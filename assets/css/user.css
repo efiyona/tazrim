@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700;800&family=Montserrat:ital,wght@0,100;1,100&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+
+*{
+    font-family: Assistant;
+    font-weight: normal;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+    letter-spacing: 0;
+
+    color: var(--text);
+    font-size: 20px;
+    line-height: 1.3rem;
+}
+
+:root {
+    --main: #AE4A37;
+    --sub_main: #819355;
+    --text: #414141;
+    --error: #FF6B5B;
+    --notice: #FFD35B;
+    --success: #5BFF9D;
+    --gray: #ECEDEF;
+    --white: #fff;
+}
+
+body{
+    margin: 0;
+    padding: 0; 
+}
