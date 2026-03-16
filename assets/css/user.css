@@ -1,30 +1,859 @@
+/* =========================================
+   Fonts & Core Settings (הגדרות ליבה)
+========================================= */
 @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700;800&family=Montserrat:ital,wght@0,100;1,100&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
 
-*{
-    font-family: Assistant;
+:root {
+    /* הצבעים החדשים שלך */
+    --main: #237227;             /* ירוק כהה - צבע ראשי למערכת (כפתורים, כותרות, לוגו) */
+    --main-dark: #1a561d;        /* גוון כהה יותר לירוק עבור Hover */
+    --main-light: rgba(35, 114, 39, 0.1);
+    
+    --sub_main: #519A66;        /* ירוק בהיר - צבע משני (הכנסות, אלמנטים תומכים) */
+    --sub_main-light: rgba(81, 154, 102, 0.1);
+    
+    --notice: #FFAA00;          /* כתום/צהוב עז - להתראות, אזהרות תקציב או הוצאות ממתינות */
+    --notice-light: #FFD786;    /* כתום בהיר - רקע להודעות אזהרה או פסי התקדמות */
+    
+    /* צבעי בסיס */
+    --text: #414141;
+    --text-light: #777777;
+    --error: #FF6B5B;
+    --success: #519A66;         /* נשתמש בירוק הבהיר שלך גם להצלחה */
+    --gray: #ECEDEF;
+    --gray-light: #F8F9FA;
+    --white: #fff;
+    --input-bg: #FAFAFA;
+}
+
+* {
+    font-family: 'Assistant', sans-serif;
     font-weight: normal;
     box-sizing: border-box;
     scroll-behavior: smooth;
     letter-spacing: 0;
-
-    color: var(--text);
-    font-size: 20px;
-    line-height: 1.3rem;
-}
-
-:root {
-    --main: #AE4A37;
-    --sub_main: #819355;
-    --text: #414141;
-    --error: #FF6B5B;
-    --notice: #FFD35B;
-    --success: #5BFF9D;
-    --gray: #ECEDEF;
-    --white: #fff;
-}
-
-body{
     margin: 0;
-    padding: 0; 
+    padding: 0;
+    color: var(--text);
+}
+
+body {
+    background-color: var(--white);
+    line-height: 1.3rem;
+    font-size: 18px;
+    direction: rtl; /* הבטחת כיווניות לאורך כל האתר */
+}
+
+/* =========================================
+   Utility Classes (מחלקות כלליות)
+========================================= */
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.text-center { text-align: center; }
+.w-full { width: 100%; }
+.bg-gray { background-color: var(--gray); }
+.hidden { display: none; }
+
+/* =========================================
+   Split Screen Layout (פריסת מסך חצוי)
+========================================= */
+.split-screen-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.form-side {
+    flex: 1;
+    background-color: var(--white);
+    padding: 2rem;
+}
+
+.form-wrapper {
+    width: 100%;
+    max-width: 400px;
+}
+
+.brand-side {
+    flex: 1;
+    background-color: var(--main);
+    color: var(--white);
+    padding: 2rem;
+}
+
+.brand-content {
+    max-width: 450px;
+}
+
+.brand-icon { font-size: 5rem; color: var(--white); margin-bottom: 1rem; }
+.brand-title { color: var(--white); font-size: 3.5rem; font-weight: 800; margin-bottom: 1rem; }
+.brand-text { color: var(--white); font-size: 1.2rem; opacity: 0.9; line-height: 1.6; font-weight: 300; }
+
+.brand-mobile {
+    display: none;
+    color: var(--main);
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+}
+
+/* =========================================
+   Form Elements (אלמנטים של טפסים)
+========================================= */
+.page-title { font-size: 2.2rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--text); }
+.page-subtitle { font-size: 1.1rem; color: var(--text-light); margin-bottom: 2.5rem; }
+
+.input-group { margin-bottom: 1.5rem; text-align: right; }
+.input-group label { display: block; margin-bottom: 0.5rem; font-weight: 700; font-size: 0.9rem; }
+
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-icon i {
+    position: absolute;
+    right: 15px;
+    color: #aaa;
+    font-size: 1rem;
+}
+
+.input-with-icon input {
+    width: 100%;
+    padding: 12px 45px 12px 15px;
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    outline: none;
+    transition: all 0.3s ease;
+    background-color: var(--input-bg);
+    font-size: 1rem;
+}
+
+.input-with-icon input:focus {
+    border-color: var(--main);
+    background-color: var(--white);
+    box-shadow: 0 0 0 4px var(--main-light);
+}
+
+.btn-primary {
+    background-color: var(--main);
+    color: var(--white);
+    border: none;
+    padding: 15px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.btn-primary:hover {
+    background-color: var(--main-dark);
+    transform: translateY(-1px);
+}
+
+.form-actions { margin: 1.5rem 0 2rem 0; font-size: 0.9rem; }
+.form-actions a, .auth-switch a { color: var(--main); text-decoration: none; font-weight: 700; }
+.form-actions a:hover, .auth-switch a:hover { text-decoration: underline; }
+
+.auth-switch { margin-top: 2rem; font-size: 1rem; color: var(--text-light); }
+
+/* Custom Checkbox */
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-container input {
+    margin-left: 8px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--main);
+}
+
+/* =========================================
+   Radio Selector (עבור דף הרשמה)
+========================================= */
+.radio-group {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 1.5rem;
+}
+
+.radio-card {
+    flex: 1;
+    border: 1.5px solid #ddd;
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.radio-card.active {
+    border-color: var(--main);
+    background-color: var(--main-light);
+}
+
+/* =========================================
+   Responsive (מובייל וטאבלט)
+========================================= */
+@media (max-width: 900px) {
+    .brand-side { display: none; }
+    .brand-mobile { display: block; text-align: center; }
+    
+    .form-side { 
+        background-color: var(--gray-light); 
+        padding: 1.5rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .form-wrapper { 
+        background-color: var(--white); 
+        padding: 2.5rem 2rem; 
+        border-radius: 20px; 
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
+        text-align: center; /* מרכוז טקסט כללי במובייל */
+    }
+
+    .page-title, .page-subtitle, .auth-switch {
+        text-align: center;
+    }
+
+    .input-group {
+        text-align: right; /* שומר על התוויות מימין */
+    }
+}
+
+@media (max-width: 480px) {
+    .form-wrapper { padding: 1.5rem; }
+    .page-title { font-size: 1.8rem; }
+}
+
+/* --- 1. כפתורים (Buttons) --- */
+.btn-primary { 
+    padding: 15px; 
+    font-size: 1.1rem; 
+}
+/* רספונסיביות של כפתורים */
+@media (max-width: 900px) {
+    .btn-primary { padding: 12px; font-size: 1rem; }
+}
+
+/* --- 2. כרטיסיית הרשמה (Register Card) --- */
+.register-card { 
+    margin: 50px; 
+}
+/* רספונסיביות של הכרטיסייה */
+@media (max-width: 900px) {
+    .register-card { margin: 20px; }
+}
+
+/* --- הודעות שגיאה (Alerts) --- */
+.alert-error {
+    background-color: #fff5f5;
+    border: 1.5px solid var(--error);
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.alert-error ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.alert-error li {
+    color: var(--error);
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+/* רספונסיביות להודעות */
+@media (max-width: 900px) {
+    .alert-error {
+        text-align: center;
+    }
+}
+
+/* =========================================
+   6. Dashboard Layout (פריסת דשבורד)
+========================================= */
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* Sidebar - תפריט צד למחשב */
+.sidebar {
+    width: 260px;
+    background-color: var(--main);
+    color: var(--white);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    transition: all 0.3s ease;
+}
+
+.sidebar-header {
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+.sidebar-header i {
+    color: var(--white);
+}
+
+.sidebar-header span {
+    color: var(--white);
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    flex: 1;
+}
+
+.sidebar-nav a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.sidebar-nav a i {
+    color: inherit;
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar-nav a:hover, 
+.sidebar-nav a.active {
+    background-color: var(--main-dark);
+    color: var(--white);
+}
+
+.sidebar-nav hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 20px 10px;
+}
+
+.logout-link:hover {
+    background-color: rgba(255, 107, 91, 0.2) !important;
+    color: #ff6b5b !important;
+}
+
+/* Main Content Area */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--gray-light);
+}
+
+
+.mobile-menu-btn {
+    display: none; /* יופיע רק במובייל */
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.user-info {
+    font-size: 1rem;
+}
+
+.user-info-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* יישור לשמאל ב-RTL */
+    gap: 4px;
+}
+
+.user-welcome {
+    font-size: 1rem;
+    color: var(--text-dark);
+}
+
+.home-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--main-light); /* הירוק הבהיר מאוד */
+    color: var(--main);
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.home-tag i {
+    font-size: 0.75rem;
+}
+
+/* התאמה למובייל - שהכל יהיה בשורה אחת אם יש מקום */
+@media (max-width: 600px) {
+    .user-info-wrapper {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+    }
+}
+
+.content-wrapper {
+    padding: 30px;
+}
+
+.section-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 25px;
+}
+
+/* Stats Grid - כרטיסיות מידע */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background-color: var(--white);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    border-right: 5px solid var(--gray);
+}
+
+.stat-card label {
+    display: block;
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.stat-card .amount {
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+/* צבעים ספציפיים לכרטיסיות */
+.stat-card.balance { border-right-color: var(--notice); }
+.stat-card.income { border-right-color: var(--success); }
+.stat-card.income .amount { color: var(--success); }
+.stat-card.expenses { border-right-color: var(--error); }
+.stat-card.expenses .amount { color: var(--error); }
+
+/* Floating Action Button (FAB) */
+.floating-btn {
+    position: fixed;
+    bottom: 30px;
+    left: 30px; /* בגלל ה-RTL הלחצן יהיה בשמאל */
+    width: 60px;
+    height: 60px;
+    background-color: var(--main);
+    color: var(--white);
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 4px 15px rgba(35, 114, 39, 0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    z-index: 100;
+    transition: transform 0.2s ease;
+}
+
+.floating-btn:hover {
+    transform: scale(1.1);
+}
+
+/* =========================================
+   7. Responsive Dashboard (רספונסיביות)
+========================================= */
+
+@media (max-width: 900px) {
+    .sidebar {
+        display: none; /* מסתירים את תפריט הצד במובייל */
+    }
+
+    .mobile-menu-btn {
+        display: block;
+    }
+
+    .content-wrapper {
+        padding: 20px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr; /* כרטיסיות אחת מעל השנייה */
+    }
+
+    /* מצב שבו הסיידבר פתוח במובייל */
+    .sidebar.mobile-open {
+        display: flex !important; /* דורס את ה-display: none */
+        position: fixed;
+        top: 0;
+        right: 0; /* פתיחה מצד ימין בגלל ה-RTL */
+        width: 280px;
+        height: 100vh;
+        z-index: 9999;
+        box-shadow: -5px 0 25px rgba(0,0,0,0.2);
+        animation: slideInRTL 0.3s ease;
+    }
+
+    /* אנימציה נחמדה לכניסה מהצד */
+    @keyframes slideInRTL {
+        from { transform: translateX(100%); }
+        to { transform: translateX(0); }
+    }
+
+    /* הוספת שכבת חושך כשהתפריט פתוח (אופציונלי) */
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 998;
+        display: none;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+}
+
+/* =========================================
+   9. Transactions List (רשימת פעולות)
+========================================= */
+
+.transaction-item {
+    background-color: var(--white);
+    padding: 15px 20px;
+    border-radius: 15px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s ease;
+    border-right: 4px solid var(--gray);
+}
+
+.transaction-item:hover {
+    transform: scale(1.01);
+}
+
+.transaction-item.income { border-right-color: var(--success); }
+.transaction-item.expense { border-right-color: var(--error); }
+
+.transaction-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.cat-icon-wrapper {
+    width: 45px;
+    height: 45px;
+    background-color: var(--gray-light);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cat-icon-wrapper i {
+    font-size: 1.1rem;
+    color: var(--text-light);
+}
+
+.income .cat-icon-wrapper i { color: var(--success); }
+.expense .cat-icon-wrapper i { color: var(--error); }
+
+.details {
+    display: flex;
+    flex-direction: column;
+}
+
+.details .desc {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.details .date {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+.transaction-amount {
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+.income .transaction-amount { color: var(--success); }
+.expense .transaction-amount { color: var(--error); }
+
+/* כפתור טען עוד */
+.btn-load-more {
+    background-color: var(--white);
+    border: 2px solid var(--gray);
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-load-more:hover {
+    background-color: var(--gray-light);
+    border-color: var(--main);
+    color: var(--main);
+}
+
+/* =========================================
+   10. New Top-Bar Design (עיצוב סרגל עליון חדש)
+========================================= */
+
+.top-bar {
+    background-color: var(--white);
+    padding: 15px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 20px; /* יוצר את האפקט ה"צף" מהצדדים */
+    border-radius: 20px; /* פינות מעוגלות כמו בדוגמה */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.user-profile-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--main-light);
+    object-fit: cover;
+}
+
+.user-details-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.welcome-text {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.user-name {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin: 2px 0;
+}
+
+.home-name-sub {
+    font-size: 0.8rem;
+    color: var(--main);
+    font-weight: 600;
+}
+
+/* צד שמאל - אייקונים */
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.action-icons {
+    display: flex;
+    gap: 12px;
+}
+
+.icon-btn {
+    width: 42px;
+    height: 42px;
+    background-color: var(--gray-light);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.icon-btn i {
+    font-size: 1.1rem;
+    color: var(--text);
+}
+
+.icon-btn:hover {
+    background-color: var(--gray);
+    transform: translateY(-2px);
+}
+
+.logout-btn-top i {
+    color: var(--error);
+}
+
+.notification-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    background-color: var(--error);
+    border-radius: 50%;
+    border: 2px solid var(--white);
+}
+
+/* התאמה למובייל */
+@media (max-width: 900px) {
+    .top-bar {
+        margin: 10px;
+        padding: 10px 15px;
+    }
+    .user-name { font-size: 0.9rem; }
+    .welcome-text, .home-name-sub { font-size: 0.7rem; }
+    .user-avatar img { width: 40px; height: 40px; }
+}
+
+/* =========================================
+   עדכונים למבנה ה-Layout המקצועי
+========================================= */
+
+/* מוודא שהתוכן הראשי תופס את כל השטח ליד הסיידבר */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* מונע פריצה של אלמנטים */
+    background-color: var(--gray-light);
+}
+
+/* עיצוב ה-Top Bar הצף */
+.top-bar {
+    background-color: var(--white);
+    margin: 20px 25px 0 25px; /* רווח מהקצוות ליצירת אפקט צף */
+    padding: 12px 25px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+/* סידור הפרופיל בתוך ה-Top Bar */
+.user-profile-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar img {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 2px solid var(--main-light);
+    object-fit: cover;
+}
+
+.user-details-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.welcome-text {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.user-name {
+    font-size: 1rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.home-name-sub {
+    font-size: 0.8rem;
+    color: var(--main);
+    font-weight: 600;
+}
+
+/* אייקונים בצד שמאל */
+.action-icons {
+    display: flex;
+    gap: 12px;
+}
+
+.icon-btn {
+    width: 40px;
+    height: 40px;
+    background-color: var(--gray-light);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+    background-color: var(--gray);
+}
+
+.logout-btn-top i {
+    color: var(--error);
+}
+
+/* התאמה לרזולוציות שונות */
+@media (max-width: 900px) {
+    .top-bar {
+        margin: 10px;
+        padding: 10px 15px;
+    }
 }
