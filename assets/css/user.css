@@ -857,3 +857,540 @@ body {
         padding: 10px 15px;
     }
 }
+
+/* =========================================
+   11. Category Budget Grid (מעקב תקציב)
+========================================= */
+
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.category-card {
+    background-color: var(--white);
+    border-radius: 18px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* מצב חריגה מהתקציב */
+.category-card.over-budget {
+    border-color: var(--error);
+    background-color: #fff9f9;
+}
+
+.cat-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cat-icon-circle {
+    width: 40px;
+    height: 40px;
+    background-color: var(--main-light);
+    color: var(--main);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.over-budget .cat-icon-circle {
+    background-color: #fee2e2;
+    color: var(--error);
+}
+
+.cat-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-dark);
+}
+
+.spending-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 8px;
+}
+
+.spent-amount {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--text-dark);
+}
+
+.budget-total {
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+/* פסי התקדמות */
+.progress-container {
+    width: 100%;
+    height: 8px;
+    background-color: var(--gray-light);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--main);
+    border-radius: 10px;
+    transition: width 0.4s ease;
+}
+
+.over-budget .progress-bar {
+    background-color: var(--error);
+}
+
+/* כפתור פירוט */
+.cat-card-footer {
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+.btn-cat-details {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    background-color: var(--gray-light);
+    color: var(--text);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-cat-details:hover {
+    background-color: var(--gray);
+    color: var(--main);
+}
+
+.btn-cat-details i {
+    font-size: 0.75rem;
+}
+
+/* התאמה למובייל */
+@media (max-width: 600px) {
+    .category-grid {
+        grid-template-columns: 1fr;
+    }
+}
+/* פופאפ (Modal) */
+.modal {
+    display: none; 
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* החשכת רקע */
+    backdrop-filter: blur(4px); /* אפקט טשטוש מודרני */
+}
+
+.modal-content {
+    background-color: var(--white);
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh; /* מקסימום 80% מגובה המסך */
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    animation: modalSlideUp 0.3s ease-out;
+}
+
+@keyframes modalSlideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid var(--gray-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 20px 25px;
+    overflow-y: auto; /* מאפשר גלילה בתוך הפופאפ */
+    flex: 1;
+}
+
+.close-modal-btn {
+    font-size: 2rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-light);
+    line-height: 1;
+}
+
+.close-modal-btn:hover {
+    color: var(--error);
+}
+
+/* התאמה לטבלה בתוך המודאל */
+.details-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.details-table th {
+    position: sticky; /* כותרת הטבלה נשארת למעלה בגלילה */
+    top: 0;
+    background: var(--white);
+    z-index: 10;
+    padding-bottom: 15px;
+    text-align: right;
+    border-bottom: 2px solid var(--gray-light);
+}
+
+.modal-body {
+    padding: 20px 25px;
+    overflow-y: auto; 
+    flex: 1;
+    background-color: var(--gray-light); /* הוספנו רקע אפור בהיר */
+    border-bottom-left-radius: 20px; /* עיגול הפינות למטה */
+    border-bottom-right-radius: 20px;
+}
+
+/* =========================================
+   12. AI Advisor Section (יועץ חכם)
+========================================= */
+.ai-card {
+    background: linear-gradient(145deg, #ffffff 0%, #fcfdfe 100%);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 8px 25px rgba(35, 114, 39, 0.06);
+    border: 1px solid rgba(35, 114, 39, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* פס עיטור עליון */
+.ai-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--main), var(--sub_main));
+}
+
+.ai-card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.ai-icon-wrapper {
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, var(--main-light), rgba(81, 154, 102, 0.2));
+    color: var(--main);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.ai-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.ai-intro-text {
+    font-size: 0.95rem;
+    color: var(--text-light);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.btn-ai-generate {
+    background: linear-gradient(90deg, var(--main), var(--sub_main));
+    color: var(--white);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-ai-generate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(35, 114, 39, 0.2);
+}
+
+.ai-result-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-dark);
+    background-color: var(--gray-light);
+    padding: 20px;
+    border-radius: 12px;
+    border-right: 4px solid var(--sub_main);
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   13. Month Selector (בורר חודשים)
+========================================= */
+.month-selector {
+    display: flex;
+    align-items: center;
+    background-color: var(--white);
+    border-radius: 12px;
+    padding: 5px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--gray);
+}
+
+.month-btn {
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: var(--text-light);
+    text-decoration: none;
+    transition: 0.2s ease;
+}
+
+.month-btn:hover {
+    background-color: var(--gray-light);
+    color: var(--main);
+}
+
+.month-btn.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.current-month-display {
+    padding: 0 15px;
+    font-weight: 700;
+    color: var(--main-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+    justify-content: center;
+}
+
+@media (max-width: 600px) {
+    .page-header-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+}
+
+/* כפתור חזרה לחודש הנוכחי */
+.btn-return-today {
+    background-color: var(--main-light);
+    color: var(--main);
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-return-today:hover {
+    background-color: var(--main);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 600px) {
+    .page-header-actions > div:first-child {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
+
+/* =========================================
+   15. Pending Transactions (פעולות עתידיות/ממתינות)
+========================================= */
+.transaction-item.pending-trans {
+    opacity: 0.6; /* אפקט שקיפות */
+    background-color: #fdfdfd;
+    border-right-color: #d1d5db !important; /* פס אפור במקום ירוק/אדום */
+}
+
+.transaction-item.pending-trans .transaction-amount {
+    color: #9ca3af !important; /* סכום בצבע אפור כדי לא לבלבל עם כסף אמיתי */
+}
+
+.transaction-item.pending-trans .cat-icon-wrapper {
+    background-color: #f3f4f6;
+}
+
+.transaction-item.pending-trans .cat-icon-wrapper i {
+    color: #9ca3af !important; /* אייקון השעון באפור */
+}
+
+/* =========================================
+   14. Add Transaction UI (עיצוב פופאפ הוספה)
+========================================= */
+
+/* בורר הוצאה/הכנסה מודרני */
+.modern-toggle {
+    display: flex;
+    background-color: var(--gray);
+    border-radius: 12px;
+    padding: 5px;
+    margin-bottom: 25px;
+}
+
+.modern-toggle input[type="radio"] {
+    display: none;
+}
+
+.toggle-option {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: all 0.3s ease;
+}
+
+/* מצבי הדלקה (Checked) */
+.modern-toggle input[id="type-expense"]:checked + .expense {
+    background-color: var(--error);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(255, 107, 91, 0.3);
+}
+
+.modern-toggle input[id="type-income"]:checked + .income {
+    background-color: var(--success);
+    color: var(--white);
+    box-shadow: 0 4px 12px rgba(81, 154, 102, 0.3);
+}
+
+/* גריד קטגוריות (ריבועים) */
+.category-grid-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+    gap: 12px;
+    max-height: 220px;
+    overflow-y: auto; /* מאפשר גלילה אם יש הרבה קטגוריות */
+    padding: 5px;
+    margin-top: 10px;
+}
+
+/* Scrollbar דק לגריד הקטגוריות */
+.category-grid-selector::-webkit-scrollbar {
+    width: 6px;
+}
+.category-grid-selector::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 10px;
+}
+
+.cat-tile {
+    cursor: pointer;
+    display: block;
+}
+
+.cat-tile input[type="radio"] {
+    display: none;
+}
+
+.tile-content {
+    background-color: var(--white);
+    border: 2px solid var(--gray);
+    border-radius: 15px;
+    padding: 15px 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.tile-content .cat-icon {
+    width: 40px;
+    height: 40px;
+    background-color: var(--gray-light);
+    color: var(--text-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+}
+
+.tile-content .cat-name-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+}
+
+/* מצב נבחר (Checked) לריבוע הקטגוריה */
+.cat-tile input[type="radio"]:checked + .tile-content {
+    border-color: var(--main);
+    background-color: var(--main-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(35, 114, 39, 0.15);
+}
+
+.cat-tile input[type="radio"]:checked + .tile-content .cat-icon {
+    background-color: var(--main);
+    color: var(--white);
+}
