@@ -1394,3 +1394,170 @@ body {
     background-color: var(--main);
     color: var(--white);
 }
+
+/* דף ניהול הבית *//* === עיצוב חדש לכרטיסיות הקטגוריות === */
+        .icon-option {
+            width: 40px; height: 40px; border-radius: 10px; background: var(--gray);
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            color: var(--text-light); transition: 0.2s; border: 2px solid transparent; font-size: 1.2rem;
+        }
+        .icon-option.selected {
+            background: var(--main-light); color: var(--main); border-color: var(--main);
+        }
+
+        /* תיקון צבעים לבורר הוצאה/הכנסה בפופאפ קטגוריות */
+        .modern-toggle input[id="cat-type-exp"]:checked + .expense {
+            background-color: var(--error);
+            color: var(--white);
+            box-shadow: 0 4px 12px rgba(255, 107, 91, 0.3);
+        }
+        .modern-toggle input[id="cat-type-inc"]:checked + .income {
+            background-color: var(--success);
+            color: var(--white);
+            box-shadow: 0 4px 12px rgba(81, 154, 102, 0.3);
+        }
+
+        .category-setting-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--white);
+    padding: 12px 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    border: 1px solid var(--gray);
+    transition: all 0.2s ease;
+}
+.category-setting-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+    border-color: #e0e0e0;
+}
+.category-setting-card.expense-cat {
+    border-right: 4px solid var(--error);
+}
+.category-setting-card.income-cat {
+    border-right: 4px solid var(--success);
+}
+.cat-info-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.cat-icon-circle-small {
+    width: 38px;
+    height: 38px;
+    background-color: var(--gray-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    font-size: 1rem;
+}
+.cat-budget-pill {
+    background-color: #fff0f0;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--error);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.cat-budget-pill.no-budget {
+    background-color: var(--gray);
+    color: #888;
+    font-weight: 600;
+}
+
+/* שליטה מדויקת במספר הכרטיסיות בשורה */
+.categories-grid-container {
+    display: grid;
+    grid-template-columns: 1fr; /* מובייל: כרטיסייה 1 בשורה */
+    gap: 15px;
+}
+
+@media (min-width: 768px) {
+    .categories-grid-container {
+        grid-template-columns: repeat(2, 1fr); /* מסכים גדולים: בדיוק 2 בשורה */
+    }
+}
+
+/* עיצוב כפתור וואטסאפ */
+.btn-whatsapp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: #25D366;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    margin-top: 15px;
+    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+    width: 100%;
+}
+.btn-whatsapp:hover {
+    background-color: #128C7E;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(37, 211, 102, 0.4);
+}
+@media (min-width: 768px) {
+    .btn-whatsapp {
+        width: max-content; /* במחשב הכפתור לא ימתח על כל הרוחב */
+    }
+}
+
+        .management-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 20px;
+            padding-bottom: 80px; 
+        }
+        @media (min-width: 768px) {
+            .management-grid { grid-template-columns: repeat(2, 1fr); }
+            .full-width-card { grid-column: span 2; }
+        }
+        .join-code-box {
+            background-color: var(--main-light);
+            border: 2px dashed var(--main);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .join-code-box h2 {
+            font-size: 2rem;
+            color: var(--main);
+            letter-spacing: 5px;
+            margin: 10px 0;
+            user-select: all;
+        }
+        .cat-list-item, .recurring-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background-color: var(--gray);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .action-btns button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: 0.2s;
+        }
+        .btn-edit { color: var(--main); }
+        .btn-delete { color: var(--error); }
+        .action-btns button:hover { background-color: white; }

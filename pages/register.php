@@ -1,6 +1,9 @@
 <?php
 require('../path.php');
 include(ROOT_PATH . "/app/controllers/users.php");
+
+// תפיסת קוד ההצטרפות מהקישור (אם הגיעו דרך הוואטסאפ)
+$prefilled_code = isset($_GET['join_code']) ? htmlspecialchars($_GET['join_code']) : '';
 ?>
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -31,13 +34,15 @@ include(ROOT_PATH . "/app/controllers/users.php");
                         <label>שם פרטי</label>
                         <div class="input-with-icon">
                             <i class="fa-solid fa-user"></i>
-                            <input type="text" name="first_name" value="<?php echo $first_name; ?>" required placeholder="השם שלך">                        </div>
+                            <input type="text" name="first_name" value="<?php echo $first_name; ?>" required placeholder="השם שלך">                        
+                        </div>
                     </div>
                     <div class="input-group">
                         <label>שם משפחה</label>
                         <div class="input-with-icon">
                             <i class="fa-solid fa-signature"></i>
-                            <input type="text" name="last_name" value="<?php echo $last_name; ?>" required placeholder="שם המשפחה">                        </div>
+                            <input type="text" name="last_name" value="<?php echo $last_name; ?>" required placeholder="שם המשפחה">                        
+                        </div>
                     </div>
                     <div class="input-group">
                         <label>כינוי (Nickname)</label>
@@ -97,7 +102,7 @@ include(ROOT_PATH . "/app/controllers/users.php");
                             <label>קוד בית</label>
                             <div class="input-with-icon">
                                 <i class="fa-solid fa-key"></i>
-                                <input type="text" name="home_code" maxlength="4" placeholder="הזינו קוד בן 4 תווים">
+                                <input type="text" name="home_code" value="<?php echo $prefilled_code; ?>" placeholder="הזינו את קוד ההצטרפות">
                             </div>
                         </div>
                     </div>
@@ -134,6 +139,17 @@ include(ROOT_PATH . "/app/controllers/users.php");
             fJoin.classList.remove('hidden'); fCreate.classList.add('hidden');
             bJoin.classList.add('active'); bCreate.classList.remove('active');
         };
+
+        // --- קוד חדש: בדיקה אם הגענו מקישור של וואטסאפ ---
+        const prefilledCode = "<?php echo $prefilled_code; ?>";
+        if (prefilledCode !== "") {
+            // אם יש קוד בקישור, נבחר אוטומטית באופציית "הצטרפות לבית" ונציג אותה
+            rJoin.checked = true;
+            fJoin.classList.remove('hidden'); 
+            fCreate.classList.add('hidden');
+            bJoin.classList.add('active'); 
+            bCreate.classList.remove('active');
+        }
 
         document.getElementById('registerForm').onsubmit = (e) => {
             if(document.getElementById('reg_pass').value.length < 4) {
