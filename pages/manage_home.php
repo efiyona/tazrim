@@ -11,7 +11,7 @@ $home_data = selectOne('homes', ['id' => $home_id]);
 
 // בניית הודעת הוואטסאפ וקידוד הקישור
 $join_code = $home_data['join_code'];
-$whatsapp_text = "היי! בואי לנהל איתי את התקציב של בית '" . $home_data['name'] . "' ב'התזרים' 🏠" . "\n\n" . "קוד ההצטרפות שלנו הוא: " . $join_code . "\n" . "להצטרפות מהירה: " . BASE_URL . "index.php?join=" . $join_code;
+$whatsapp_text = "היי! בואי לנהל איתי את התקציב של בית '" . $home_data['name'] . "' ב'התזרים' 🏠" . "\n\n" . "קוד ההצטרפות שלנו הוא: " . $join_code . "\n" . "להצטרפות מהירה: " . BASE_URL . "pages/register.php?join_code=" . $join_code;
 $whatsapp_url = "https://api.whatsapp.com/send?text=" . urlencode($whatsapp_text);
 
 // 2. שליפת קטגוריות (מחולקות להוצאות והכנסות)
