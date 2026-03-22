@@ -664,9 +664,11 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                     msg.innerHTML = '<i class="fa-solid fa-check-circle"></i> התראות הופעלו! המכשיר רשום במערכת.';
                 }
             } catch (error) {
-                console.error('Subscription Error:', error);
-                alert('אירעה שגיאה בחיבור להתראות. נסה שוב מאוחר יותר.');
+                console.error('Full Subscription Error:', error);
+                // כאן השינוי - אנחנו רוצים לראות את השגיאה האמיתית מהדפדפן
+                alert('שגיאה מפורטת: ' + error.name + " - " + error.message);
                 btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-bell"></i> נסה שוב';
             }
         }
     </script>
