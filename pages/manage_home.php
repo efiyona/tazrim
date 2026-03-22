@@ -33,6 +33,11 @@ $recurring_result = mysqli_query($conn, $recurring_query);
 // 4. שליפת כל המשתמשים השייכים לבית זה
 $members_query = "SELECT first_name, nickname, role, email FROM users WHERE home_id = $home_id ORDER BY (role = 'admin') DESC, first_name ASC";
 $members_result = mysqli_query($conn, $members_query);
+
+// בדיקה האם קיים כבר מפתח API למשתמש הנוכחי
+$token_check_query = "SELECT token FROM api_tokens WHERE user_id = $user_id LIMIT 1";
+$token_check_result = mysqli_query($conn, $token_check_query);
+$existing_token = mysqli_fetch_assoc($token_check_result);
 ?>
 
 <!DOCTYPE html>
@@ -67,46 +72,61 @@ $members_result = mysqli_query($conn, $members_query);
                     
                     <div class="card">
                         <div class="card-header">
-                            <h3>פרטי הבית</h3>
+                            <h3>פרטי הבית וחיבורים</h3>
                         </div>
 
-                        <div class="join-code-box">
-                            <p style="font-weight: 600; font-size: 0.9rem;">קוד ההצטרפות לבית זה:</p>
-                            <h2><?php echo $home_data['join_code']; ?></h2>
-                            <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">שלח את הקוד הזה לשותפים/בני זוג כדי שיצטרפו אליך.</p>
-                            
-                            <?php 
-                            // במידה והאתר יושב באחסון אמיתי זה יעבוד מושלם, בלוקאלהוסט זה יישלח את הנתיב של הלוקאלהוסט
-                            $register_link = BASE_URL . "pages/register.php?join_code=" . $home_data['join_code'];
-                            
-                            $whatsapp_msg = "היי! 👋 הוזמנת להצטרף לניהול התקציב של הבית שלנו: *" . $home_data['name'] . "* באפליקציית התזרים. 🏠\n\nלחץ על הקישור הבא כדי להירשם ולהצטרף אוטומטית:\n" . $register_link;
-                            $whatsapp_url = "https://api.whatsapp.com/send?text=" . urlencode($whatsapp_msg);
-                            ?>
-                            
-                            <a href="<?php echo $whatsapp_url; ?>" target="_blank" class="btn-whatsapp">
-                                <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> שליחה בוואטסאפ
-                            </a>
+                        <div class="card-body-padding">
+                            <div class="management-block">
+                                <span class="block-label">קוד הצטרפות לבית:</span>
+                                <div class="join-row">
+                                    <span class="join-code-v2"><?php echo $home_data['join_code']; ?></span>
+                                    <a href="<?php echo $whatsapp_url; ?>" target="_blank" class="btn-whatsapp-minimal">
+                                        <i class="fa-brands fa-whatsapp"></i> שליחה בוואטסאפ
+                                    </a>
+                                </div>
+                                <p class="block-help">שלח את הקוד הזה להודיה או לשותפים כדי שיצטרפו לבית שלך.</p>
+                            </div>
+
+                            <div class="management-block">
+                                <span class="block-label">חיבור לאייפון (API Key):</span>
+                                <?php if ($existing_token): ?>
+                                    <div class="api-wrapper-v2">
+                                        <input type="text" id="api-token-display" value="<?php echo $existing_token['token']; ?>" readonly>
+                                        <button onclick="copyApiToken()" class="copy-btn-v2" title="העתק מפתח">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <div id="copy-msg" style="display: none;" class="success-text-small">
+                                        <i class="fa-solid fa-check"></i> המפתח הועתק!
+                                    </div>
+                                <?php else: ?>
+                                    <button type="button" id="btn-generate-api" class="btn-generate-v2" onclick="generateApiToken()">
+                                        <i class="fa-solid fa-key"></i> יצירת מפתח חיבור ראשון
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+
+                            <hr class="management-divider">
+
+                            <form id="update-home-form">
+                                <div class="input-group">
+                                    <label>שם הבית</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-house"></i>
+                                        <input type="text" name="home_name" value="<?php echo htmlspecialchars($home_data['name']); ?>" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label>יתרת בנק עדכנית (₪)</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-building-columns"></i>
+                                        <input type="number" step="0.01" name="initial_balance" value="<?php echo $home_data['initial_balance']; ?>" required>
+                                    </div>
+                                </div>
+                                <div id="home-msg" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 8px; font-weight: 600; text-align: center;"></div>
+                                <button type="button" id="btn-update-home" class="btn-primary" onclick="updateHomeDetails()">שמור שינויים</button>
+                            </form>
                         </div>
-                        
-                        <form id="update-home-form">
-                            <div class="input-group">
-                                <label>שם הבית</label>
-                                <div class="input-with-icon">
-                                    <i class="fa-solid fa-house"></i>
-                                    <input type="text" name="home_name" value="<?php echo htmlspecialchars($home_data['name']); ?>" required>
-                                </div>
-                            </div>
-                            <div class="input-group">
-                                <label>יתרת בנק עדכנית (₪)</label>
-                                <div class="input-with-icon">
-                                    <i class="fa-solid fa-building-columns"></i>
-                                    <input type="number" step="0.01" name="initial_balance" value="<?php echo $home_data['initial_balance']; ?>" required>
-                                </div>
-                            </div>
-                            <div id="home-msg" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 8px; font-weight: 600; text-align: center;"></div>
-                            
-                            <button type="button" id="btn-update-home" class="btn-primary" onclick="updateHomeDetails()">שמור שינויים</button>
-                        </form>
                     </div>
 
                     <div class="card">
@@ -516,6 +536,44 @@ $members_result = mysqli_query($conn, $members_query);
                     alert('שגיאת תקשורת עם השרת.');
                 });
             }
+        }
+    </script>
+
+    <script>
+        // העתקת המפתח לקליפבורד
+        function copyApiToken() {
+            const tokenInput = document.getElementById('api-token-display');
+            tokenInput.select();
+            navigator.clipboard.writeText(tokenInput.value);
+            
+            const msg = document.getElementById('copy-msg');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 2000);
+        }
+
+        // יצירת מפתח חדש ב-AJAX
+        function generateApiToken() {
+            const btn = document.getElementById('btn-generate-api');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מייצר מפתח...';
+
+            fetch('<?php echo BASE_URL; ?>/app/ajax/generate_api_token.php', {
+                method: 'POST'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload(); // רענון כדי להציג את המפתח החדש
+                } else {
+                    alert('שגיאה ביצירת המפתח: ' + data.message);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-key"></i> יצירת מפתח חיבור';
+                }
+            })
+            .catch(err => {
+                alert('שגיאת תקשורת עם השרת.');
+                btn.disabled = false;
+            });
         }
     </script>
 </html>
