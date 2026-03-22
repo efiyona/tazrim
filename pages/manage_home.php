@@ -9,6 +9,11 @@ $user_id = $_SESSION['id'];
 // 1. שליפת פרטי הבית
 $home_data = selectOne('homes', ['id' => $home_id]);
 
+// בניית הודעת הוואטסאפ וקידוד הקישור
+$join_code = $home_data['join_code'];
+$whatsapp_text = "היי! בואי לנהל איתי את התקציב של בית '" . $home_data['name'] . "' ב'התזרים' 🏠" . "\n\n" . "קוד ההצטרפות שלנו הוא: " . $join_code . "\n" . "להצטרפות מהירה: " . BASE_URL . "index.php?join=" . $join_code;
+$whatsapp_url = "https://api.whatsapp.com/send?text=" . urlencode($whatsapp_text);
+
 // 2. שליפת קטגוריות (מחולקות להוצאות והכנסות)
 $categories_query = "SELECT * FROM categories WHERE home_id = $home_id AND is_active = 1 ORDER BY type ASC, name ASC";
 $categories_result = mysqli_query($conn, $categories_query);
@@ -551,28 +556,37 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
             setTimeout(() => { msg.style.display = 'none'; }, 2000);
         }
 
-        // יצירת מפתח חדש ב-AJAX
         function generateApiToken() {
             const btn = document.getElementById('btn-generate-api');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מייצר מפתח...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מייצר...';
 
-            fetch('<?php echo BASE_URL; ?>/app/ajax/generate_api_token.php', {
+            fetch('<?php echo BASE_URL; ?>app/ajax/generate_api_token.php', {
                 method: 'POST'
             })
-            .then(res => res.json())
+            .then(async response => {
+                const text = await response.text();
+                try {
+                    return JSON.parse(text);
+                } catch(e) {
+                    // אם השרת שלח שגיאת PHP במקום JSON, נראה אותה בקונסול
+                    console.error("Server Error Output:", text);
+                    throw new Error("השרת שלח תשובה לא תקינה. בדוק את הקונסול.");
+                }
+            })
             .then(data => {
                 if (data.status === 'success') {
-                    window.location.reload(); // רענון כדי להציג את המפתח החדש
+                    window.location.reload();
                 } else {
-                    alert('שגיאה ביצירת המפתח: ' + data.message);
+                    alert('שגיאה: ' + data.message);
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-key"></i> יצירת מפתח חיבור';
+                    btn.innerHTML = '<i class="fa-solid fa-key"></i> ניסיון חוזר';
                 }
             })
             .catch(err => {
-                alert('שגיאת תקשורת עם השרת.');
+                alert(err.message);
                 btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-key"></i> ניסיון חוזר';
             });
         }
     </script>

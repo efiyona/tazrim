@@ -1,5 +1,5 @@
 <?php
-require_once('../path.php');
+require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
 session_start();
 
