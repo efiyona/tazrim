@@ -64,7 +64,7 @@ function sendPushToHome($home_id, $exclude_user_id, $title, $body, $url = '/') {
     // שליפת כל המכשירים של כל המשתמשים בבית, למעט המשתמש שהחריגו
     $query = "SELECT us.* FROM user_subscriptions us
               JOIN users u ON us.user_id = u.id
-              WHERE u.home_id = $home_id AND u.id != 8";
+              WHERE u.home_id = $home_id AND u.id != $exclude_user_id";
     
     $result = mysqli_query($conn, $query);
 
@@ -93,6 +93,48 @@ function sendPushToHome($home_id, $exclude_user_id, $title, $body, $url = '/') {
 
     foreach ($webPush->flush() as $report) {
 
+    }
+    return true;
+}
+
+// ========================================================
+// 3. פונקציה לשליחת התראה ל*כל* בני הבית (ללא החרגות)
+// ========================================================
+function sendPushToEntireHome($home_id, $title, $body, $url = '/') {
+    global $conn;
+
+    // שליפת כל המכשירים של כל המשתמשים בבית (כולל כולם)
+    $query = "SELECT us.* FROM user_subscriptions us
+              JOIN users u ON us.user_id = u.id
+              WHERE u.home_id = $home_id";
+    
+    $result = mysqli_query($conn, $query);
+
+    if (mysqli_num_rows($result) === 0) return false;
+
+    $auth = [
+        'VAPID' => [
+            'subject' => SITE_URL,
+            'publicKey' => VAPID_PUBLIC_KEY,
+            'privateKey' => VAPID_PRIVATE_KEY,
+        ],
+    ];
+
+    $webPush = new \Minishlink\WebPush\WebPush($auth);
+    $payload = json_encode(['title' => $title, 'body' => $body, 'url' => $url]);
+
+    while ($sub = mysqli_fetch_assoc($result)) {
+        $subscription = \Minishlink\WebPush\Subscription::create([
+            'endpoint'  => $sub['endpoint'],
+            'publicKey' => $sub['p256dh'],
+            'authToken' => $sub['auth'],
+        ]);
+
+        $webPush->queueNotification($subscription, $payload);
+    }
+
+    foreach ($webPush->flush() as $report) {
+        // רץ ברקע
     }
     return true;
 }
