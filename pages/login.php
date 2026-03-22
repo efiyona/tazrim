@@ -80,7 +80,7 @@ if (isset($_SESSION['id'])) {
                             <span class="checkmark"></span>
                             זכור אותי
                         </label>
-                        <a href="#" class="forgot-password">שכחת סיסמה?</a>
+                        <a href="<?php echo BASE_URL; ?>pages/forgot_password.php" class="forgot-password">שכחת סיסמה?</a>
                     </div>
 
                     <button type="submit" name="login_btn" class="btn-primary">התחברות למערכת</button>
