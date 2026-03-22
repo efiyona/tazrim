@@ -604,15 +604,15 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
         const VAPID_PUBLIC_KEY = "<?php echo VAPID_PUBLIC_KEY; ?>";
 
         // פונקציית עזר להמרת המפתח לפורמט בינארי שהאייפון דורש
+
         function urlBase64ToUint8Array(base64String) {
             const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
+            const base64 = (base64String + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+
+            const rawData = atob(base64);
+            return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
         }
 
         async function initPushSubscription() {
