@@ -64,7 +64,7 @@ function sendPushToHome($home_id, $exclude_user_id, $title, $body, $url = '/') {
     // שליפת כל המכשירים של כל המשתמשים בבית, למעט המשתמש שהחריגו
     $query = "SELECT us.* FROM user_subscriptions us
               JOIN users u ON us.user_id = u.id
-              WHERE u.home_id = $home_id AND u.id != $exclude_user_id";
+              WHERE u.home_id = $home_id AND u.id != 8";
     
     $result = mysqli_query($conn, $query);
 
