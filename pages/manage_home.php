@@ -1,7 +1,7 @@
 <?php
 require_once('../path.php');
 include(ROOT_PATH . '/app/database/db.php');
-include(ROOT_PATH . '/assets/includes/auth_check.php'); // שמתי לב לנתיב הנכון לפי העץ שלך
+include(ROOT_PATH . '/assets/includes/auth_check.php'); 
 
 $home_id = $_SESSION['home_id'];
 $user_id = $_SESSION['id'];
@@ -10,7 +10,7 @@ $user_id = $_SESSION['id'];
 $home_data = selectOne('homes', ['id' => $home_id]);
 
 // 2. שליפת קטגוריות (מחולקות להוצאות והכנסות)
-$categories_query = "SELECT * FROM categories WHERE home_id = $home_id ORDER BY type ASC, name ASC";
+$categories_query = "SELECT * FROM categories WHERE home_id = $home_id AND is_active = 1 ORDER BY type ASC, name ASC";
 $categories_result = mysqli_query($conn, $categories_query);
 $expenses_cats = [];
 $income_cats = [];
@@ -29,6 +29,10 @@ $recurring_query = "SELECT r.*, c.name as cat_name, c.icon as cat_icon
                     WHERE r.home_id = $home_id AND r.is_active = 1 
                     ORDER BY r.day_of_month ASC";
 $recurring_result = mysqli_query($conn, $recurring_query);
+
+// 4. שליפת כל המשתמשים השייכים לבית זה
+$members_query = "SELECT first_name, nickname, role, email FROM users WHERE home_id = $home_id ORDER BY (role = 'admin') DESC, first_name ASC";
+$members_result = mysqli_query($conn, $members_query);
 ?>
 
 <!DOCTYPE html>
@@ -73,7 +77,7 @@ $recurring_result = mysqli_query($conn, $recurring_query);
                             
                             <?php 
                             // במידה והאתר יושב באחסון אמיתי זה יעבוד מושלם, בלוקאלהוסט זה יישלח את הנתיב של הלוקאלהוסט
-                            $register_link = BASE_URL . "/pages/register.php?join_code=" . $home_data['join_code'];
+                            $register_link = BASE_URL . "pages/register.php?join_code=" . $home_data['join_code'];
                             
                             $whatsapp_msg = "היי! 👋 הוזמנת להצטרף לניהול התקציב של הבית שלנו: *" . $home_data['name'] . "* באפליקציית התזרים. 🏠\n\nלחץ על הקישור הבא כדי להירשם ולהצטרף אוטומטית:\n" . $register_link;
                             $whatsapp_url = "https://api.whatsapp.com/send?text=" . urlencode($whatsapp_msg);
@@ -93,7 +97,7 @@ $recurring_result = mysqli_query($conn, $recurring_query);
                                 </div>
                             </div>
                             <div class="input-group">
-                                <label>יתרת בנק התחלתית (₪)</label>
+                                <label>יתרת בנק עדכנית (₪)</label>
                                 <div class="input-with-icon">
                                     <i class="fa-solid fa-building-columns"></i>
                                     <input type="number" step="0.01" name="initial_balance" value="<?php echo $home_data['initial_balance']; ?>" required>
@@ -103,6 +107,39 @@ $recurring_result = mysqli_query($conn, $recurring_query);
                             
                             <button type="button" id="btn-update-home" class="btn-primary" onclick="updateHomeDetails()">שמור שינויים</button>
                         </form>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>משתתפים בבית</h3>
+                        </div>
+                        <div class="members-list" style="margin-top: 10px;">
+                            <?php while ($member = mysqli_fetch_assoc($members_result)): 
+                                $is_admin = ($member['role'] === 'admin');
+                                $displayName = $member['first_name'];
+                                $initial = mb_substr($displayName, 0, 1, 'utf-8');
+                            ?>
+                                <div class="member-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f0f0f0; transition: 0.2s;">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <div style="width: 35px; height: 35px; border-radius: 50%; background: <?php echo $is_admin ? 'var(--main-light)' : '#f3f4f6'; ?>; color: <?php echo $is_admin ? 'var(--main)' : '#666'; ?>; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem;">
+                                            <?php echo $initial; ?>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 700; color: var(--text); font-size: 0.95rem;">
+                                                <?php echo htmlspecialchars($displayName); ?>
+                                                <?php if ($member['email'] == $_SESSION['email'] ?? ''): ?>
+                                                    <span style="font-weight: normal; font-size: 0.75rem; color: #888; margin-right: 5px;">(אתה)</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div style="font-size: 0.75rem; color: #888;"><?php echo htmlspecialchars($member['email']); ?></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <span style="font-size: 0.7rem; background: #f3f4f6; color: #666; padding: 3px 8px; border-radius: 12px; font-weight: 600;"><?php echo $member['nickname']; ?></span>
+
+                                </div>
+                            <?php endwhile; ?>
+                        </div>
                     </div>
 
                     <div class="card">
@@ -165,9 +202,11 @@ $recurring_result = mysqli_query($conn, $recurring_query);
                                                 ללא תקציב
                                             </div>
                                         <?php endif; ?>
-
-                                        <div class="action-btns">
-                                            <button class="btn-edit" style="background: var(--gray); padding: 8px; border-radius: 8px;" onclick="openEditCategoryModal(<?php echo $cat['id']; ?>, '<?php echo addslashes($cat['name']); ?>', <?php echo $cat['budget_limit']; ?>, 'expense', '<?php echo $cat['icon']; ?>')">
+                                        <div class="action-btns" style="display: flex; gap: 8px;">
+                                            <button class="btn-delete" style="background: #fee2e2; color: var(--error); border: none; padding: 8px; border-radius: 8px; cursor: pointer;" onclick="deleteCategory(<?php echo $cat['id']; ?>)">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                            <button class="btn-edit" style="background: var(--gray); border: none; padding: 8px; border-radius: 8px; cursor: pointer;" onclick="openEditCategoryModal(<?php echo $cat['id']; ?>, '<?php echo addslashes($cat['name']); ?>', <?php echo $cat['budget_limit']; ?>, '<?php echo $cat['type']; ?>', '<?php echo $cat['icon']; ?>')">
                                                 <i class="fa-solid fa-pen"></i>
                                             </button>                                        
                                         </div>
@@ -188,10 +227,13 @@ $recurring_result = mysqli_query($conn, $recurring_query);
                                         </div>
                                         <span style="font-weight: 700; color: var(--text); font-size: 1.05rem;"><?php echo $cat['name']; ?></span>
                                     </div>
-                                    <div class="action-btns">
-                                        <button class="btn-edit" style="background: var(--gray); padding: 8px; border-radius: 8px;" onclick="openEditCategoryModal(<?php echo $cat['id']; ?>, '<?php echo addslashes($cat['name']); ?>', 0, 'income', '<?php echo $cat['icon']; ?>')">
+                                    <div class="action-btns" style="display: flex; gap: 8px;">
+                                        <button class="btn-delete" style="background: #fee2e2; color: var(--error); border: none; padding: 8px; border-radius: 8px; cursor: pointer;" onclick="deleteCategory(<?php echo $cat['id']; ?>)">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                        <button class="btn-edit" style="background: var(--gray); border: none; padding: 8px; border-radius: 8px; cursor: pointer;" onclick="openEditCategoryModal(<?php echo $cat['id']; ?>, '<?php echo addslashes($cat['name']); ?>', <?php echo $cat['budget_limit']; ?>, '<?php echo $cat['type']; ?>', '<?php echo $cat['icon']; ?>')">
                                             <i class="fa-solid fa-pen"></i>
-                                        </button>                                    
+                                        </button>                                        
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -448,5 +490,32 @@ $recurring_result = mysqli_query($conn, $recurring_query);
                 btn.innerHTML = '<i class="fa-solid fa-save"></i> שמור קטגוריה';
             });
         });
+    </script>
+
+    <script>
+        // === פונקציית מחיקת קטגוריה (מחיקה רכה) ===
+        function deleteCategory(id) {
+            if(confirm('האם אתה בטוח שברצונך למחוק קטגוריה זו? (פעולות עבר מקטגוריה זו ישמרו בדוחות)')) {
+                const formData = new FormData();
+                formData.append('id', id);
+
+                fetch('<?php echo BASE_URL; ?>/app/ajax/delete_category.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.reload();
+                    } else {
+                        alert('שגיאה במחיקה: ' + (data.message || 'אירעה שגיאה.'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('שגיאת תקשורת עם השרת.');
+                });
+            }
+        }
     </script>
 </html>

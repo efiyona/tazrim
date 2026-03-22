@@ -1561,3 +1561,162 @@ body {
         .btn-edit { color: var(--main); }
         .btn-delete { color: var(--error); }
         .action-btns button:hover { background-color: white; }
+
+        .month-navigator { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-bottom: 25px; }
+        .month-nav-btn { background: var(--gray); color: var(--text); border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; text-decoration: none; font-weight: 600; transition: 0.2s; }
+        .month-nav-btn:hover { background: var(--main-light); color: var(--main); }
+        .current-month-display { font-size: 1.3rem; font-weight: 800; color: var(--main); text-align: center; }
+        
+        .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
+        @media (min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+        .kpi-card { background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
+        .kpi-card::before { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 4px; }
+        .kpi-card.income::before { background-color: var(--success); }
+        .kpi-card.expense::before { background-color: var(--error); }
+        .kpi-card.balance::before { background-color: var(--main); }
+        .kpi-card.daily::before { background-color: #f59e0b; }
+        .kpi-title { font-size: 0.9rem; color: #666; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .kpi-amount { font-size: 1.6rem; font-weight: 800; color: var(--text); }
+        .kpi-amount.success-text { color: var(--success); }
+        .kpi-amount.error-text { color: var(--error); }
+        
+        .charts-container { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 30px; }
+        @media (min-width: 992px) { .charts-container { grid-template-columns: 1fr 1fr; } }
+        .chart-card { background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .chart-header { border-bottom: 2px solid var(--gray); padding-bottom: 10px; margin-bottom: 15px; }
+        .chart-header h3 { margin: 0; font-size: 1.1rem; color: var(--text); }
+        .canvas-wrapper { position: relative; height: 300px; width: 100%; display: flex; justify-content: center; }
+        
+        /* עיצוב מדי תקציב */
+        .budget-item { margin-bottom: 18px; }
+        .budget-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.95rem; font-weight: 700; color: var(--text); }
+        .progress-bar-bg { width: 100%; height: 12px; background-color: var(--gray); border-radius: 6px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.8s ease-out; }
+
+        /* מיכל ההתראות */
+.notification-wrapper {
+    position: relative;
+    cursor: pointer;
+}
+
+/* הפופאפ הצף */
+.notifications-dropdown {
+    display: none; /* מוסתר כברירת מחדל */
+    position: absolute;
+    top: 50px;
+    left: 0;
+    width: 320px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    z-index: 1000;
+    border: 1px solid #eee;
+    text-align: right;
+    overflow: hidden;
+    animation: fadeInScale 0.2s ease-out;
+}
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.notifications-dropdown.show {
+    display: block;
+}
+
+/* כותרת הפופאפ */
+.notif-header {
+    padding: 15px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fafafa;
+}
+
+.notif-header h3 { margin: 0; font-size: 1rem; font-weight: 800; color: var(--text); }
+.btn-mark-read { background: none; border: none; color: var(--main); font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+/* גוף הפופאפ */
+.notif-body { max-height: 380px; overflow-y: auto; }
+
+.notif-item {
+    display: flex;
+    padding: 15px;
+    gap: 12px;
+    border-bottom: 1px solid #f5f5f5;
+    transition: 0.2s;
+    text-decoration: none;
+}
+
+.notif-item:hover { background: #f9f9f9; }
+.notif-item.unread { background: #f0fdf4; border-right: 4px solid var(--main); }
+
+.notif-icon-circle {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 1rem;
+}
+
+.notif-icon-circle.info { background: #e0f2fe; color: #0369a1; }
+.notif-icon-circle.warning { background: #ffedd5; color: #9a3412; }
+.notif-icon-circle.success { background: #dcfce7; color: #15803d; }
+
+.notif-text p { margin: 0; font-size: 0.9rem; color: var(--text); line-height: 1.4; }
+.notif-time { font-size: 0.75rem; color: #888; margin-top: 4px; display: block; }
+
+/* מצב ריק */
+.notif-empty { padding: 40px 20px; text-align: center; color: #ccc; }
+.notif-empty i { font-size: 2.5rem; margin-bottom: 10px; }
+.notif-empty p { margin: 0; font-size: 0.9rem; color: #999; }
+
+.notif-footer { padding: 12px; border-top: 1px solid #f0f0f0; text-align: center; background: #fafafa; }
+.notif-footer a { font-size: 0.85rem; font-weight: 700; color: #666; text-decoration: none; }
+
+/* התאמה למובייל */
+/* התאמה למובייל - תיקון רספונסיביות */
+/* התאמה למובייל - ייצוב סופי ומוחלט */
+@media (max-width: 600px) {
+    .notifications-dropdown {
+        position: fixed !important; /* קיבוע למסך */
+        top: 70px !important;
+        /* ביטול כל הגדרות הצד של הדסקטופ */
+        right: auto !important; 
+        left: 50% !important;
+        /* מרכוז מוחלט */
+        transform: translateX(-50%) !important;
+        width: 92vw !important; /* רוחב כמעט מלא */
+        max-width: none !important;
+        margin: 0 !important;
+    }
+
+    /* מניעת קפיצות בזמן גלילה או תנועה */
+    .notifications-dropdown.show {
+        display: block !important;
+    }
+}
+
+/* ביטול אנימציית התזוזה למעלה ספציפית לכפתור ההתראות כדי לשמור על יציבות הפופאפ */
+.notification-wrapper:hover {
+    transform: none !important; /* מבטל את ה-translateY(-2px) הכללי */
+    background-color: var(--gray); /* שומר רק על שינוי הרקע */
+}
+
+/* גם במצב שהפופאפ פתוח, נוודא שהכפתור לא זז */
+.notification-wrapper.active {
+    transform: none !important;
+}
+
+/* במובייל - נבטל כל אפקט תזוזה בלחיצה */
+@media (max-width: 600px) {
+    .icon-btn:active, .notification-wrapper:active {
+        transform: none !important;
+    }
+}
+
+/* עיצוב התיאור בתוך ההתראה */
+.notif-bold {
+    font-weight: 800;
+    color: var(--main); /* משתמש בירוק הראשי של המערכת שלך */
+}

@@ -2,6 +2,33 @@
 // pages/login.php
 require('../path.php');
 include(ROOT_PATH . "/app/controllers/users.php"); // חיבור הלוגיקה
+
+// === בדיקה: האם המשתמש כבר מחובר או שיש לו עוגייה תקינה? ===
+if (isset($_SESSION['id'])) {
+    // יש סשן פעיל - טיסה ישירה לדף הבית
+    header('location: ' . BASE_URL . 'index.php');
+    exit();
+} elseif (isset($_COOKIE['remember_token'])) {
+    // אין סשן, אבל יש עוגייה - נבדוק אותה
+    $token = $_COOKIE['remember_token'];
+    $user = selectOne('users', ['remember_token' => $token]);
+    
+    if ($user) {
+        // העוגייה תקינה! מבצעים התחברות אוטומטית וטסים לדף הבית
+        $_SESSION['id'] = $user['id'];
+        $_SESSION['first_name'] = $user['first_name'];
+        $_SESSION['nickname'] = $user['nickname'];
+        $_SESSION['home_id'] = $user['home_id'];
+        $_SESSION['role'] = $user['role'];
+        
+        header('location: ' . BASE_URL . 'index.php');
+        exit();
+    } else {
+        // העוגייה קיימת אבל מזויפת/פגת תוקף במסד - מוחקים אותה
+        setcookie('remember_token', '', time() - 3600, "/");
+    }
+}
+// ==========================================================
 ?>
 <!DOCTYPE html>
 <html lang="he" dir="rtl">

@@ -126,3 +126,14 @@ function delete($table, $id)
     return $stmt->affected_rows;
 }
 
+function addNotification($home_id, $title, $message, $type = 'info', $user_id = null) {
+    $data = [
+        'home_id'   => $home_id,
+        'user_id'   => $user_id,
+        'title'     => $title,
+        'message'   => $message,
+        'type'      => $type
+    ];
+    
+    return create('notifications', $data);
+}

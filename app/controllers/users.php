@@ -36,9 +36,16 @@ if (isset($_POST['login_btn'])) {
             $_SESSION['home_id'] = $user['home_id'];
             $_SESSION['role'] = $user['role'];
             
-            // טיפול ב"זכור אותי" (כרגע רק תשתית, נחזור לזה כשנגדיר עוגיות)
+            // טיפול ב"זכור אותי"
             if(isset($_POST['remember_me'])) {
-                // כאן תבוא לוגיקת ה-Token
+                // 1. יצירת מחרוזת אקראית ומאובטחת (טוקן)
+                $token = bin2hex(random_bytes(32));
+                
+                // 2. שמירת הטוקן במסד הנתונים בעמודה שכבר יש לנו
+                update('users', $user['id'], ['remember_token' => $token]);
+                
+                // 3. יצירת עוגייה בדפדפן שתקפה ל-30 ימים (86400 שניות ביום)
+                setcookie('remember_token', $token, time() + (86400 * 30), "/");
             }
 
             // הפניה לדף הבית (index.php בחוץ)

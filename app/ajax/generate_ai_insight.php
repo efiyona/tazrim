@@ -1,11 +1,12 @@
 <?php
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
+require_once('../../secrets.php'); 
 
 // הגדרות בסיס
 $home_id = $_SESSION['home_id'] ?? 2;
 $user_id = $_SESSION['id'] ?? 1; 
-$api_key = 'AIzaSyBOJGxjxfkNC-fuFkwAvC4tseyLdlAM4zE';
+$api_key = GEMINI_API_KEY;
 $model_name = 'gemini-2.5-flash'; // הגדרת המודל כמשתנה לעדכון קל בעתיד
 
 $selected_month = isset($_GET['m']) ? (int)$_GET['m'] : (int)date('m');

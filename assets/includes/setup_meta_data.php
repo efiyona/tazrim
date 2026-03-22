@@ -1,8 +1,5 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#237227">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 
 <title>התזרים | ניהול כלכלת בית חכם</title>
 
@@ -16,3 +13,13 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
 
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/user.css?v=<?php echo time(); ?>">
+
+<link rel="manifest" href="<?php echo BASE_URL; ?>manifest.json">
+<link rel="icon" type="image/x-icon" href="<?php echo BASE_URL; ?>favicon.ico">
+<meta name="theme-color" content="#237227">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="התזרים">
+
+<link rel="apple-touch-icon" href="<?php echo BASE_URL; ?>assets/images/apple-touch-icon.png">
