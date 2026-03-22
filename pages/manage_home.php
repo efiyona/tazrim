@@ -603,6 +603,18 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
         // שימוש במפתח הציבורי שהגדרנו ב-secrets.php
         const VAPID_PUBLIC_KEY = "<?php echo VAPID_PUBLIC_KEY; ?>";
 
+        // פונקציית עזר להמרת המפתח לפורמט בינארי שהאייפון דורש
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
         async function initPushSubscription() {
             const btn = document.getElementById('btn-enable-notifications');
             const msg = document.getElementById('notif-msg');
@@ -630,10 +642,13 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 }
 
                 // 4. יצירת מנוי מול שירות ה-Push
+                const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
                 const subscription = await register.pushManager.subscribe({
                     userVisibleOnly: true,
-                    applicationServerKey: VAPID_PUBLIC_KEY
+                    applicationServerKey: convertedVapidKey // שימוש במפתח המומר
                 });
+
 
                 // 5. שליחת המנוי לשרת ב-Hostinger לשמירה במסד
                 const response = await fetch('<?php echo BASE_URL; ?>app/ajax/save_subscription.php', {
