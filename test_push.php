@@ -6,7 +6,7 @@ include(ROOT_PATH . '/app/functions/push_functions.php');
 
 // הגדרת ההודעה הגלובלית שאתה רוצה לשלוח
 $title = "הודעת מערכת מ'התזרים' 📣";
-$body = "המערכת לא נועדה למטרות רווח! 🍷";
+$body = "ברוכים הבאים למערכת! 🍷";
 $url = BASE_URL . "pages/manage_home.php";
 
 echo "<h2>שליחת הודעת מערכת לכל המנויים</h2>";
