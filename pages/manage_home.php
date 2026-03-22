@@ -92,6 +92,14 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                                 <p class="block-help">שלח את הקוד הזה להודיה או לשותפים כדי שיצטרפו לבית שלך.</p>
                             </div>
 
+                            <div class="management-block" style="border-top: 1px solid #f1f5f9; padding-top: 20px; margin-top: 10px;">
+                                <span class="block-label">התראות דחיפה (Push):</span>
+                                <button type="button" id="btn-enable-notifications" class="btn-generate-v2" style="background-color: var(--main); width: 100%;" onclick="initPushSubscription()">
+                                    <i class="fa-solid fa-bell"></i> הפעל התראות במכשיר זה
+                                </button>
+                                <div id="notif-msg" style="display: none;" class="success-text-small"></div>
+                            </div>
+
                             <div class="management-block">
                                 <span class="block-label">חיבור לאייפון (API Key):</span>
                                 <?php if ($existing_token): ?>
@@ -588,6 +596,63 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-key"></i> ניסיון חוזר';
             });
+        }
+    </script>
+
+    <script>
+        // שימוש במפתח הציבורי שהגדרנו ב-secrets.php
+        const VAPID_PUBLIC_KEY = "<?php echo VAPID_PUBLIC_KEY; ?>";
+
+        async function initPushSubscription() {
+            const btn = document.getElementById('btn-enable-notifications');
+            const msg = document.getElementById('notif-msg');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מתחבר לשרתי אפל...';
+
+            // 1. בדיקה אם הדפדפן תומך (חובה PWA באייפון)
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                alert('התראות לא נתמכות. וודא שהוספת את האתר למסך הבית (Add to Home Screen).');
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                // 2. רישום ה-Service Worker
+                const register = await navigator.serviceWorker.register('<?php echo BASE_URL; ?>sw.js');
+                
+                // 3. בקשת אישור מהמשתמש
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    alert('כדי לקבל התראות, עליך לאשר אותן בהגדרות הדפדפן.');
+                    btn.disabled = false;
+                    return;
+                }
+
+                // 4. יצירת מנוי מול שירות ה-Push
+                const subscription = await register.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: VAPID_PUBLIC_KEY
+                });
+
+                // 5. שליחת המנוי לשרת ב-Hostinger לשמירה במסד
+                const response = await fetch('<?php echo BASE_URL; ?>app/ajax/save_subscription.php', {
+                    method: 'POST',
+                    body: JSON.stringify(subscription),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    btn.style.display = 'none';
+                    msg.style.display = 'block';
+                    msg.innerHTML = '<i class="fa-solid fa-check-circle"></i> התראות הופעלו! המכשיר רשום במערכת.';
+                }
+            } catch (error) {
+                console.error('Subscription Error:', error);
+                alert('אירעה שגיאה בחיבור להתראות. נסה שוב מאוחר יותר.');
+                btn.disabled = false;
+            }
         }
     </script>
 </html>
