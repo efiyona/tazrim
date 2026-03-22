@@ -1,9 +1,3 @@
-
-<?php
-echo "sync!";
-?>
-
-
 <?php 
 require('path.php'); 
 
