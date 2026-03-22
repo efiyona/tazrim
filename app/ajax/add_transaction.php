@@ -1,6 +1,7 @@
 <?php
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
+include_once(ROOT_PATH . '/app/functions/push_functions.php'); // טעינת המנוע של הפוש
 
 header('Content-Type: application/json');
 
@@ -43,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // ניקוי Cache של ה-AI
         mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
 
-        // 6. יצירת התראה לבית
+        // 6. יצירת התראה פנימית לבית (בתוך האפליקציה)
         $user_name = $_SESSION['first_name'];
         $amount_formatted = number_format($amount, 2);
 
@@ -51,6 +52,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $notif_msg = "הוסיף פעולה חדשה: <span class='notif-bold'>$description</span> בסך $amount_formatted ₪";
 
         addNotification($home_id, $notif_title, $notif_msg, 'info', null);
+
+        // ==========================================
+        // 7. שליחת התראת Push לשאר בני הבית
+        // ==========================================
+        if ($type === 'expense') {
+            $push_title = "הוצאה חדשה בתזרים 💸";
+            $action_word = "הוסיף/ה הוצאה של";
+        } else {
+            $push_title = "הכנסה חדשה בתזרים 💰";
+            $action_word = "הוסיף/ה הכנסה של";
+        }
+
+        // גוף ההודעה מבוסס על התיאור שהזנת
+        $push_body = "$user_name $action_word $amount_formatted ₪ עבור '$description'.";
+        $push_url = BASE_URL; // לחיצה על ההתראה תוביל למסך הראשי
+
+        // הפעלת פונקציית העזר שלנו - שולחת לכולם בבית *חוץ* מלמי שביצע את הפעולה
+        sendPushToHome($home_id, $user_id, $push_title, $push_body, $push_url);
+        // ==========================================
 
         echo json_encode(['status' => 'success']);
     } else {
