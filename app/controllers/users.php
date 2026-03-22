@@ -76,7 +76,7 @@ if (isset($_POST['register_btn'])) {
     $existingUser = selectOne('users', ['email' => $email]);
     if ($existingUser) array_push($errors, "כתובת האימייל הזו כבר רשומה במערכת");
 
-    // --- ה בדיקת קוד הבית לפני הכל ---
+    // --- בדיקת קוד הבית לפני הכל ---
     $target_home_id = null;
 
     if ($home_action === 'join') {
@@ -115,22 +115,35 @@ if (isset($_POST['register_btn'])) {
         if ($user_id) {
             // 2. טיפול בבית (יצירה או שיוך)
             if ($home_action === 'create') {
-                // יצירת קוד רנדומלי (מספרים בלבד)
                 $new_home_code = rand(1000, 9999);
                 $home_name = $_POST['home_name'] ?: "הבית של " . $first_name;
                 
-                // יצירת הבית ושמירת ה-user_id שיצר אותו כ-primary_user (או השדה המקביל אצלך)
                 $target_home_id = create('homes', [
                     'name' => $home_name,
                     'join_code' => $new_home_code,
-                    'primary_user_id' => $user_id // כאן אנחנו מחברים את המשתמש לבית
+                    'primary_user_id' => $user_id 
                 ]);
             }
 
-            // 3. עדכון ה-home_id של המשתמש חזרה (כדי שיוכל להיכנס לבית)
+            // 3. עדכון ה-home_id של המשתמש חזרה
             update('users', $user_id, ['home_id' => $target_home_id]);
 
-            // 4. התחברות אוטומטית והפניה
+            // ==========================================
+            // 4. שליחת התראת Push לשאר בני הבית (רק בהצטרפות)
+            // ==========================================
+            if ($home_action === 'join') {
+                include_once(ROOT_PATH . '/app/functions/push_functions.php');
+                
+                $push_title = "שותף חדש בבית! 🏠";
+                $push_body = "$first_name הצטרף הרגע לניהול 'התזרים' של הבית. ברוך הבא!";
+                $push_url = BASE_URL;
+
+                // שולח לכל בני הבית הקיימים, חוץ מהמשתמש החדש
+                sendPushToHome($target_home_id, $user_id, $push_title, $push_body, $push_url);
+            }
+            // ==========================================
+
+            // 5. התחברות אוטומטית והפניה
             $_SESSION['id'] = $user_id;
             $_SESSION['first_name'] = $first_name;
             $_SESSION['home_id'] = $target_home_id;
