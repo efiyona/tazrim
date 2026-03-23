@@ -129,7 +129,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
                 <div class="page-header-actions flex-between" style="margin-bottom: 25px;">
                     <div style="display: flex; align-items: center; gap: 15px;">
-                        <h1 class="section-title" style="margin-bottom: 0;">סיכום חודשי לבדיקה</h1>
+                        <h1 class="section-title" style="margin-bottom: 0;">סיכום חודשי</h1>
                         
                         <?php if (!$is_current_month): ?>
                             <a href="index.php?m=<?php echo date('m'); ?>&y=<?php echo date('Y'); ?>" class="btn-return-today">
