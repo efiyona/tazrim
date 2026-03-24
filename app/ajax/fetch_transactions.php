@@ -5,8 +5,8 @@ require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
 
 $home_id = $_SESSION['home_id'];
-$offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 3;
-$limit = 3;
+$offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 4;
+$limit = 4;
 
 $selected_month = isset($_GET['m']) ? (int)$_GET['m'] : (int)date('m');
 $selected_year = isset($_GET['y']) ? (int)$_GET['y'] : (int)date('Y');
