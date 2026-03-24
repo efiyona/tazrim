@@ -27,7 +27,13 @@
     --input-bg: #FAFAFA;
 }
 
+/* מניעת זום נוסף בשדות הקלדה (גיבוי לאייפון) */
+input, select, textarea {
+    font-size: 16px !important;
+}
+
 * {
+    touch-action: manipulation;
     font-family: 'Assistant', sans-serif;
     font-weight: normal;
     box-sizing: border-box;
