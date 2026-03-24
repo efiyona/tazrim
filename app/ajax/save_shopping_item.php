@@ -12,7 +12,13 @@ $home_id = $_SESSION['home_id'];
 $item_id = $_POST['item_id'] ?? 'new';
 $cat_id = $_POST['category_id'] ?? 0;
 $item_name = trim($_POST['item_name'] ?? '');
+
+// --- רשת ביטחון לכמות ---
 $quantity = trim($_POST['quantity'] ?? '1');
+// אם הכמות ריקה, או מכילה טקסט בטעות, או שהיא קטנה מ-1 - נכריח אותה להיות 1.
+if ($quantity === '' || (int)$quantity < 1) {
+    $quantity = '1';
+}
 
 // אימות נתונים בסיסי
 if (empty($item_name) || empty($cat_id)) {
