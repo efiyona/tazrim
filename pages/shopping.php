@@ -228,7 +228,7 @@ $is_setup_needed = ($cats_count == 0);
     </script>
     <?php else: ?>
     <script>
-        // --- מערכת רשימת הקניות הרגילה (נטענת רק אם יש חנויות) ---
+        // --- מערכת רשימת הקניות הרגילה ---
         $(document).ready(function() {
             $('#fabToggle').on('click', function(e) { e.stopPropagation(); $('#fabMenu').fadeToggle(200); });
             $(document).on('click', function() { $('#fabMenu').fadeOut(200); });
@@ -243,6 +243,7 @@ $is_setup_needed = ($cats_count == 0);
                 });
             });
 
+            // חסימת תווים שאינם מספרים (השדה הפך חזרה ל-number כדי שיהיה אנטר במקלדת)
             $(document).on('input', '.item-qty-input', function() {
                 this.value = this.value.replace(/[^0-9]/g, '');
             });
@@ -299,6 +300,7 @@ $is_setup_needed = ($cats_count == 0);
                 typingTimer = setTimeout(function() { saveItemToDB($row); }, 500);
             });
 
+            // מחיקה עם השהיה (ללא העלמת חנות ריקה!)
             $(document).on('click', '.item-checkbox', function() {
                 const $row = $(this).closest('.item-row');
                 if ($row.hasClass('ghost-row')) return;
@@ -316,12 +318,8 @@ $is_setup_needed = ($cats_count == 0);
                     
                     const timer = setTimeout(function() {
                         $row.slideUp(300, function() {
-                            const catId = $row.data('cat-id');
                             $(this).remove();
-                            const $catBlock = $(`#cat-block-${catId}`);
-                            if ($catBlock.find('.active-row').length === 0) {
-                                $catBlock.fadeOut(300, function() { $(this).remove(); checkEmptyState(); });
-                            }
+                            // הסרנו את הקוד שהעלים את החנות עצמה! עכשיו החנות תישאר גלויה וריקה.
                         });
                         if (itemId !== 'new') deleteItemFromDB(itemId);
                     }, 800);
@@ -343,7 +341,68 @@ $is_setup_needed = ($cats_count == 0);
             });
 
             loadShoppingLists();
+            
+            // --- מנגנון סנכרון חי (Real-time Feel) ---
+            // 1. סנכרון בכל פעם שהמשתמש חוזר לעמוד/פותח את הטלפון מחדש
+            document.addEventListener("visibilitychange", function() {
+                if (document.visibilityState === 'visible') {
+                    silentSyncLists();
+                }
+            });
+            // 2. סנכרון שקט כל 15 שניות אם העמוד פתוח (לא יפריע להקלדה)
+            setInterval(function() {
+                if (document.visibilityState === 'visible') {
+                    silentSyncLists();
+                }
+            }, 15000);
         });
+
+        // סנכרון שקט - מושך נתונים מהשרת ומשלים מה שחסר בלי להרוס את המסך
+        function silentSyncLists() {
+            $.get('../app/ajax/fetch_shopping_lists.php', function(response) {
+                try {
+                    const data = JSON.parse(response);
+                    if(data.status !== 'success') return;
+
+                    if (data.active_categories.length > 0) {
+                        $('#empty-state-msg').remove();
+                        $('#btnClearAllFAB').fadeIn();
+                    }
+
+                    data.active_categories.forEach(cat => {
+                        let $catBlock = $(`#cat-block-${cat.id}`);
+                        
+                        // אם מישהו הוסיף מוצר לחנות שמוסתרת כרגע אצלי - ניצור אותה מחדש
+                        if ($catBlock.length === 0) {
+                            const newCatHtml = buildCategoryBlock(cat, true, true);
+                            $('#shopping-lists-container').append(newCatHtml);
+                            $catBlock = $(`#cat-block-${cat.id}`);
+                            // מחיקת החנות מתפריט ה"פלוס" אם היא הייתה שם
+                            $(`.fab-menu-item[onclick*="${cat.id}"]`).remove();
+                        }
+
+                        // עוברים על המוצרים ובודקים אם יש משהו חדש שצריך להזריק
+                        if (cat.items) {
+                            cat.items.forEach(item => {
+                                let $existingItem = $catBlock.find(`.item-row[data-item-id="${item.id}"]`);
+                                
+                                if ($existingItem.length === 0) {
+                                    // מוצר חדש לגמרי! נוסיף אותו רגע לפני השורת רפאים של אותה חנות
+                                    const newItemHtml = buildItemRowHtml(item, cat.id, false);
+                                    $(newItemHtml).insertBefore($catBlock.find('.ghost-row')).hide().slideDown(300);
+                                } else {
+                                    // המוצר קיים. נעקן כמות/שם רק אם המשתמש לא מצוין עליו כרגע עם העכבר/מקלדת
+                                    if ($existingItem.find('input:focus').length === 0 && !$existingItem.hasClass('pending-delete')) {
+                                        $existingItem.find('.item-input').val(item.item_name);
+                                        $existingItem.find('.item-qty-input').val(item.quantity);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                } catch (e) {}
+            });
+        }
 
         function loadShoppingLists() {
             $.get('../app/ajax/fetch_shopping_lists.php', function(response) {
@@ -379,18 +438,7 @@ $is_setup_needed = ($cats_count == 0);
             });
         }
 
-        function checkEmptyState() {
-            if ($('.category-block:visible').length === 0) {
-                $('#btnClearAllFAB').fadeOut();
-                if ($('#empty-state-msg').length === 0) {
-                    $('#shopping-lists-container').html(`<div style="text-align:center; padding: 40px; color:#888;" id="empty-state-msg">
-                        <i class="fa-solid fa-basket-shopping fa-2x" style="margin-bottom: 10px; color:#ddd;"></i><br>
-                        הרשימה ריקה! לחצו על ה- + למטה כדי להתחיל.
-                    </div>`);
-                }
-            }
-        }
-
+        // שינינו ל-type="number" אבל הסרנו את inputmode="numeric" והוספנו enterkeyhint
         function buildItemRowHtml(item, catId, isGhost = false) {
             const rowClass = isGhost ? 'ghost-row' : 'active-row';
             const iconClass = isGhost ? 'fa-solid fa-plus' : 'fa-regular fa-circle'; 
@@ -401,8 +449,8 @@ $is_setup_needed = ($cats_count == 0);
             return `
                 <div class="item-row ${rowClass}" data-cat-id="${catId}" ${idAttr}>
                     <div class="item-checkbox"><i class="${iconClass}" style="${iconColor}"></i></div>
-                    <input type="text" class="item-input ${isGhost ? 'ghost-name' : ''}" value="${item.item_name}" ${placeholderName}>
-                    <input type="text" inputmode="numeric" pattern="[0-9]*" class="item-qty-input ${isGhost ? 'ghost-qty' : ''}" value="${item.quantity}">
+                    <input type="text" enterkeyhint="next" class="item-input ${isGhost ? 'ghost-name' : ''}" value="${item.item_name}" ${placeholderName}>
+                    <input type="number" enterkeyhint="next" class="item-qty-input ${isGhost ? 'ghost-qty' : ''}" value="${item.quantity}">
                 </div>
             `;
         }
@@ -467,7 +515,7 @@ $is_setup_needed = ($cats_count == 0);
                         $row.data('item-id', res.new_id);
                         $row.attr('data-item-id', res.new_id); 
                     }
-                } catch (e) { console.error("שגיאה בשמירה:", e); }
+                } catch (e) {}
             });
         }
 

@@ -2083,8 +2083,14 @@ body {
 .pending-delete .item-qty-input {
     text-decoration: line-through;
     color: #aaa;
+    font-size: 18px;
 }
 
 .pending-delete .item-checkbox i {
     color: var(--error) !important; /* אדום בולט לסימון מחיקה */
+}
+
+/* מניעת זום אוטומטי במובייל */
+.item-input, .item-qty-input {
+    font-size: 16px !important; 
 }
