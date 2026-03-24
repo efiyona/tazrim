@@ -14,6 +14,9 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
         <a href="<?php echo BASE_URL . 'index.php'; ?>" class="<?php echo ($current_page == 'index.php') ? 'active' : ''; ?>">
             <i class="fa-solid fa-house"></i> דף הבית
         </a>
+        <a href="<?php echo BASE_URL . 'pages/shopping.php'; ?>" class="<?php echo ($current_page == 'shopping.php') ? 'active' : ''; ?>">
+            <i class="fa-solid fa-cart-shopping"></i> רשימת קניות
+        </a>
         <a href="<?php echo BASE_URL . 'pages/reports.php'; ?>" class="<?php echo ($current_page == 'reports.php') ? 'active' : ''; ?>">
             <i class="fa-solid fa-chart-line"></i> דוחות
         </a>
