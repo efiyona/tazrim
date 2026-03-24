@@ -1,7 +1,6 @@
 <?php
 require_once('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
-session_start();
 
 header('Content-Type: application/json');
 

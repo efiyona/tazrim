@@ -277,6 +277,7 @@ $is_setup_needed = ($cats_count == 0);
                 
                 const newGhost = buildItemRowHtml({ id: 'new', item_name: '', quantity: '1' }, catId, true);
                 $ghostRow.parent().append(newGhost);
+                updateAiButtonVisibility(catId);
             });
 
             $(document).on('focus', '.active-row input', function() {
@@ -312,8 +313,10 @@ $is_setup_needed = ($cats_count == 0);
                     clearTimeout($row.data('deleteTimer')); 
                     $row.removeClass('pending-delete');
                     $icon.removeClass('fa-rotate-left fa-solid').addClass('fa-regular fa-circle').css('color', ''); 
+                    updateAiButtonVisibility($row.data('cat-id'));
                 } else {
                     $row.addClass('pending-delete');
+                    updateAiButtonVisibility($row.data('cat-id'));
                     $icon.removeClass('fa-circle fa-regular').addClass('fa-solid fa-rotate-left').css('color', ''); 
                     
                     const timer = setTimeout(function() {
@@ -404,13 +407,15 @@ $is_setup_needed = ($cats_count == 0);
             });
         }
 
-        function loadShoppingLists() {
+        function loadShoppingLists(openCategoryId = null) {
             $.get('../app/ajax/fetch_shopping_lists.php', function(response) {
                 try {
-                    const data = JSON.parse(response);
+                    // בדיקה אם response הוא כבר אובייקט או מחרוזת
+                    const data = (typeof response === 'object') ? response : JSON.parse(response);
                     if(data.status !== 'success') return;
 
-                    let listsHtml = ''; let fabHtml = '';
+                    let listsHtml = ''; 
+                    let fabHtml = '';
 
                     if (data.active_categories.length === 0) {
                         listsHtml = `<div style="text-align:center; padding: 40px; color:#888;" id="empty-state-msg">
@@ -420,12 +425,15 @@ $is_setup_needed = ($cats_count == 0);
                         $('#btnClearAllFAB').hide(); 
                     } else {
                         data.active_categories.forEach(cat => {
-                            listsHtml += buildCategoryBlock(cat, true, false);
+                            // אם זה ה-ID שביקשנו לפתוח, נשלח true ל-isOpen
+                            const shouldBeOpen = (openCategoryId && cat.id == openCategoryId);
+                            listsHtml += buildCategoryBlock(cat, true, shouldBeOpen);
                         });
                         $('#btnClearAllFAB').fadeIn(); 
                     }
                     $('#shopping-lists-container').html(listsHtml);
 
+                    // עדכון תפריט הפלוס (חנויות ריקות)
                     if (data.empty_categories.length === 0) {
                         fabHtml = `<div class="fab-menu-item" style="color:#aaa; cursor:default; justify-content:center;">אין חנויות מוגדרות</div>`;
                     } else {
@@ -434,7 +442,7 @@ $is_setup_needed = ($cats_count == 0);
                         });
                     }
                     $('#fabMenu').html(fabHtml);
-                } catch (e) { console.error("שגיאה:", e); }
+                } catch (e) { console.error("שגיאה בטעינת הרשימה:", e); }
             });
         }
 
@@ -457,23 +465,102 @@ $is_setup_needed = ($cats_count == 0);
 
         function buildCategoryBlock(category, hasItems, isOpen = false) {
             let itemsHtml = '';
+            let activeItemsCount = 0; // סופר כמה פריטים פעילים יש לנו
+            
             if (hasItems && category.items) {
-                category.items.forEach(item => { itemsHtml += buildItemRowHtml(item, category.id, false); });
+                category.items.forEach(item => { 
+                    itemsHtml += buildItemRowHtml(item, category.id, false); 
+                    activeItemsCount++;
+                });
             }
+            
             itemsHtml += buildItemRowHtml({ id: 'new', item_name: '', quantity: '1' }, category.id, true);
 
             const displayStyle = isOpen ? '' : 'style="display: none;"';
             const arrowClass = isOpen ? 'fa-chevron-up' : 'fa-chevron-down';
 
+            // הוספת כפתור הקסם רק אם יש 3 מוצרים ומעלה
+            let aiButtonHtml = '';
+            if (activeItemsCount >= 3) {
+                aiButtonHtml = `
+                    <button class="btn-ai-sort" title="סידור חכם לפי מעברי הסופר" onclick="sortCategoryAI(${category.id}, event)">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </button>
+                `;
+            }
+
             return `
                 <div class="category-block" id="cat-block-${category.id}">
                     <div class="category-header">
                         <div><i class="fa-solid ${category.icon}"></i> ${category.name}</div>
-                        <i class="fa-solid ${arrowClass} toggle-arrow"></i>
+                        <div style="display: flex; align-items: center;">
+                            ${aiButtonHtml}
+                            <i class="fa-solid ${arrowClass} toggle-arrow"></i>
+                        </div>
                     </div>
                     <div class="category-items-list" ${displayStyle}>${itemsHtml}</div>
                 </div>
             `;
+        }
+
+        function sortCategoryAI(categoryId, event) {
+            // עוצר את הלחיצה כדי לא לסגור את הקטגוריה בטעות
+            event.stopPropagation();
+            
+            const $catBlock = $(`#cat-block-${categoryId}`);
+            
+            // 1. הזרקת שכבת הטעינה המגניבה לתוך הקטגוריה
+            $catBlock.append(`
+                <div class="ai-overlay" id="ai-overlay-${categoryId}">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>מסדר מדפים...</span>
+                </div>
+            `);
+
+            // 2. איסוף המידע למשלוח לשרת (רק שמות ו-ID)
+            let itemsData = [];
+            $catBlock.find('.active-row').not('.pending-delete').each(function() {
+                const id = $(this).data('item-id');
+                const name = $(this).find('.item-input').val();
+                if (id && id !== 'new' && name.trim() !== '') {
+                    itemsData.push({ id: id, name: name });
+                }
+            });
+
+            // 3. שליחה למוח של ה-AI בשרת
+            $.post('../app/ajax/ai_sort_category.php', {
+                category_id: categoryId,
+                items: JSON.stringify(itemsData)
+            }, function(response) {
+                // הדפסה לקונסול כדי שתוכל לראות הכל מסודר
+                console.log("AI Response Object:", response);
+                
+                try {
+                    const res = (typeof response === 'string') ? JSON.parse(response) : response;
+                    
+                    // הקפצת התשובה הגולמית לבדיקה מהירה
+                    if (res.debug_raw) {
+                        console.log("Raw AI Text:", res.debug_raw);
+                    }
+
+                    if (res.status === 'success') {
+                        $(`#ai-overlay-${categoryId} span`).text('סודר בהצלחה!');
+                        $(`#ai-overlay-${categoryId} i`).removeClass('fa-wand-magic-sparkles').addClass('fa-check');
+                        
+                        setTimeout(() => {
+                            loadShoppingLists(categoryId); 
+                        }, 1000);
+                    } else {
+                        // אם נכשל, נציג למשתמש מה ה-AI ענה כדי שנבין למה
+                        alert('שגיאת AI: ' + res.message + '\n\nתשובת המודל:\n' + res.debug_raw);
+                        $(`#ai-overlay-${categoryId}`).fadeOut(300, function() { $(this).remove(); });
+                    }
+                } catch (e) {
+                    alert('שגיאת פענוח בשרת. בדוק את ה-Console.');
+                    console.error("Parse Error:", e, response);
+                    $(`#ai-overlay-${categoryId}`).fadeOut(300, function() { $(this).remove(); });
+                }
+            });
         }
 
         function openEmptyCategory(id, name, icon, btnElement) {
@@ -522,6 +609,28 @@ $is_setup_needed = ($cats_count == 0);
         function deleteItemFromDB(itemId) {
             if (itemId === 'new') return;
             $.post('../app/ajax/delete_shopping_item.php', { item_id: itemId });
+        }
+
+        function updateAiButtonVisibility(categoryId) {
+            const $catBlock = $(`#cat-block-${categoryId}`);
+            // סופר שורות אקטיביות שאינן בתהליך מחיקה ואינן שורת רפאים
+            const activeItemsCount = $catBlock.find('.active-row').not('.pending-delete').length;
+            const $headerRight = $catBlock.find('.category-header > div:last-child');
+            let $aiBtn = $headerRight.find('.btn-ai-sort');
+
+            if (activeItemsCount >= 3) {
+                if ($aiBtn.length === 0) {
+                    // אם אין כפתור ויש 3 מוצרים - נוסיף אותו לפני החץ
+                    $headerRight.prepend(`
+                        <button class="btn-ai-sort" title="סידור חכם לפי מעברי הסופר" onclick="sortCategoryAI(${categoryId}, event)">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </button>
+                    `);
+                }
+            } else {
+                // אם יש פחות מ-3 מוצרים - נסיר את הכפתור
+                $aiBtn.remove();
+            }
         }
     </script>
     <?php endif; ?>

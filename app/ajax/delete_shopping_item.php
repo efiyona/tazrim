@@ -1,7 +1,6 @@
 <?php
 require_once('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
-session_start();
 
 if (!isset($_SESSION['home_id']) || !isset($_POST['item_id'])) {
     echo json_encode(['status' => 'error']);

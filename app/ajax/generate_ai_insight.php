@@ -4,8 +4,8 @@ include(ROOT_PATH . '/app/database/db.php');
 require_once('../../secrets.php'); 
 
 // הגדרות בסיס
-$home_id = $_SESSION['home_id'] ?? 2;
-$user_id = $_SESSION['id'] ?? 1; 
+$home_id = $_SESSION['home_id'];
+$user_id = $_SESSION['id']; 
 $api_key = GEMINI_API_KEY;
 $model_name = 'gemini-2.5-flash'; // הגדרת המודל כמשתנה לעדכון קל בעתיד
 

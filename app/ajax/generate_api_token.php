@@ -1,7 +1,6 @@
 <?php
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
-session_start();
 
 $user_id = $_SESSION['id'];
 $home_id = $_SESSION['home_id'];
