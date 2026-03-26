@@ -20,7 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $token = $_POST['api_token'] ?? '';
-$amount = (float)($_POST['amount'] ?? 0);
+
+// --- ניקוי שדה הסכום מכל תו שאינו מספר או נקודה עשרונית (כמו ₪, פסיקים, רווחים ואותיות) ---
+$raw_amount = $_POST['amount'] ?? '0';
+$clean_amount = preg_replace('/[^0-9.]/', '', $raw_amount);
+$amount = (float)$clean_amount;
+// ---------------------------------------------------------------------------------
+
 $description = mysqli_real_escape_string($conn, trim($_POST['description'] ?? ''));
 $category_id = (int)($_POST['category_id'] ?? 0);
 
