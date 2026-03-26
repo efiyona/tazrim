@@ -2103,7 +2103,7 @@ body {
 
 /* === כפתור וטעינת הבינה המלאכותית === */
 .btn-ai-sort {
-    background: linear-gradient(135deg, #a855f7, #ec4899); /* גרדיאנט סגול-ורוד של AI */
+    background: linear-gradient(135deg, #6feb8c, #48c476);
     color: white;
     border: none;
     border-radius: 50%;
@@ -2113,15 +2113,15 @@ body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    margin-right: 12px;
-    box-shadow: 0 3px 8px rgba(168, 85, 247, 0.4);
+    margin-left: 15px;
+    box-shadow: 0 3px 8px #6feb8c;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     font-size: 0.9rem;
 }
 
 .btn-ai-sort:hover {
     transform: scale(1.15) rotate(10deg);
-    box-shadow: 0 5px 12px rgba(168, 85, 247, 0.6);
+    box-shadow: 0 5px 12px #6feb8c;
 }
 
 .btn-ai-sort:active {
@@ -2149,14 +2149,14 @@ body {
 
 .ai-overlay i {
     font-size: 2rem;
-    color: #a855f7;
+    color: #6feb8c;
     margin-bottom: 10px;
     animation: magicPulse 1.5s infinite;
 }
 
 .ai-overlay span {
     font-weight: 800;
-    color: #a855f7;
+    color: #6feb8c;
     font-size: 1.1rem;
 }
 
@@ -2164,4 +2164,8 @@ body {
     0% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.2); opacity: 0.7; }
     100% { transform: scale(1); opacity: 1; }
+}
+
+.fa-plus, .fa-trash-can{
+    color: white;
 }
