@@ -51,7 +51,7 @@ $real_balance_query = "SELECT
     COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) - 
     COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as net_balance
     FROM transactions 
-    WHERE home_id = $home_id AND transaction_date <= CURRENT_DATE()";
+    WHERE home_id = $home_id AND transaction_date <= '$today_il'";
 
 $balance_result = mysqli_query($conn, $real_balance_query);
 $balance_data = mysqli_fetch_assoc($balance_result);
@@ -84,8 +84,8 @@ $transactions_query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name
                        AND MONTH(t.transaction_date) = $selected_month 
                        AND YEAR(t.transaction_date) = $selected_year
                        ORDER BY 
-                            CASE WHEN t.transaction_date > CURRENT_DATE() THEN 1 ELSE 0 END DESC,
-                            CASE WHEN t.transaction_date > CURRENT_DATE() THEN t.transaction_date END ASC,
+                            CASE WHEN t.transaction_date > '$today_il' THEN 1 ELSE 0 END DESC,
+                            CASE WHEN t.transaction_date > '$today_il' THEN t.transaction_date END ASC,
                             t.transaction_date DESC, 
                             t.created_at DESC 
                        LIMIT 4";

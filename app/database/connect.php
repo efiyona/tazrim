@@ -6,4 +6,5 @@
     }
 
     date_default_timezone_set('Asia/Jerusalem');
+    $today_il = date('Y-m-d');
 ?>
