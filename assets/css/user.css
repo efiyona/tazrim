@@ -2166,6 +2166,8 @@ body {
     100% { transform: scale(1); opacity: 1; }
 }
 
-.fa-plus, .fa-trash-can{
+
+
+.fa-plus, .fa-trash-can-white{
     color: white;
 }

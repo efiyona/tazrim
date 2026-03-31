@@ -139,7 +139,7 @@ $is_setup_needed = ($cats_count == 0);
 
                 <div class="fabs-wrapper">
                     <button class="fab-btn fab-clear" id="btnClearAllFAB" title="נקה את כל הרשימה">
-                        <i class="fa-solid fa-trash-can"></i>
+                        <i class="fa-solid fa-trash-can fa-trash-can-white"></i>
                     </button>
 
                     <div class="fab-container">
@@ -338,7 +338,7 @@ $is_setup_needed = ($cats_count == 0);
                     $.post('../app/ajax/clear_shopping_list.php', function(response) {
                         $('.category-block').fadeOut(400, function() {
                             loadShoppingLists(); 
-                            btn.html('<i class="fa-solid fa-trash-can"></i>'); 
+                            btn.html('<i class="fa-solid fa-trash-can fa-trash-can-white"></i>'); 
                         });
                     });
                 }
