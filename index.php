@@ -184,7 +184,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                 <div class="transactions-section" style="margin-bottom: 30px;">
                     <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
                         פעולות ממתינות
-                        <span style="font-size: 0.8rem; background: #fee2e2; color: #dc2626; padding: 3px 10px; border-radius: 20px; font-weight: bold;">עתידי</span>
                     </h2>
 
                     <div id="pending-transactions-list">
@@ -485,52 +484,93 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
     const currentMonth = <?php echo $selected_month; ?>;
     const currentYear = <?php echo $selected_year; ?>;
 
-    let offset = 4;
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    const transactionsList = document.getElementById('transactions-list');
+    // ניהול מונים נפרדים לשני האזורים
+    let recentOffset = 4;
+    let pendingOffset = 4;
 
-    if (loadMoreBtn && transactionsList) {
-        loadMoreBtn.addEventListener('click', function() {
-            if (loadMoreBtn.getAttribute('data-state') === 'expanded') {
-                collapseTransactions();
-                return;
-            }
+    // 1. מאזין לכפתור טעינת פעולות אחרונות
+    document.getElementById('loadMoreBtn')?.addEventListener('click', function() {
+        if (this.getAttribute('data-state') === 'expanded') {
+            collapseTransactions('recent', 'recent-transactions-list', this);
+            return;
+        }
+        loadTransactions('recent', recentOffset, 'recent-transactions-list', this);
+    });
 
-            loadMoreBtn.innerText = 'טוען...';
-            loadMoreBtn.disabled = true;
-            
-            fetch(`app/ajax/fetch_transactions.php?offset=${offset}&m=${currentMonth}&y=${currentYear}`)
-                .then(response => response.text())
-                .then(data => {
-                    if (data.trim() === "NO_MORE") {
-                        loadMoreBtn.innerText = 'סגור רשימה';
-                        loadMoreBtn.disabled = false;
-                        loadMoreBtn.setAttribute('data-state', 'expanded');
-                        loadMoreBtn.style.backgroundColor = 'var(--gray)';
-                    } else {
-                        const wrappedData = `<div class="ajax-loaded">${data}</div>`;
-                        transactionsList.insertAdjacentHTML('beforeend', wrappedData);
-                        offset += 4;
-                        loadMoreBtn.innerText = 'הצג עוד...';
-                        loadMoreBtn.disabled = false;
+    // 2. מאזין לכפתור טעינת פעולות ממתינות
+    document.getElementById('loadMorePendingBtn')?.addEventListener('click', function() {
+        if (this.getAttribute('data-state') === 'expanded') {
+            collapseTransactions('pending', 'pending-transactions-list', this);
+            return;
+        }
+        loadTransactions('pending', pendingOffset, 'pending-transactions-list', this);
+    });
+
+    // פונקציה חכמה אחת שטוענת נתונים לפי סוג (status)
+    function loadTransactions(status, offset, containerId, btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> טוען...';
+        btn.disabled = true;
+        
+        const url = `app/ajax/fetch_transactions.php?offset=${offset}&status=${status}&m=${currentMonth}&y=${currentYear}`;
+        
+        fetch(url)
+            .then(res => res.text())
+            .then(html => {
+                if (html.trim() === "" || html.trim() === "NO_MORE") {
+                    setButtonToExpanded(btn);
+                } else {
+                    // עוטפים את הנתונים החדשים בקלאס ייעודי כדי שנוכל למחוק רק אותם בסגירה
+                    const wrappedHtml = `<div class="ajax-loaded-${status}">${html}</div>`;
+                    document.getElementById(containerId).insertAdjacentHTML('beforeend', wrappedHtml);
+                    
+                    // מקדמים את המונה רק אחרי טעינה מוצלחת
+                    if (status === 'recent') recentOffset += 4;
+                    if (status === 'pending') pendingOffset += 4;
+
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    
+                    // בודקים אם הגענו לסוף הרשימה (פחות מ-4 פעולות חזרו)
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    if (tempDiv.querySelectorAll('.transaction-item').length < 4) {
+                        setButtonToExpanded(btn);
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    loadMoreBtn.innerText = 'שגיאה בטעינה';
-                    loadMoreBtn.disabled = false;
-                });
-        });
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching transactions:', err);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
     }
 
-    function collapseTransactions() {
-        const loadedItems = document.querySelectorAll('.ajax-loaded');
+    // פונקציה שהופכת את הכפתור ל"סגור רשימה"
+    function setButtonToExpanded(btn) {
+        btn.innerText = 'סגור רשימה';
+        btn.disabled = false;
+        btn.setAttribute('data-state', 'expanded');
+        btn.style.backgroundColor = 'var(--gray)';
+    }
+
+    // פונקציה שכווצת חזרה רשימה ספציפית
+    function collapseTransactions(status, containerId, btn) {
+        // מחיקת כל הבלוקים שנטענו ב-AJAX עבור הסטטוס הספציפי
+        const loadedItems = document.querySelectorAll(`.ajax-loaded-${status}`);
         loadedItems.forEach(item => item.remove());
-        offset = 4;
-        loadMoreBtn.innerText = 'הצג עוד...';
-        loadMoreBtn.removeAttribute('data-state');
-        loadMoreBtn.style.backgroundColor = 'var(--white)';
-        transactionsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // איפוס המונה הרלוונטי
+        if (status === 'recent') recentOffset = 4;
+        if (status === 'pending') pendingOffset = 4;
+        
+        // החזרת הכפתור למצבו המקורי
+        btn.innerHTML = status === 'pending' ? 'הצג עוד ממתינות...' : 'הצג עוד...';
+        btn.removeAttribute('data-state');
+        btn.style.backgroundColor = ''; // מחזיר לעיצוב הרגיל של ה-CSS
+        
+        // גלילה חלקה חזרה לראש האזור
+        document.getElementById(containerId).parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function loadCategoryDetails(catId, catName) {
