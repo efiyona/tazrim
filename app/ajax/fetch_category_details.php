@@ -21,8 +21,8 @@ if ($cat_id) {
               AND MONTH(t.transaction_date) = $selected_month
               AND YEAR(t.transaction_date) = $selected_year
               ORDER BY 
-                CASE WHEN t.transaction_date > CURRENT_DATE() THEN 1 ELSE 0 END DESC,
-                CASE WHEN t.transaction_date > CURRENT_DATE() THEN t.transaction_date END ASC,
+                CASE WHEN t.transaction_date > '$today_il' THEN 1 ELSE 0 END DESC,
+                CASE WHEN t.transaction_date > '$today_il' THEN t.transaction_date END ASC,
                 t.transaction_date DESC";
               
     $result = mysqli_query($conn, $query);
