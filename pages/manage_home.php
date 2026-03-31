@@ -8,6 +8,7 @@ $user_id = $_SESSION['id'];
 
 // 1. שליפת פרטי הבית
 $home_data = selectOne('homes', ['id' => $home_id]);
+$display_balance = decryptBalance($home_data['initial_balance']);
 
 // בניית הודעת הוואטסאפ וקידוד הקישור
 $join_code = $home_data['join_code'];

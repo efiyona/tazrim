@@ -16,6 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $home_name = trim($_POST['home_name'] ?? '');
     $initial_balance = isset($_POST['initial_balance']) ? (float)$_POST['initial_balance'] : 0;
 
+    // הצפנת היתרה לפני השמירה
+    $encrypted_balance = encryptBalance($initial_balance);
+
     if (empty($home_name)) {
         echo json_encode(['status' => 'error', 'message' => 'שם הבית לא יכול להיות ריק.']);
         exit();
@@ -25,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $home_name_clean = mysqli_real_escape_string($conn, $home_name);
 
     // עדכון טבלת הבית (homes)
-    $update_query = "UPDATE homes SET name = '$home_name_clean', initial_balance = $initial_balance WHERE id = $home_id";
+    $update_query = "UPDATE homes SET name = '$home_name_clean', initial_balance = '$encrypted_balance' WHERE id = $home_id";
 
     if (mysqli_query($conn, $update_query)) {
         echo json_encode(['status' => 'success']);

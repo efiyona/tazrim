@@ -31,7 +31,6 @@ function selectAll($table, $conditions = [])
         $stmt = $conn->prepare($sql);
         $stmt->execute();
         $records = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-        return $records;
     }
     else
     {
@@ -47,8 +46,24 @@ function selectAll($table, $conditions = [])
         
         $stmt = excuteQuery($sql, $conditions);
         $records = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-        return $records;
     }
+
+    // --- מנגנון פענוח אוטומטי ---
+    if ($records) {
+        // רשימת העמודות שדורשות פענוח (אפשר להוסיף עוד בעתיד עם פסיק)
+        $encrypted_columns = ['initial_balance']; 
+        
+        foreach ($records as &$row) {
+            foreach ($encrypted_columns as $col) {
+                if (array_key_exists($col, $row)) {
+                    $row[$col] = decryptBalance($row[$col]);
+                }
+            }
+        }
+    }
+    // ----------------------------
+
+    return $records;
 }
 
 function selectOne($table, $conditions)
@@ -69,8 +84,20 @@ function selectOne($table, $conditions)
     $sql = $sql . " LIMIT 1";
     $stmt = excuteQuery($sql, $conditions);
     $records = $stmt->get_result()->fetch_assoc();
-    return $records;
 
+    // --- מנגנון פענוח אוטומטי ---
+    if ($records) {
+        $encrypted_columns = ['initial_balance']; 
+        
+        foreach ($encrypted_columns as $col) {
+            if (array_key_exists($col, $records)) {
+                $records[$col] = decryptBalance($records[$col]);
+            }
+        }
+    }
+    // ----------------------------
+
+    return $records;
 }
 
 function create($table, $data)
@@ -136,4 +163,26 @@ function addNotification($home_id, $title, $message, $type = 'info', $user_id = 
     ];
     
     return create('notifications', $data);
+}
+
+function encryptBalance($value) {
+    if ($value === null || $value === '') return null;
+    $key = ENCRYPTION_KEY;
+    $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
+    $encrypted = openssl_encrypt($value, 'aes-256-cbc', $key, 0, $iv);
+    return base64_encode($encrypted . '::' . $iv);
+}
+
+function decryptBalance($value) {
+    if (empty($value)) return 0;
+    if (is_numeric($value)) return (float)$value; 
+    
+    $key = ENCRYPTION_KEY;
+    $parts = explode('::', base64_decode($value), 2);
+    
+    if (count($parts) === 2) {
+        $decrypted = openssl_decrypt($parts[0], 'aes-256-cbc', $key, 0, $parts[1]);
+        if ($decrypted !== false) return (float)$decrypted;
+    }
+    return 0; 
 }

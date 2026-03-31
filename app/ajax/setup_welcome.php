@@ -15,12 +15,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. עדכון פרטי הבית (שם ויתרה התחלתית)
     $home_name = isset($_POST['home_name']) ? mysqli_real_escape_string($conn, trim($_POST['home_name'])) : '';
     $initial_balance = isset($_POST['initial_balance']) ? (float)$_POST['initial_balance'] : 0;
+
+    $encrypted_balance = encryptBalance($initial_balance);
     
     // אם המשתמש השאיר שם בית ריק, לא נדרוס את הקיים (נשאיר את ברירת המחדל שנוצרה בהרשמה)
     if (!empty($home_name)) {
-        mysqli_query($conn, "UPDATE homes SET name = '$home_name', initial_balance = $initial_balance WHERE id = $home_id");
+        mysqli_query($conn, "UPDATE homes SET name = '$home_name', initial_balance = '$encrypted_balance' WHERE id = $home_id");
     } else {
-        mysqli_query($conn, "UPDATE homes SET initial_balance = $initial_balance WHERE id = $home_id");
+        mysqli_query($conn, "UPDATE homes SET initial_balance = '$encrypted_balance' WHERE id = $home_id");
     }
 
     // 2. עיבוד והזרקת קטגוריות
