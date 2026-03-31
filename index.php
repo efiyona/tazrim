@@ -75,21 +75,33 @@ $result_expense = mysqli_query($conn, $month_expense_query);
 $expense_data = mysqli_fetch_assoc($result_expense);
 $total_expense = $expense_data['total'] ?? 0;
 
-// 4. שליפת פעולות אחרונות (+ שם המשתמש)
-$transactions_query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name 
-                       FROM transactions t 
-                       LEFT JOIN categories c ON t.category = c.id 
-                       LEFT JOIN users u ON t.user_id = u.id
-                       WHERE t.home_id = $home_id 
-                       AND MONTH(t.transaction_date) = $selected_month 
-                       AND YEAR(t.transaction_date) = $selected_year
-                       ORDER BY 
-                            CASE WHEN t.transaction_date > '$today_il' THEN 1 ELSE 0 END DESC,
-                            CASE WHEN t.transaction_date > '$today_il' THEN t.transaction_date END ASC,
-                            t.transaction_date DESC, 
-                            t.created_at DESC 
-                       LIMIT 4";
-$result_transactions = mysqli_query($conn, $transactions_query);
+$limit = 4; // כמות ראשונית להצגה
+
+// 1. שאילתת ממתינות (עתידיות) - מוגבל ל-4
+$pending_query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name 
+                  FROM transactions t 
+                  LEFT JOIN categories c ON t.category = c.id 
+                  LEFT JOIN users u ON t.user_id = u.id
+                  WHERE t.home_id = $home_id 
+                  AND t.transaction_date > '$today_il'
+                  AND MONTH(t.transaction_date) = $selected_month 
+                  AND YEAR(t.transaction_date) = $selected_year
+                  ORDER BY t.transaction_date ASC, t.created_at ASC
+                  LIMIT $limit";
+$pending_result = mysqli_query($conn, $pending_query);
+
+// 2. שאילתת אחרונות (עבר) - מוגבל ל-4
+$recent_query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name 
+                 FROM transactions t 
+                 LEFT JOIN categories c ON t.category = c.id 
+                 LEFT JOIN users u ON t.user_id = u.id
+                 WHERE t.home_id = $home_id 
+                 AND t.transaction_date <= '$today_il'
+                 AND MONTH(t.transaction_date) = $selected_month 
+                 AND YEAR(t.transaction_date) = $selected_year
+                 ORDER BY t.transaction_date DESC, t.created_at DESC 
+                 LIMIT $limit";
+$recent_result = mysqli_query($conn, $recent_query);
 
 /// 5. שאילתה לשליפת קטגוריות עם סיכום הוצאות חודשי - ממוין מהגבוה לנמוך
 $categories_budget_query = "SELECT 
@@ -168,26 +180,67 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                     </div>
                 </div>
 
+                <?php if (mysqli_num_rows($pending_result) > 0): ?>
+                <div class="transactions-section" style="margin-bottom: 30px;">
+                    <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        פעולות ממתינות
+                        <span style="font-size: 0.8rem; background: #fee2e2; color: #dc2626; padding: 3px 10px; border-radius: 20px; font-weight: bold;">עתידי</span>
+                    </h2>
+
+                    <div id="pending-transactions-list">
+                        <?php while($row = mysqli_fetch_assoc($pending_result)): ?>
+                            <div class="transaction-item <?php echo $row['type']; ?> pending-trans">
+                                <div class="transaction-info">
+                                    <div class="cat-icon-wrapper">
+                                        <i class="fa-regular fa-clock"></i> </div>
+                                    <div class="details">
+                                        <span class="desc">
+                                            <?php echo $row['description']; ?>
+                                            <?php if($row['user_name']) echo "<span style='font-size: 0.75rem; color: #888; font-weight: normal; margin-right: 5px;'>({$row['user_name']})</span>"; ?>
+                                        </span>
+                                        <span class="date"><?php echo date('d/m/Y', strtotime($row['transaction_date'])); ?></span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="transaction-amount">
+                                        <?php echo ($row['type'] == 'income') ? '+' : '-'; ?> <?php echo number_format($row['amount'], 0); ?> ₪
+                                    </div>
+                                    <div style="display:flex; gap: 5px;">
+                                        <button onclick="openEditTransModal(<?php echo $row['id']; ?>, <?php echo $row['amount']; ?>, <?php echo $row['category']; ?>, '<?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?>', '<?php echo $row['type']; ?>')" style="background: var(--gray); border: none; color: var(--text); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="ערוך פעולה">
+                                            <i class="fa-solid fa-pen" style="font-size: 1rem;"></i>
+                                        </button>
+                                        <button onclick="deleteTransaction(<?php echo $row['id']; ?>)" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק פעולה">
+                                            <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    </div>
+
+                    <?php if (mysqli_num_rows($pending_result) == 4): ?>
+                        <button id="loadMorePendingBtn" class="btn-load-more w-full" style="margin-top: 20px;">
+                        הצג עוד ממתינות...
+                        </button>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+
+
                 <div class="transactions-section">
                     <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin-bottom: 20px;">פעולות אחרונות</h2>
 
-                    <div id="transactions-list">
-                        <?php if (mysqli_num_rows($result_transactions) > 0): ?>
-                            <?php while($row = mysqli_fetch_assoc($result_transactions)): 
-                                $is_future = strtotime($row['transaction_date']) > strtotime(date('Y-m-d'));
-                                $pending_class = $is_future ? 'pending-trans' : '';
-                                $display_icon = $is_future ? 'fa-regular fa-clock' : ($row['cat_icon'] ?: 'fa-tag');
-                            ?>
-                                <div class="transaction-item <?php echo $row['type']; ?> <?php echo $pending_class; ?>">
+                    <div id="recent-transactions-list">
+                        <?php if (mysqli_num_rows($recent_result) > 0): ?>
+                            <?php while($row = mysqli_fetch_assoc($recent_result)): ?>
+                                <div class="transaction-item <?php echo $row['type']; ?>">
                                     <div class="transaction-info">
                                         <div class="cat-icon-wrapper">
-                                            <i class="fa-solid <?php echo $display_icon; ?>"></i>
-                                        </div>
+                                            <i class="fa-solid <?php echo $row['cat_icon'] ?: 'fa-tag'; ?>"></i> </div>
                                         <div class="details">
                                             <span class="desc">
                                                 <?php echo $row['description']; ?>
                                                 <?php if($row['user_name']) echo "<span style='font-size: 0.75rem; color: #888; font-weight: normal; margin-right: 5px;'>({$row['user_name']})</span>"; ?>
-                                                <?php if($is_future) echo '<span style="font-size:0.7rem; background:#eee; padding:2px 6px; border-radius:10px; margin-right:5px; color: #777;">ממתין</span>'; ?>
                                             </span>
                                             <span class="date"><?php echo date('d/m/Y', strtotime($row['transaction_date'])); ?></span>
                                         </div>
@@ -215,9 +268,9 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                         <?php endif; ?>
                     </div>
 
-                    <?php if (mysqli_num_rows($result_transactions) >= 4): ?>
+                    <?php if (mysqli_num_rows($recent_result) == 4): ?>
                         <button id="loadMoreBtn" class="btn-load-more w-full" style="margin-top: 20px;">
-                           הצג עוד...
+                        הצג עוד...
                         </button>
                     <?php endif; ?>
                 </div>

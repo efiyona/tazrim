@@ -4,6 +4,7 @@ include(ROOT_PATH . '/app/database/db.php');
 include(ROOT_PATH . '/assets/includes/auth_check.php');
 
 $home_id = $_SESSION['home_id'];
+$home_data = selectOne('homes', ['id' => $home_id]);
 
 // בדיקה האם הבית הזה כבר עבר אשף התקנה של רשימת קניות (האם יש לו חנויות)
 $check_cats_query = "SELECT COUNT(*) as count FROM shopping_categories WHERE home_id = $home_id";
