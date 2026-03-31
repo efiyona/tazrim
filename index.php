@@ -201,7 +201,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                                         <span class="date"><?php echo date('d/m/Y', strtotime($row['transaction_date'])); ?></span>
                                     </div>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="transaction-actions">
                                     <div class="transaction-amount">
                                         <?php echo ($row['type'] == 'income') ? '+' : '-'; ?> <?php echo number_format($row['amount'], 0); ?> ₪
                                     </div>
@@ -245,7 +245,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                                             <span class="date"><?php echo date('d/m/Y', strtotime($row['transaction_date'])); ?></span>
                                         </div>
                                     </div>
-                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="transaction-actions">
                                         <div class="transaction-amount">
                                             <?php echo ($row['type'] == 'income') ? '+' : '-'; ?> <?php echo number_format($row['amount'], 0); ?> ₪
                                         </div>

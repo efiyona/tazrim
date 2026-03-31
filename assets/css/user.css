@@ -2171,3 +2171,52 @@ body {
 .fa-plus, .fa-trash-can-white{
     color: white;
 }
+
+/* מניעת שבירת שורה בפריט עצמו */
+.transaction-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px; /* רווח מינימלי בין הטקסט לסכום */
+    flex-wrap: nowrap; /* מונע מהסכום לרדת שורה */
+}
+
+/* הגדרת התיאור כגמיש - שיקח את מה שנשאר אבל לא ידחוף את הסכום */
+.transaction-info {
+    flex: 1;
+    min-width: 0; /* קריטי כדי לאפשר לטקסט בפנים להתכווץ */
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* טיפול בטקסט ארוך בתיאור */
+.details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.details .desc {
+    font-weight: 700;
+    font-size: 1rem;
+    white-space: nowrap;      /* מונע מהתיאור לרדת שורה */
+    overflow: hidden;         /* מסתיר חריגות */
+    text-overflow: ellipsis;  /* מוסיף ... אם הטקסט ארוך מדי */
+}
+
+/* וידוא שהסכום לעולם לא נשבר (המספר והשקל תמיד ביחד) */
+.transaction-amount {
+    font-weight: 800;
+    font-size: 1.1rem;
+    white-space: nowrap;      /* מונע הפרדה בין המספר לסימן ₪ */
+    flex-shrink: 0;           /* מונע מהסכום להתכווץ */
+}
+
+.transaction-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0; /* מונע מכל הגוש של הסכום והכפתורים להימחץ */
+}
