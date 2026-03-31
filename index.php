@@ -47,11 +47,12 @@ $month_name = $hebrew_months[$selected_month];
 $home_data = selectOne('homes', ['id' => $home_id]);
 $initial_balance = $home_data['initial_balance'] ?? 0;
 
+// לוגיקה שמרנית: הכנסות נספרות רק עד היום (כולל), הוצאות נספרות תמיד (כולל עתידיות)
 $real_balance_query = "SELECT 
-    COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) - 
+    COALESCE(SUM(CASE WHEN type = 'income' AND transaction_date <= '$today_il' THEN amount ELSE 0 END), 0) - 
     COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as net_balance
     FROM transactions 
-    WHERE home_id = $home_id AND transaction_date <= '$today_il'";
+    WHERE home_id = $home_id";
 
 $balance_result = mysqli_query($conn, $real_balance_query);
 $balance_data = mysqli_fetch_assoc($balance_result);
