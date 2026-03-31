@@ -68,7 +68,7 @@ if (mysqli_num_rows($result) > 0) {
                     <span class='date'>{$date_formatted}</span>
                 </div>
             </div>
-            <div class=׳transaction-actions׳>
+            <div class='transaction-actions'>
                 <div class='transaction-amount'>
                     {$symbol} {$amount_formatted} ₪
                 </div>
