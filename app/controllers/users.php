@@ -71,6 +71,7 @@ if (isset($_POST['register_btn'])) {
     if (empty($first_name)) array_push($errors, "חובה להזין שם פרטי");
     if (empty($email)) array_push($errors, "חובה להזין כתובת אימייל");
     if (strlen($password) < 4) array_push($errors, "הסיסמה חייבת להיות לפחות 4 תווים");
+    if (!isset($_POST['accept_tos'])) array_push($errors, "חובה לקרוא ולאשר את תנאי השימוש");
 
     // בדיקה אם המשתמש קיים
     $existingUser = selectOne('users', ['email' => $email]);
@@ -141,6 +142,20 @@ if (isset($_POST['register_btn'])) {
                 // שולח לכל בני הבית הקיימים, חוץ מהמשתמש החדש
                 sendPushToHome($target_home_id, $user_id, $push_title, $push_body, $push_url);
             }
+            // ==========================================
+
+            // ==========================================
+            // 4.5 שמירת תיעוד אישור התקנון בטבלת tos_agreements
+            // ==========================================
+            create('tos_agreements', [
+                'user_id' => $user_id,
+                'tos_version' => CURRENT_TOS_VERSION,
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'Unknown',
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown'
+            ]);
+            
+            // הגדרת הסשן כדי שה-auth_check.php לא יזרוק אותו חזרה לדף אישור מיד כשיתחבר
+            $_SESSION['tos_version'] = CURRENT_TOS_VERSION;
             // ==========================================
 
             // 5. התחברות אוטומטית והפניה

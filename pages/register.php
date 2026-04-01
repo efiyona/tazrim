@@ -107,7 +107,15 @@ $prefilled_code = isset($_GET['join_code']) ? htmlspecialchars($_GET['join_code'
                         </div>
                     </div>
 
-                    <button type="submit" name="register_btn" class="btn-primary">השלמת הרשמה</button>
+                    <div class="input-group" style="margin-top: 25px; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; margin: 0; color: #334155;">
+                            <input type="checkbox" name="accept_tos" id="acceptTosCb" value="1" style="width: 20px; height: 20px; accent-color: var(--main); cursor: pointer;" onchange="toggleRegBtn()">
+                            <span>קראתי ואני מסכים ל<a href="#" onclick="openTosModal(event)" style="color: var(--main); text-decoration: underline;">תנאי השימוש ומדיניות הפרטיות</a></span>
+                        </label>
+                    </div>
+
+                    <button type="submit" name="register_btn" id="regBtn" class="btn-primary" disabled>השלמת הרשמה</button>
+
                 </form>
 
                 <p class="auth-switch">כבר יש לך חשבון? <a href="login.php">התחבר כאן</a></p>
@@ -120,6 +128,19 @@ $prefilled_code = isset($_GET['join_code']) ? htmlspecialchars($_GET['join_code'
                 <h2 class="brand-title">התזרים</h2>
                 <p class="brand-text">מצטרפים לניהול תקציב חכם ופשוט.</p>
             </div>
+        </div>
+    </div>
+
+    <div id="tosModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+        <div style="background: white; width: 100%; max-width: 600px; border-radius: 16px; padding: 25px; position: relative; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+            <button type="button" onclick="closeTosModal()" style="position: absolute; top: 15px; left: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8;">&times;</button>
+            <h2 style="margin-top: 0; margin-bottom: 15px; font-weight: 800; color: var(--main-dark); text-align: center;">תקנון המערכת</h2>
+            
+            <div>
+                <?php include(ROOT_PATH . '/assets/includes/tos_content.php'); ?>
+            </div>
+            
+            <button type="button" class="btn-primary" onclick="closeTosModal()" style="margin-top: auto;">קראתי את התקנון</button>
         </div>
     </div>
 
@@ -156,6 +177,21 @@ $prefilled_code = isset($_GET['join_code']) ? htmlspecialchars($_GET['join_code'
                 e.preventDefault(); alert('הסיסמה חייבת להיות לפחות 4 תווים');
             }
         };
+
+        // --- לוגיקת תקנון תנאי שימוש (TOS) ---
+        function toggleRegBtn() {
+            document.getElementById('regBtn').disabled = !document.getElementById('acceptTosCb').checked;
+        }
+
+        function openTosModal(e) {
+            e.preventDefault(); // מונע קפיצה של הדף למעלה בגלל הלינק
+            document.getElementById('tosModal').style.display = 'flex';
+        }
+
+        function closeTosModal() {
+            document.getElementById('tosModal').style.display = 'none';
+        }
+        
     </script>
 </body>
 </html>
