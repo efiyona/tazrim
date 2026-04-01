@@ -2276,3 +2276,7 @@ body {
         font-size: 1.5rem;
     }
 }
+
+.accept-checkbox-wrapper span{
+    font-size: 0.9rem;
+}
