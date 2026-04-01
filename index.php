@@ -177,7 +177,14 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                     <?php endif; ?>
                     
                     <div class="stat-card income">
-                        <label>הכנסות החודש</label>
+                        <label>
+                            הכנסות החודש
+                            <?php 
+                                $info_label = "הכנסות החודש";
+                                $info_key = "month_income"; 
+                                include(ROOT_PATH . '/assets/includes/info_label.php'); 
+                            ?>
+                        </label>
                         <div class="amount">+ <?php echo number_format($total_income, 0); ?> ₪</div>
                     </div>
                     
@@ -460,7 +467,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                     <input type="hidden" name="transaction_id" id="edit-trans-id">
                     <input type="hidden" id="edit-trans-type">
 
-                                        <div class="input-group">
+                    <div class="input-group">
                         <label>תיאור הפעולה</label>
                         <div class="input-with-icon">
                             <i class="fa-solid fa-pen"></i>
@@ -883,3 +890,4 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
     });
 </script>
 </html>
+
