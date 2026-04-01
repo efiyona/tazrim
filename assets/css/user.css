@@ -2220,3 +2220,23 @@ body {
     gap: 10px;
     flex-shrink: 0; /* מונע מכל הגוש של הסכום והכפתורים להימחץ */
 }
+
+/* כפתור מידע (עיגול קטן) */
+.info-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 25px;
+    height: 25px;
+    background-color: var(--sub_main-light);
+    color: var(--main);
+    border-radius: 50%;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.info-trigger:hover {
+    color: white;
+    transform: scale(1.1);
+}

@@ -129,7 +129,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
     <title>התזרים | דף הבית</title>
 </head>
 <body class="bg-gray">
-
     <div class="dashboard-container">
         
         <?php include(ROOT_PATH . '/assets/includes/sidebar_bavbar.php'); ?>
@@ -165,7 +164,14 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                 <div class="stats-grid">
                     <?php if ($initial_balance != 0): ?>
                         <div class="stat-card balance">
-                            <label>יתרת מציאות (בנק)</label>
+                            <label>
+                                יתרה בחשבון
+                                <?php 
+                                    $info_label = "יתרה בחשבון";
+                                    $info_key = "real_balance"; // המזהה מהמסד
+                                    include(ROOT_PATH . '/assets/includes/info_label.php'); 
+                                ?>
+                            </label>
                             <div class="amount"><?php echo number_format($current_bank_balance, 0); ?> ₪</div>
                         </div>
                     <?php endif; ?>
@@ -176,7 +182,14 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                     </div>
                     
                     <div class="stat-card expenses">
-                        <label>הוצאות החודש</label>
+                        <label>
+                            הוצאות החודש
+                            <?php 
+                                $info_label = "הוצאות החודש";
+                                $info_key = "month_expenses"; // המזהה מהמסד
+                                include(ROOT_PATH . '/assets/includes/info_label.php'); 
+                            ?>
+                        </label>
                         <div class="amount">- <?php echo number_format($total_expense, 0); ?> ₪</div>
                     </div>
                 </div>

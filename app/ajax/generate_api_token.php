@@ -6,7 +6,7 @@ $user_id = $_SESSION['id'];
 $home_id = $_SESSION['home_id'];
 
 $random_string = bin2hex(random_bytes(8));
-$new_token = "EFI_APP_" . strtoupper($random_string);
+$new_token = "TAZRIM_APP_" . strtoupper($random_string);
 
 // הכנסה למסד הנתונים
 $query = "INSERT INTO api_tokens (user_id, home_id, token) VALUES ($user_id, $home_id, '$new_token')";

@@ -268,3 +268,5 @@ function updateBadge(count) {
     }
 }
 </script>
+
+<?php include(ROOT_PATH . '/assets/includes/global_info_modal.php'); ?>
