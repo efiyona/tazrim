@@ -2,10 +2,30 @@
 require_once('../path.php');
 include(ROOT_PATH . '/app/database/db.php');
 
-// אנחנו לא מכניסים פה את auth_check.php כדי למנוע לולאה אינסופית,
 // אבל אנחנו כן חייבים לוודא שהמשתמש מחובר!
 if (!isset($_SESSION['id'])) {
     header('location: ' . BASE_URL . 'pages/login.php');
+    exit();
+}
+
+// === חסימת גישה למשתמשים שכבר אישרו ===
+$user_id_for_tos = $_SESSION['id'];
+
+// קודם נבדוק בסשן (הכי מהיר)
+if (isset($_SESSION['tos_version']) && $_SESSION['tos_version'] === CURRENT_TOS_VERSION) {
+    header("Location: " . BASE_URL . "index.php");
+    exit();
+}
+
+// אם לא קיים בסשן, נבדוק בוודאות מול מסד הנתונים
+$tos_query = "SELECT tos_version FROM tos_agreements WHERE user_id = $user_id_for_tos ORDER BY accepted_at DESC LIMIT 1";
+$tos_result = mysqli_query($conn, $tos_query);
+$tos_data = mysqli_fetch_assoc($tos_result);
+
+if ($tos_data && $tos_data['tos_version'] === CURRENT_TOS_VERSION) {
+    // נעדכן את הסשן כדי לחסוך קריאות בהמשך
+    $_SESSION['tos_version'] = CURRENT_TOS_VERSION;
+    header("Location: " . BASE_URL . "index.php");
     exit();
 }
 ?>
