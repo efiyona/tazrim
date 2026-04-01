@@ -1,5 +1,5 @@
 <?php
-require_once('../path.php');
+require_once('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
 include(ROOT_PATH . '/assets/includes/auth_check.php'); 
 
@@ -93,6 +93,7 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                                 <p class="block-help">שלח את הקוד הזה לשותפים כדי שיצטרפו לבית שלך.</p>
                             </div>
 
+                            
                             <div class="management-block" style="border-top: 1px solid #f1f5f9; padding-top: 20px; margin-top: 10px;">
                                 <span class="block-label">התראות דחיפה (Push):</span>
                                 <button type="button" id="btn-enable-notifications" class="btn-generate-v2" style="background-color: var(--main); width: 100%;" onclick="initPushSubscription()">

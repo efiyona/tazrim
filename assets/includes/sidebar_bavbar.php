@@ -1,6 +1,10 @@
 <?php
 // מזהה את שם הקובץ הנוכחי (למשל: index.php או manage_home.php)
 $current_page = basename($_SERVER['SCRIPT_NAME']);
+
+// מערך שמכיל את כל דפי ההגדרות, כדי שהתפריט יישאר פתוח אם גולשים בהם
+$settings_pages = ['manage_home.php', 'user_profile.php'];
+$is_settings_active = in_array($current_page, $settings_pages);
 ?>
 
 <div class="sidebar-overlay" id="overlay"></div>
@@ -20,10 +24,27 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
         <a href="<?php echo BASE_URL . 'pages/reports.php'; ?>" class="<?php echo ($current_page == 'reports.php') ? 'active' : ''; ?>">
             <i class="fa-solid fa-chart-line"></i> דוחות
         </a>
-        <a href="<?php echo BASE_URL . 'pages/manage_home.php'; ?>" class="<?php echo ($current_page == 'manage_home.php') ? 'active' : ''; ?>">
-            <i class="fa-solid fa-house-chimney-user"></i> ניהול הבית
-        </a>
+        
+        
         <hr>
+        <div class="nav-dropdown <?php echo $is_settings_active ? 'open' : ''; ?>">
+            <a href="#" class="nav-dropdown-toggle <?php echo $is_settings_active ? 'active' : ''; ?>">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="fa-solid fa-gear"></i> הגדרות
+                </div>
+                <i class="fa-solid fa-chevron-left nav-chevron"></i>
+            </a>
+            
+            <div class="nav-submenu">
+                <a href="<?php echo BASE_URL . 'pages/settings/manage_home.php'; ?>" class="<?php echo ($current_page == 'manage_home.php') ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-house-chimney-user"></i> הגדרות הבית
+                </a>
+                <a href="<?php echo BASE_URL . 'pages/settings/user_profile.php'; ?>" class="<?php echo ($current_page == 'user_profile.php') ? 'active' : ''; ?>">
+                    <i class="fa-solid fa-user-gear"></i> החשבון שלי
+                </a>
+            </div>
+        </div>
+
         <a href="<?php echo BASE_URL . 'logout.php'; ?>" class="logout-link">
             <i class="fa-solid fa-right-from-bracket"></i> התנתקות
         </a>
@@ -163,6 +184,15 @@ menuBtn.addEventListener('click', () => {
 overlay.addEventListener('click', () => {
     sidebar.classList.remove('mobile-open');
     overlay.classList.remove('active');
+});
+
+// --- לוגיקת תפריט צד נפתח (Accordion) ---
+document.querySelectorAll('.nav-dropdown-toggle').forEach(toggle => {
+    toggle.addEventListener('click', function(e) {
+        e.preventDefault(); // מונע קפיצה לראש הדף
+        const parentDropdown = this.parentElement;
+        parentDropdown.classList.toggle('open');
+    });
 });
 
 // --- לוגיקת התראות ---
