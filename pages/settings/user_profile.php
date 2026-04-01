@@ -375,9 +375,35 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
         }
 
         function deleteAccount() {
-            if(confirm('אזהרה: האם אתה בטוח לחלוטין שברצונך למחוק את חשבונך לצמיתות? לא ניתן לשחזר פעולה זו!')) {
-                // TODO: AJAX call to app/ajax/delete_account.php
-                alert('פונקציית מחיקת החשבון תופעל כאן');
+            if(confirm('אזהרה: האם אתה בטוח לחלוטין שברצונך למחוק את חשבונך לצמיתות?\n\nאם אתה המשתמש היחיד בבית - כל נתוני הבית (הוצאות, קטגוריות ודוחות) ימחקו גם הם ללא אפשרות שחזור!')) {
+                
+                // משנים את הכפתור כדי שהמשתמש יראה שמשהו קורה
+                const btns = document.querySelectorAll('.btn-danger-outline');
+                const deleteBtn = btns[btns.length - 1]; // הכפתור האחרון הוא המחיקה
+                const originalHtml = deleteBtn.innerHTML;
+                deleteBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מוחק חשבון ונתונים...';
+                deleteBtn.disabled = true;
+
+                fetch('<?php echo BASE_URL; ?>app/ajax/delete_account.php', {
+                    method: 'POST'
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // מחיקה הצליחה - מעבירים לעמוד ההרשמה/התחברות עם פרמטר שמציין מחיקה
+                        window.location.href = '<?php echo BASE_URL; ?>pages/login.php?deleted=1';
+                    } else {
+                        // אם יש שגיאה (למשל, הוא אדמין עם שותפים)
+                        alert(data.message);
+                        deleteBtn.innerHTML = originalHtml;
+                        deleteBtn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    alert('שגיאת תקשורת עם השרת בעת ניסיון המחיקה.');
+                    deleteBtn.innerHTML = originalHtml;
+                    deleteBtn.disabled = false;
+                });
             }
         }
     </script>
