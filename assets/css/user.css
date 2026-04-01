@@ -2269,3 +2269,7 @@ body {
 .tos-scroll-box h4:first-child { 
     margin-top: 0; 
 }
+
+.step h1{
+    line-height: 1.2;
+}
