@@ -1234,7 +1234,9 @@ body {
 
 @media (max-width: 600px) {
     .page-header-actions {
-
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
     }
 
     .current-month-display {
