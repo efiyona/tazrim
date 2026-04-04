@@ -166,7 +166,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                             <i class="fa-solid fa-arrow-trend-up" style="color: var(--success);"></i>
                             הכנסות החודש
                             <?php 
-                                $info_label = "הכנסות החודש";
+                                $info_label = "הכנסות";
                                 $info_key = "month_income"; 
                                 include(ROOT_PATH . '/assets/includes/info_label.php'); 
                             ?>
@@ -179,7 +179,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                             <i class="fa-solid fa-arrow-trend-down" style="color: var(--error);"></i>
                              הוצאות החודש
                             <?php 
-                                $info_label = "הוצאות החודש";
+                                $info_label = "הוצאות";
                                 $info_key = "month_expenses"; // המזהה מהמסד
                                 include(ROOT_PATH . '/assets/includes/info_label.php'); 
                             ?>                        
