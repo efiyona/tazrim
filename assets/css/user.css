@@ -1226,9 +1226,19 @@ body {
     justify-content: center;
 }
 
+.current-month-display {
+    font-size: 1.2rem;
+    color: var(--main);
+    text-align: center;
+}
+
 @media (max-width: 600px) {
     .page-header-actions {
 
+    }
+
+    .current-month-display {
+        font-size: 1rem;
     }
 }
 
@@ -1569,7 +1579,7 @@ body {
         .month-navigator { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-bottom: 25px; }
         .month-nav-btn { background: var(--gray); color: var(--text); border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; text-decoration: none; font-weight: 600; transition: 0.2s; }
         .month-nav-btn:hover { background: var(--main-light); color: var(--main); }
-        .current-month-display { font-size: 1.3rem; font-weight: 800; color: var(--main); text-align: center; }
+       
         
         .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
         @media (min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }

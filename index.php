@@ -146,7 +146,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                     
                     <div class="month-selector">
                         <?php if (!$is_current_month): ?>
-                            <a href="<?php echo BASE_URL . '/pages/reports.php?m=' . date('m') . '&y=' . date('Y'); ?>" class="btn-return-today">
+                            <a href="<?php echo '?m=' . date('m') . '&y=' . date('Y'); ?>" class="btn-return-today">
                                 היום
                             </a>
                         <?php endif; ?>
