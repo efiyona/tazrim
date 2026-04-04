@@ -2496,3 +2496,8 @@ body {
 /* עיצוב פס הגלילה הפנימי של התפריט */
 .custom-select-options::-webkit-scrollbar { width: 6px; }
 .custom-select-options::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 10px; }
+
+/* נעילת גלילה ברקע כשפופאפ פתוח */
+body.no-scroll {
+    overflow: hidden;
+}

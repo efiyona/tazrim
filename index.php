@@ -645,16 +645,33 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
             return;
         }
 
-        let selectedCat = filteredCats.find(cat => cat.id == selectedId);
-        if (!selectedCat) {
-            selectedCat = filteredCats[0];
-        }
-        hiddenInput.value = selectedCat.id;
-
         const wrapper = document.createElement('div');
         wrapper.className = 'custom-select-wrapper';
-        
-        const iconClassInit = selectedCat.icon ? selectedCat.icon : 'fa-tag';
+
+        // בדיקה אם יש קטגוריה נבחרת (בעריכה) או שזה מצב התחלתי (הוספה)
+        let selectedCat = filteredCats.find(cat => cat.id == selectedId);
+        let triggerHTML = '';
+
+        if (!selectedCat) {
+            // מצב ברירת מחדל - לא נבחרה קטגוריה
+            hiddenInput.value = '';
+            triggerHTML = `
+                <div class="selected-cat-info" style="color: #888;">
+                    <i class="fa-solid fa-list-ul" style="color: #ccc;"></i> <span>בחירת קטגוריה...</span>
+                </div>
+                <i class="fa-solid fa-chevron-down" style="color: #ccc; font-size: 0.9rem;"></i>
+            `;
+        } else {
+            // קטגוריה קיימת (למשל בעריכה)
+            hiddenInput.value = selectedCat.id;
+            const iconClassInit = selectedCat.icon ? selectedCat.icon : 'fa-tag';
+            triggerHTML = `
+                <div class="selected-cat-info">
+                    <i class="fa-solid ${iconClassInit}" style="color: var(--main);"></i> <span>${selectedCat.name}</span>
+                </div>
+                <i class="fa-solid fa-chevron-down" style="color: #ccc; font-size: 0.9rem;"></i>
+            `;
+        }
         
         let optionsHTML = '';
         filteredCats.forEach(cat => {
@@ -668,10 +685,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
         wrapper.innerHTML = `
             <div class="custom-select-trigger">
-                <div class="selected-cat-info">
-                    <i class="fa-solid ${iconClassInit}" style="color: var(--main);"></i> <span>${selectedCat.name}</span>
-                </div>
-                <i class="fa-solid fa-chevron-down" style="color: #ccc; font-size: 0.9rem;"></i>
+                ${triggerHTML}
             </div>
             <div class="custom-select-options">
                 ${optionsHTML}
@@ -699,7 +713,8 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                 const icon = this.getAttribute('data-icon');
                 
                 hiddenInput.value = val;
-                wrapper.querySelector('.selected-cat-info').innerHTML = `<i class="fa-solid ${icon}" style="color: var(--main);"></i> <span>${name}</span>`;
+                // צובע בחזרה למראה הנבחר הרגיל אחרי שלחצו על משהו
+                wrapper.querySelector('.selected-cat-info').innerHTML = `<i class="fa-solid ${icon}" style="color: var(--main);"></i> <span style="color: var(--text);">${name}</span>`;
                 
                 wrapper.classList.remove('open');
             });
@@ -749,6 +764,16 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         
         const submitBtn = document.getElementById('submit-trans-btn');
         const msgBox = document.getElementById('add-trans-msg');
+        
+        // --- חסימת השליחה אם לא נבחרה קטגוריה ---
+        const selectedCatId = document.getElementById('selected-category-id').value;
+        if (!selectedCatId) {
+            msgBox.style.display = 'block';
+            msgBox.style.backgroundColor = '#fee2e2';
+            msgBox.style.color = 'var(--error)';
+            msgBox.innerText = 'נא לבחור קטגוריה מהרשימה.';
+            return; // עוצר את השמירה כאן
+        }
         
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> שומר נתונים...';
@@ -849,9 +874,18 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
     }
 
     editForm.addEventListener('submit', function(e) {
+        
         e.preventDefault(); 
-        const submitBtn = document.getElementById('submit-edit-trans-btn');
-        const msgBox = document.getElementById('edit-trans-msg');
+        // --- חסימת השליחה אם לא נבחרה קטגוריה ---
+        const selectedCatId = document.getElementById('edit-selected-category-id').value;
+        if (!selectedCatId) {
+            msgBox.style.display = 'block';
+            msgBox.style.backgroundColor = '#fee2e2';
+            msgBox.style.color = 'var(--error)';
+            msgBox.innerText = 'נא לבחור קטגוריה מהרשימה.';
+            return; // עוצר את השמירה כאן
+        }
+        // -----------------------------------------
         
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> שומר...';
