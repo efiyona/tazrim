@@ -55,7 +55,9 @@ if (mysqli_num_rows($result) > 0) {
         
         // מדפיסים את העיצוב בדיוק כמו ב-index.php
         echo "
-        <div class='transaction-item {$row['type']} {$pending_class}'>
+        <div class='transaction-item {$row['type']} {$pending_class}' 
+        onclick=\"openEditTransModal({$row['id']}, {$row['amount']}, {$row['category']}, '{$safe_desc}', '{$row['type']}')\"
+        style='cursor: pointer;'>
             <div class='transaction-info'>
                 <div class='cat-icon-wrapper'>
                     <i class='fa-solid {$display_icon}'></i>
@@ -73,10 +75,10 @@ if (mysqli_num_rows($result) > 0) {
                     {$symbol} {$amount_formatted} ₪
                 </div>
                 <div style='display:flex; gap: 5px;'>
-                    <button onclick=\"openEditTransModal({$row['id']}, {$row['amount']}, {$row['category']}, '{$safe_desc}', '{$row['type']}')\" style='background: var(--gray); border: none; color: var(--text); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;' title='ערוך פעולה'>
-                        <i class='fa-solid fa-pen' style='font-size: 1rem;'></i>
-                    </button>
-                    <button onclick=\"deleteTransaction({$row['id']})\" style='background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;' title='מחק פעולה'>
+                    <div style='background: var(--gray); color: var(--text); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;' title='ערוך פעולה'>
+                        <i class='fa-solid fa-pen' style='font-size: 0.9rem;'></i>
+                    </div>
+                    <button onclick=\"event.stopPropagation(); deleteTransaction({$row['id']})\" style='background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;' title='מחק פעולה'>
                         <i class='fa-solid fa-trash-can' style='font-size: 1rem;'></i>
                     </button>
                 </div>

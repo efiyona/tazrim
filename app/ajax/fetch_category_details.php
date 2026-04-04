@@ -38,7 +38,9 @@ if ($cat_id) {
             // השם המבצע בסוגריים אפורים קטנים
             $user_badge = $row['user_name'] ? "<span style='font-size: 0.75rem; color: #888; font-weight: normal; margin-right: 5px;'>({$row['user_name']})</span>" : "";
 
-            echo '<div class="transaction-item expense ' . $pending_class . '" style="margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">';
+            echo '<div class="transaction-item expense ' . $pending_class . '" 
+                onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . htmlspecialchars($row['description'], ENT_QUOTES) . '\', \'expense\')"
+                style="margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer;">';
             echo '  <div class="transaction-info">';
             echo '      <div class="cat-icon-wrapper"><i class="fa-solid ' . $icon . '"></i></div>';
             echo '      <div class="details">';
@@ -52,7 +54,7 @@ if ($cat_id) {
             echo '          <button onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . htmlspecialchars($row['description'], ENT_QUOTES) . '\', \'expense\')" style="background: var(--gray); border: none; color: var(--text); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="ערוך פעולה">';
             echo '              <i class="fa-solid fa-pen" style="font-size: 1rem;"></i>';
             echo '          </button>';
-            echo '          <button onclick="deleteTransaction(' . $row['id'] . ')" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק פעולה">';
+            echo '          <button onclick="event.stopPropagation(); deleteTransaction(' . $row['id'] . ')" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק פעולה">';
             echo '              <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>';
             echo '          </button>';
             echo '      </div>';

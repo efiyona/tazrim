@@ -454,7 +454,6 @@ body {
     padding: 25px;
     border-radius: 15px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-    border-right: 5px solid var(--gray);
 }
 
 .stat-card label {
@@ -557,6 +556,10 @@ body {
     .sidebar-overlay.active {
         display: block;
     }
+
+    .stat-card{
+        text-align: center;
+    }
 }
 
 /* =========================================
@@ -573,15 +576,12 @@ body {
     justify-content: space-between;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
     transition: transform 0.2s ease;
-    border-right: 4px solid var(--gray);
 }
 
 .transaction-item:hover {
     transform: scale(1.01);
 }
 
-.transaction-item.income { border-right-color: var(--success); }
-.transaction-item.expense { border-right-color: var(--error); }
 
 .transaction-info {
     display: flex;
@@ -1584,13 +1584,14 @@ body {
        
         
         .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
-        @media (min-width: 768px) { .kpi-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 900px)
+        {
+            .kpi-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+    
+        }
         .kpi-card { background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
-        .kpi-card::before { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 4px; }
-        .kpi-card.income::before { background-color: var(--success); }
-        .kpi-card.expense::before { background-color: var(--error); }
-        .kpi-card.balance::before { background-color: var(--main); }
-        .kpi-card.daily::before { background-color: #f59e0b; }
         .kpi-title { font-size: 0.9rem; color: #666; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .kpi-amount { font-size: 1.6rem; font-weight: 800; color: var(--text); }
         .kpi-amount.success-text { color: var(--success); }
@@ -1691,8 +1692,6 @@ body {
 .notif-footer a { font-size: 0.85rem; font-weight: 700; color: #666; text-decoration: none; }
 
 /* התאמה למובייל */
-/* התאמה למובייל - תיקון רספונסיביות */
-/* התאמה למובייל - ייצוב סופי ומוחלט */
 @media (max-width: 600px) {
     .notifications-dropdown {
         position: fixed !important; /* קיבוע למסך */
@@ -1710,6 +1709,14 @@ body {
     /* מניעת קפיצות בזמן גלילה או תנועה */
     .notifications-dropdown.show {
         display: block !important;
+    }
+
+    .kpi-card {
+        text-align: center;
+    }
+
+    .kpi-title {
+        justify-content: center;
     }
 }
 
@@ -2363,4 +2370,13 @@ body {
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.transaction-item {
+    cursor: pointer; /* סימן של יד */
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.transaction-item:active {
+    background-color: var(--gray-light);
 }

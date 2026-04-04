@@ -15,7 +15,7 @@
 
 <link rel="manifest" href="<?php echo BASE_URL; ?>manifest.json">
 <link rel="icon" type="image/x-icon" href="<?php echo BASE_URL; ?>favicon.ico">
-<meta name="theme-color" content="#237227">
+<meta name="theme-color" content="#29b669">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">

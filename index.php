@@ -160,6 +160,34 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                     </div>
                 </div>
                 
+                <div class="kpi-grid">
+                    <div class="kpi-card income">
+                        <div class="kpi-title">
+                            <i class="fa-solid fa-arrow-trend-up" style="color: var(--success);"></i>
+                            הכנסות החודש
+                            <?php 
+                                $info_label = "הכנסות החודש";
+                                $info_key = "month_income"; 
+                                include(ROOT_PATH . '/assets/includes/info_label.php'); 
+                            ?>
+                        </div>
+                        <div class="kpi-amount success-text"><?php echo number_format($total_income) . '₪'; ?>+</div>
+                    </div>
+                    
+                    <div class="kpi-card expense">
+                        <div class="kpi-title">
+                            <i class="fa-solid fa-arrow-trend-down" style="color: var(--error);"></i>
+                             הוצאות החודש
+                            <?php 
+                                $info_label = "הוצאות החודש";
+                                $info_key = "month_expenses"; // המזהה מהמסד
+                                include(ROOT_PATH . '/assets/includes/info_label.php'); 
+                            ?>                        
+                        </div>
+                        <div class="kpi-amount error-text"><?php echo number_format($total_expense) . '₪'; ?>-</div>
+                    </div>
+                </div>
+                            
                 <div class="stats-grid">
                     <?php if ($initial_balance != 0): ?>
                         <div class="stat-card balance">
@@ -171,33 +199,9 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                                     include(ROOT_PATH . '/assets/includes/info_label.php'); 
                                 ?>
                             </label>
-                            <div class="amount"><?php echo number_format($current_bank_balance, 0); ?> ₪</div>
+                            <div class="amount"><?php echo number_format($current_bank_balance, 0) . '₪'; ?></div>
                         </div>
                     <?php endif; ?>
-                    
-                    <div class="stat-card income">
-                        <label>
-                            הכנסות החודש
-                            <?php 
-                                $info_label = "הכנסות החודש";
-                                $info_key = "month_income"; 
-                                include(ROOT_PATH . '/assets/includes/info_label.php'); 
-                            ?>
-                        </label>
-                        <div class="amount">+ <?php echo number_format($total_income, 0); ?> ₪</div>
-                    </div>
-                    
-                    <div class="stat-card expenses">
-                        <label>
-                            הוצאות החודש
-                            <?php 
-                                $info_label = "הוצאות החודש";
-                                $info_key = "month_expenses"; // המזהה מהמסד
-                                include(ROOT_PATH . '/assets/includes/info_label.php'); 
-                            ?>
-                        </label>
-                        <div class="amount">- <?php echo number_format($total_expense, 0); ?> ₪</div>
-                    </div>
                 </div>
 
                 <?php if (mysqli_num_rows($pending_result) > 0): ?>
@@ -208,7 +212,9 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
                     <div id="pending-transactions-list">
                         <?php while($row = mysqli_fetch_assoc($pending_result)): ?>
-                            <div class="transaction-item <?php echo $row['type']; ?> pending-trans">
+                           <div class="transaction-item <?php echo $row['type']; ?> <?php echo (strtotime($row['transaction_date']) > strtotime($today_il)) ? 'pending-trans' : ''; ?>" 
+                            onclick="openEditTransModal(<?php echo $row['id']; ?>, <?php echo $row['amount']; ?>, <?php echo $row['category']; ?>, '<?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?>', '<?php echo $row['type']; ?>')"
+                            style="cursor: pointer;">
                                 <div class="transaction-info">
                                     <div class="cat-icon-wrapper">
                                         <i class="fa-regular fa-clock"></i> </div>
@@ -225,10 +231,10 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                                         <?php echo ($row['type'] == 'income') ? '+' : '-'; ?> <?php echo number_format($row['amount'], 0); ?> ₪
                                     </div>
                                     <div style="display:flex; gap: 5px;">
-                                        <button onclick="openEditTransModal(<?php echo $row['id']; ?>, <?php echo $row['amount']; ?>, <?php echo $row['category']; ?>, '<?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?>', '<?php echo $row['type']; ?>')" style="background: var(--gray); border: none; color: var(--text); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="ערוך פעולה">
-                                            <i class="fa-solid fa-pen" style="font-size: 1rem;"></i>
-                                        </button>
-                                        <button onclick="deleteTransaction(<?php echo $row['id']; ?>)" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק פעולה">
+                                        <div style="background: var(--gray); color: var(--text); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;" title="ערוך פעולה">
+                                            <i class="fa-solid fa-pen" style="font-size: 0.9rem;"></i>
+                                        </div>
+                                        <button onclick="event.stopPropagation(); deleteTransaction(<?php echo $row['id']; ?>)" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק פעולה">
                                             <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>
                                         </button>
                                     </div>
@@ -252,7 +258,9 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                     <div id="recent-transactions-list">
                         <?php if (mysqli_num_rows($recent_result) > 0): ?>
                             <?php while($row = mysqli_fetch_assoc($recent_result)): ?>
-                                <div class="transaction-item <?php echo $row['type']; ?>">
+                                <div class="transaction-item <?php echo $row['type']; ?> <?php echo (strtotime($row['transaction_date']) > strtotime($today_il)) ? 'pending-trans' : ''; ?>" 
+                                onclick="openEditTransModal(<?php echo $row['id']; ?>, <?php echo $row['amount']; ?>, <?php echo $row['category']; ?>, '<?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?>', '<?php echo $row['type']; ?>')"
+                                style="cursor: pointer;">
                                     <div class="transaction-info">
                                         <div class="cat-icon-wrapper">
                                             <i class="fa-solid <?php echo $row['cat_icon'] ?: 'fa-tag'; ?>"></i> </div>
@@ -269,10 +277,10 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                                             <?php echo ($row['type'] == 'income') ? '+' : '-'; ?> <?php echo number_format($row['amount'], 0); ?> ₪
                                         </div>
                                         <div style="display:flex; gap: 5px;">
-                                            <button onclick="openEditTransModal(<?php echo $row['id']; ?>, <?php echo $row['amount']; ?>, <?php echo $row['category']; ?>, '<?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?>', '<?php echo $row['type']; ?>')" style="background: var(--gray); border: none; color: var(--text); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="ערוך פעולה">
-                                                <i class="fa-solid fa-pen" style="font-size: 1rem;"></i>
-                                            </button>
-                                            <button onclick="deleteTransaction(<?php echo $row['id']; ?>)" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק פעולה">
+                                            <div style="background: var(--gray); color: var(--text); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;" title="ערוך פעולה">
+                                                <i class="fa-solid fa-pen" style="font-size: 0.9rem;"></i>
+                                            </div>
+                                            <button onclick="event.stopPropagation(); deleteTransaction(<?php echo $row['id']; ?>)" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק פעולה">
                                                 <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>
                                             </button>
                                         </div>
