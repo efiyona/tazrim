@@ -302,12 +302,19 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                 </div>
 
                 <section class="budget-section">
-                    <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin: 30px 0 20px;">מעקב תקציב לפי קטגוריה</h2>
+                    <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin: 30px 0 20px;">קטגוריות</h2>
                     
                     <div class="category-grid">
                         <?php while($cat = mysqli_fetch_assoc($result_categories)): 
                             $budget = $cat['budget_limit'];
                             $spent = $cat['current_spending'];
+
+                            // --- הפילטר שלנו: אם אין הוצאות החודש, דלג לקטגוריה הבאה ---
+                            if ($spent == 0) {
+                                continue;
+                            }
+                            // ---------------------------------------------------------
+
                             $percent = ($budget > 0) ? min(($spent / $budget) * 100, 100) : 0;
                             $is_over_budget = ($budget > 0 && $spent > $budget);
                         ?>
