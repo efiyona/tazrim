@@ -365,7 +365,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
             </div>
         </main>
 
-        <button class="floating-btn"><i class="fa-solid fa-plus"></i></button>
     </div>
 
     <div id="category-details-modal" class="modal">

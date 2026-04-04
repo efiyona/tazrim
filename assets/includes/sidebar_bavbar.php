@@ -1,124 +1,74 @@
 <?php
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 
-// הגדרת מבנה התפריטים המרכזי
+// --- הגדרת הניווט המרכזית ---
 $navigation = [
     [
         'name' => 'ראשי',
         'icon' => 'fa-house',
         'url' => BASE_URL . 'index.php',
-        'file' => 'index.php',
-        'show_plus' => true
+        'file' => 'index.php'
     ],
     [
         'name' => 'דוחות',
         'icon' => 'fa-chart-line',
-        'url' => BASE_URL . 'pages/reports.php',
-        'file' => 'reports.php',
-        'show_plus' => true
+        'url' => BASE_URL . 'pages/reports.php', // וודא שהנתיב תואם לתיקיות שלך
+        'file' => 'reports.php'
     ],
     [
         'name' => 'קניות',
-        'icon' => 'fa-cart-shopping',
+        'icon' => 'fa-shopping-cart',
         'url' => BASE_URL . 'pages/shopping.php',
-        'file' => 'shopping.php',
-        'show_plus' => false
+        'file' => 'shopping.php'
     ],
     [
         'name' => 'הגדרות',
         'icon' => 'fa-gear',
         'url' => 'javascript:void(0);',
-        'file' => ['manage_home.php', 'user_profile.php'], // רשימת דפים שגורמת לו להיות פעיל
-        'show_plus' => true,
+        'file' => ['manage_home.php', 'user_profile.php'],
         'submenu' => [
-            [
-                'name' => 'ניהול הבית',
-                'icon' => 'fa-house-chimney-user',
-                'url' => BASE_URL . 'pages/settings/manage_home.php',
-                'file' => 'manage_home.php'
-            ],
-            [
-                'name' => 'החשבון שלי',
-                'icon' => 'fa-user-gear',
-                'url' => BASE_URL . 'pages/settings/user_profile.php',
-                'file' => 'user_profile.php'
-            ]
+            ['name' => 'ניהול הבית', 'icon' => 'fa-house-user', 'url' => BASE_URL . 'pages/settings/manage_home.php', 'file' => 'manage_home.php'],
+            ['name' => 'החשבון שלי', 'icon' => 'fa-user-gear', 'url' => BASE_URL . 'pages/settings/user_profile.php', 'file' => 'user_profile.php']
         ]
     ]
 ];
 
-// פונקציית עזר לבדיקה אם דף נוכחי הוא חלק מתפריט (כולל תתי תפריטים)
+
+$plus_button_configs = [
+    'index.php' => [
+        'show' => true,
+        'modal_id' => 'add-transaction-modal'
+    ],
+    'reports.php' => [
+        'show' => true,
+        'modal_id' => 'filter-reports-modal' 
+    ]
+];
+
+$current_plus = $plus_button_configs[$current_page] ?? ['show' => false];
+
 function isNavActive($nav_item, $current_page) {
     if (isset($nav_item['file'])) {
-        if (is_array($nav_item['file'])) {
-            return in_array($current_page, $nav_item['file']);
-        }
+        if (is_array($nav_item['file'])) return in_array($current_page, $nav_item['file']);
         return $nav_item['file'] === $current_page;
     }
     return false;
 }
 
-// מציאת ההגדרות של הדף הנוכחי
-$current_page_config = null;
-foreach ($navigation as $item) {
-    if (isNavActive($item, $current_page)) {
-        $current_page_config = $item;
-        break;
-    }
-}
-$show_plus_on_this_page = $current_page_config['show_plus'] ?? true;
+// מציאת ההגדרות של הדף הנוכחי לטובת כפתור הפלוס
+$show_plus_on_this_page = $current_plus['show'];
+$target_modal_id = $current_plus['modal_id'] ?? '';
 ?>
 
-<div class="sidebar-overlay" id="overlay"></div>
+<div class="floating-nav-wrapper">
 
-<div class="sidebar-overlay" id="overlay"></div>
-
-<aside class="sidebar">
-    <div class="sidebar-header">
-        <i class="fa-solid fa-wallet"></i>
-        <span>התזרים</span>
-    </div>
-    <nav class="sidebar-nav">
-        <?php foreach ($navigation as $item): ?>
-            <?php if (isset($item['submenu'])): ?>
-                <div class="nav-dropdown <?php echo isNavActive($item, $current_page) ? 'open' : ''; ?>">
-                    <a href="#" class="nav-dropdown-toggle <?php echo isNavActive($item, $current_page) ? 'active' : ''; ?>">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <i class="fa-solid <?php echo $item['icon']; ?>"></i> <?php echo $item['name']; ?>
-                        </div>
-                        <i class="fa-solid fa-chevron-left nav-chevron"></i>
-                    </a>
-                    <div class="nav-submenu">
-                        <?php foreach ($item['submenu'] as $sub): ?>
-                            <a href="<?php echo $sub['url']; ?>" class="<?php echo ($current_page == $sub['file']) ? 'active' : ''; ?>">
-                                <i class="fa-solid <?php echo $sub['icon']; ?>"></i> <?php echo $sub['name']; ?>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php else: ?>
-                <a href="<?php echo $item['url']; ?>" class="<?php echo isNavActive($item, $current_page) ? 'active' : ''; ?>">
-                    <i class="fa-solid <?php echo $item['icon']; ?>"></i> <?php echo $item['name']; ?>
-                </a>
-            <?php endif; ?>
-        <?php endforeach; ?>
-
-        <a href="<?php echo BASE_URL . 'logout.php'; ?>" class="logout-link">
-            <i class="fa-solid fa-right-from-bracket"></i> התנתקות
-        </a>
-    </nav>
-</aside>
-
-<div class="floating-nav-wrapper mobile-only">
-    
     <div class="bottom-nav-bar">
         <ul id="navBarUl">
-            <?php foreach ($navigation as $item): ?>
-                <?php 
-                    $isActive = isNavActive($item, $current_page); 
-                    $hasSub = isset($item['submenu']);
-                ?>
-                <li class="list <?php echo $isActive ? 'active' : ''; ?> <?php echo $hasSub ? 'has-submenu' : ''; ?>">
+            <?php foreach ($navigation as $item): 
+                $active = isNavActive($item, $current_page);
+                $hasSub = isset($item['submenu']);
+            ?>
+                <li class="list <?php echo $active ? 'active' : ''; ?> <?php echo $hasSub ? 'has-submenu' : ''; ?>">
                     <a href="<?php echo $item['url']; ?>" class="nav-main-link">
                         <span class="icon"><i class="fa-solid <?php echo $item['icon']; ?>"></i></span>
                         <span class="text"><?php echo $item['name']; ?></span>
@@ -137,19 +87,10 @@ $show_plus_on_this_page = $current_page_config['show_plus'] ?? true;
             <div class="indicator" id="navIndicator"></div>
         </ul>
     </div>
-
     <?php if ($show_plus_on_this_page): ?>
-    <div class="detached-plus-wrapper has-submenu">
-        <div class="plus-btn-detached">
+    <div class="detached-plus-wrapper">
+        <div class="plus-btn-detached" onclick="openDynamicModal('<?php echo $target_modal_id; ?>')">
             <i class="fa-solid fa-plus"></i>
-        </div>
-        <div class="submenu-popup-container">
-            <a href="javascript:void(0);" onclick="openAddModalWithSelection('expense')" class="submenu-action-btn action-only expense-btn">
-                <i class="fa-solid fa-minus-circle"></i> הוצאה
-            </a>
-            <a href="javascript:void(0);" onclick="openAddModalWithSelection('income')" class="submenu-action-btn action-only income-btn">
-                <i class="fa-solid fa-plus-circle"></i> הכנסה
-            </a>
         </div>
     </div>
     <?php endif; ?>
@@ -275,30 +216,6 @@ $show_plus_on_this_page = $current_page_config['show_plus'] ?? true;
 </style>
 
 <script>
-// --- לוגיקת תפריט מובייל ---
-const menuBtn = document.querySelector('.mobile-menu-btn');
-const sidebar = document.querySelector('.sidebar');
-const overlay = document.getElementById('overlay');
-
-menuBtn.addEventListener('click', () => {
-    sidebar.classList.toggle('mobile-open');
-    overlay.classList.toggle('active');
-});
-
-overlay.addEventListener('click', () => {
-    sidebar.classList.remove('mobile-open');
-    overlay.classList.remove('active');
-});
-
-// --- לוגיקת תפריט צד נפתח (Accordion) ---
-document.querySelectorAll('.nav-dropdown-toggle').forEach(toggle => {
-    toggle.addEventListener('click', function(e) {
-        e.preventDefault(); // מונע קפיצה לראש הדף
-        const parentDropdown = this.parentElement;
-        parentDropdown.classList.toggle('open');
-    });
-});
-
 // --- לוגיקת התראות ---
 document.addEventListener('DOMContentLoaded', function() {
     const notifWrapper = document.getElementById('notifWrapper');
@@ -404,74 +321,95 @@ function updateBadge(count) {
 </script>
 
 <script>
+/**
+ * פונקציה לפתיחת מודאל לפי ID שנשלח מהגדרות העמוד
+ */
+function openDynamicModal(modalId) {
+    if (!modalId) return;
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'block';
+        // נעילת גלילה (אם קיים global_modals.js)
+        document.body.classList.add('no-scroll');
+        
+        // אתחול ספציפי למודאל הוספת פעולה ב-index.php
+        if (modalId === 'add-transaction-modal' && typeof resetAddForm === "function") {
+            resetAddForm();
+        }
+    } else {
+        console.error("Modal not found: " + modalId);
+    }
+}
+
+function toggleNotifications() {
+    const dropdown = document.getElementById('notifDropdown');
+    if (dropdown) dropdown.classList.toggle('show');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const listItems = document.querySelectorAll('.bottom-nav-bar .list');
     const indicator = document.getElementById('navIndicator');
-    const plusWrapper = document.querySelector('.detached-plus-wrapper');
-    const plusBtn = document.querySelector('.plus-btn-detached');
-    
-    if (!indicator) return; // הגנה למחשב
+    const itemWidth = 65; // רוחב האייקון ב-user.css
 
+    // --- תיקון מנוע המיקום האוטומטי (Auto-Alignment) ---
+    // שינוי לוגיקה שתתעדף מרכוז אלא אם באמת יש חריגה מהמסך
+    function calculateAlignment(btn, popup) {
+        popup.classList.remove('align-left', 'align-right', 'align-center');
+        
+        const rect = btn.getBoundingClientRect();
+        const popupWidth = popup.offsetWidth || 150; // הערכת רוחב אם טרם הוצג
+        const screenW = window.innerWidth;
+        
+        // חישוב המרחק של מרכז הכפתור מהקצוות
+        const distFromLeft = rect.left + (rect.width / 2);
+        const distFromRight = screenW - distFromLeft;
+        
+        // אם המרחק מכל צד גדול מחצי רוחב הפופאפ + שוליים בטחון (10px), נמרכז
+        const halfPopup = (popupWidth / 2) + 10;
+        
+        if (distFromLeft < halfPopup) {
+            popup.classList.add('align-left');
+        } else if (distFromRight < halfPopup) {
+            popup.classList.add('align-right');
+        } else {
+            popup.classList.add('align-center');
+        }
+    }
+
+    // ניהול הזזת האינדיקטור
     function moveIndicator(targetLi) {
         const items = Array.from(targetLi.parentElement.children).filter(c => c.classList.contains('list'));
         const index = items.indexOf(targetLi);
-        indicator.style.transform = `translateX(${index * -60}px)`;
+        indicator.style.transform = `translateX(${index * -itemWidth}px)`;
     }
 
-    // מיקום ראשוני
     const initialActive = document.querySelector('.bottom-nav-bar .list.active');
     if (initialActive) moveIndicator(initialActive);
 
-    function calculateAlignment(btn, popup) {
-        popup.classList.remove('align-left', 'align-right', 'align-center');
-        const rect = btn.getBoundingClientRect();
-        const screenW = window.innerWidth;
-        if (rect.left < 50) popup.classList.add('align-left');
-        else if (rect.right > screenW - 50) popup.classList.add('align-right');
-        else popup.classList.add('align-center');
-    }
-
+    // לחיצה על תפריטים עם תת-תפריט
     listItems.forEach(item => {
         const link = item.querySelector('.nav-main-link');
         link.addEventListener('click', (e) => {
             if (item.classList.contains('has-submenu')) {
                 e.preventDefault();
                 const popup = item.querySelector('.submenu-popup-container');
-                calculateAlignment(item, popup);
+                
+                // חישוב מיקום מחדש בכל פתיחה
+                if (!item.classList.contains('show-submenu')) {
+                    calculateAlignment(item, popup);
+                }
+                
                 listItems.forEach(li => { if(li !== item) li.classList.remove('show-submenu') });
                 item.classList.toggle('show-submenu');
             }
         });
     });
 
-    if (plusBtn) {
-        plusBtn.addEventListener('click', () => {
-            const popup = plusWrapper.querySelector('.submenu-popup-container');
-            calculateAlignment(plusWrapper, popup);
-            plusWrapper.classList.toggle('open');
-        });
-    }
-
+    // סגירה בלחיצה בחוץ
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.floating-nav-wrapper')) {
-            document.querySelectorAll('.show-submenu, .open').forEach(el => el.classList.remove('show-submenu', 'open'));
+            document.querySelectorAll('.show-submenu').forEach(el => el.classList.remove('show-submenu'));
         }
     });
 });
-
-// פונקציה לפתיחת מודאל הוספה עם בחירה מראש
-function openAddModalWithSelection(type) {
-    // מפעיל את כפתור הפתיחה המקורי שיש ב-index.php
-    const floatingBtn = document.querySelector('.floating-btn');
-    if (floatingBtn) floatingBtn.click();
-    
-    // בוחר את סוג הפעולה בטופס
-    const radio = document.getElementById('type-' + type);
-    if (radio) {
-        radio.checked = true;
-        filterCategories(); // מעדכן את הרשימה
-    }
-}
 </script>
-
-<?php include(ROOT_PATH . '/assets/includes/global_info_modal.php'); ?>
