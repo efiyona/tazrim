@@ -2501,3 +2501,96 @@ body {
 body.no-scroll {
     overflow: hidden;
 }
+
+/* =========================================
+   Floating Mobile Navigation (תפריט מובייל צף)
+========================================= */
+.mobile-only { display: none; }
+
+@media (max-width: 900px) {
+    .mobile-only { display: flex; }
+    .floating-btn { display: none; } /* מבטל את הכפתור הישן */
+    
+    .floating-nav-wrapper {
+        position: fixed; bottom: 25px; left: 50%;
+        transform: translateX(-50%); display: flex;
+        align-items: flex-end; gap: 12px; z-index: 2100;
+        max-width: 95vw; direction: rtl;
+    }
+
+    .bottom-nav-bar {
+        background: var(--white); height: 60px;
+        border-radius: 35px; box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        padding: 0 10px; display: flex; align-items: center;
+    }
+
+    .bottom-nav-bar ul { display: flex; position: relative; list-style: none; padding: 0; margin: 0; }
+    .bottom-nav-bar ul li.list { position: relative; width: 60px; height: 60px; z-index: 1; }
+
+    .nav-main-link {
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; width: 100%; height: 100%; text-decoration: none;
+    }
+
+    .nav-main-link .icon {
+        font-size: 1.25rem; transition: 0.5s; color: var(--text-light);
+    }
+
+    .list.active .nav-main-link .icon { transform: translateY(-30px); color: var(--white); }
+    
+    /* אנימציה להגדרות פתוחות */
+    .list.show-submenu:not(.active) .nav-main-link .icon { color: var(--main); transform: rotate(90deg); }
+    .list.active.show-submenu .nav-main-link .icon { transform: translateY(-30px) rotate(90deg); }
+
+    .nav-main-link .text {
+        position: absolute; font-weight: 700; font-size: 0.7rem;
+        transition: 0.5s; opacity: 0; transform: translateY(20px); color: var(--main);
+    }
+
+    .list.active .nav-main-link .text { opacity: 1; transform: translateY(10px); }
+
+    .indicator {
+        position: absolute; top: -30px; width: 60px; height: 60px;
+        background: var(--main); border-radius: 50%;
+        border: 6px solid var(--gray); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* הפלוס המנותק */
+    .plus-btn-detached {
+        width: 55px; height: 55px; background: var(--main);
+        border-radius: 50%; color: white; display: flex;
+        justify-content: center; align-items: center; font-size: 1.4rem;
+        box-shadow: 0 6px 15px rgba(35,114,39,0.3); cursor: pointer; transition: 0.3s;
+    }
+    .detached-plus-wrapper.open .plus-btn-detached { transform: scale(0.9) rotate(45deg); background: #888; }
+
+    /* בועות תת-תפריט */
+    .submenu-popup-container {
+        display: flex; flex-direction: column; gap: 8px;
+        position: absolute; opacity: 0; visibility: hidden;
+        transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 20;
+    }
+    .bottom-nav-bar .submenu-popup-container { bottom: 75px; }
+    .list.active .submenu-popup-container { bottom: 105px; }
+    .detached-plus-wrapper .submenu-popup-container { bottom: 70px; }
+
+    .show-submenu .submenu-popup-container, .open .submenu-popup-container { opacity: 1; visibility: visible; }
+
+    /* כפתורי גלולה פנימיים */
+    .submenu-action-btn {
+        display: flex; align-items: center; justify-content: center;
+        padding: 0 20px; gap: 10px; width: max-content; min-width: 130px;
+        height: 45px; border-radius: 25px; background: rgba(255,255,255,0.98);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15); text-decoration: none;
+        color: var(--text); font-weight: 700; font-size: 0.9rem; border: 1px solid #eee;
+    }
+    .submenu-action-btn.active-page { background: var(--main-light); color: var(--main); border-color: var(--main); }
+    .expense-btn { color: var(--error); }
+    .income-btn { color: var(--main); }
+    
+    /* יישורים אוטומטיים */
+    .submenu-popup-container.align-center { right: 50%; transform: translateX(50%) translateY(20px); }
+    .show-submenu .submenu-popup-container.align-center, .open .submenu-popup-container.align-center { transform: translateX(50%) translateY(0); }
+    .submenu-popup-container.align-left { left: 0; transform: translateY(20px); }
+    .show-submenu .submenu-popup-container.align-left, .open .submenu-popup-container.align-left { transform: translateY(0); }
+}

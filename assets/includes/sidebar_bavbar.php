@@ -1,11 +1,75 @@
 <?php
-// מזהה את שם הקובץ הנוכחי (למשל: index.php או manage_home.php)
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 
-// מערך שמכיל את כל דפי ההגדרות, כדי שהתפריט יישאר פתוח אם גולשים בהם
-$settings_pages = ['manage_home.php', 'user_profile.php'];
-$is_settings_active = in_array($current_page, $settings_pages);
+// הגדרת מבנה התפריטים המרכזי
+$navigation = [
+    [
+        'name' => 'ראשי',
+        'icon' => 'fa-house',
+        'url' => BASE_URL . 'index.php',
+        'file' => 'index.php',
+        'show_plus' => true
+    ],
+    [
+        'name' => 'דוחות',
+        'icon' => 'fa-chart-line',
+        'url' => BASE_URL . 'pages/reports.php',
+        'file' => 'reports.php',
+        'show_plus' => true
+    ],
+    [
+        'name' => 'קניות',
+        'icon' => 'fa-cart-shopping',
+        'url' => BASE_URL . 'pages/shopping.php',
+        'file' => 'shopping.php',
+        'show_plus' => false
+    ],
+    [
+        'name' => 'הגדרות',
+        'icon' => 'fa-gear',
+        'url' => 'javascript:void(0);',
+        'file' => ['manage_home.php', 'user_profile.php'], // רשימת דפים שגורמת לו להיות פעיל
+        'show_plus' => true,
+        'submenu' => [
+            [
+                'name' => 'ניהול הבית',
+                'icon' => 'fa-house-chimney-user',
+                'url' => BASE_URL . 'pages/settings/manage_home.php',
+                'file' => 'manage_home.php'
+            ],
+            [
+                'name' => 'החשבון שלי',
+                'icon' => 'fa-user-gear',
+                'url' => BASE_URL . 'pages/settings/user_profile.php',
+                'file' => 'user_profile.php'
+            ]
+        ]
+    ]
+];
+
+// פונקציית עזר לבדיקה אם דף נוכחי הוא חלק מתפריט (כולל תתי תפריטים)
+function isNavActive($nav_item, $current_page) {
+    if (isset($nav_item['file'])) {
+        if (is_array($nav_item['file'])) {
+            return in_array($current_page, $nav_item['file']);
+        }
+        return $nav_item['file'] === $current_page;
+    }
+    return false;
+}
+
+// מציאת ההגדרות של הדף הנוכחי
+$current_page_config = null;
+foreach ($navigation as $item) {
+    if (isNavActive($item, $current_page)) {
+        $current_page_config = $item;
+        break;
+    }
+}
+$show_plus_on_this_page = $current_page_config['show_plus'] ?? true;
 ?>
+
+<div class="sidebar-overlay" id="overlay"></div>
 
 <div class="sidebar-overlay" id="overlay"></div>
 
@@ -15,41 +79,81 @@ $is_settings_active = in_array($current_page, $settings_pages);
         <span>התזרים</span>
     </div>
     <nav class="sidebar-nav">
-        <a href="<?php echo BASE_URL . 'index.php'; ?>" class="<?php echo ($current_page == 'index.php') ? 'active' : ''; ?>">
-            <i class="fa-solid fa-house"></i> דף הבית
-        </a>
-        <a href="<?php echo BASE_URL . 'pages/shopping.php'; ?>" class="<?php echo ($current_page == 'shopping.php') ? 'active' : ''; ?>">
-            <i class="fa-solid fa-cart-shopping"></i> רשימת קניות
-        </a>
-        <a href="<?php echo BASE_URL . 'pages/reports.php'; ?>" class="<?php echo ($current_page == 'reports.php') ? 'active' : ''; ?>">
-            <i class="fa-solid fa-chart-line"></i> דוחות
-        </a>
-        
-        
-        <hr>
-        <div class="nav-dropdown <?php echo $is_settings_active ? 'open' : ''; ?>">
-            <a href="#" class="nav-dropdown-toggle <?php echo $is_settings_active ? 'active' : ''; ?>">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <i class="fa-solid fa-gear"></i> הגדרות
+        <?php foreach ($navigation as $item): ?>
+            <?php if (isset($item['submenu'])): ?>
+                <div class="nav-dropdown <?php echo isNavActive($item, $current_page) ? 'open' : ''; ?>">
+                    <a href="#" class="nav-dropdown-toggle <?php echo isNavActive($item, $current_page) ? 'active' : ''; ?>">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fa-solid <?php echo $item['icon']; ?>"></i> <?php echo $item['name']; ?>
+                        </div>
+                        <i class="fa-solid fa-chevron-left nav-chevron"></i>
+                    </a>
+                    <div class="nav-submenu">
+                        <?php foreach ($item['submenu'] as $sub): ?>
+                            <a href="<?php echo $sub['url']; ?>" class="<?php echo ($current_page == $sub['file']) ? 'active' : ''; ?>">
+                                <i class="fa-solid <?php echo $sub['icon']; ?>"></i> <?php echo $sub['name']; ?>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
-                <i class="fa-solid fa-chevron-left nav-chevron"></i>
-            </a>
-            
-            <div class="nav-submenu">
-                <a href="<?php echo BASE_URL . 'pages/settings/manage_home.php'; ?>" class="<?php echo ($current_page == 'manage_home.php') ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-house-chimney-user"></i> הגדרות הבית
+            <?php else: ?>
+                <a href="<?php echo $item['url']; ?>" class="<?php echo isNavActive($item, $current_page) ? 'active' : ''; ?>">
+                    <i class="fa-solid <?php echo $item['icon']; ?>"></i> <?php echo $item['name']; ?>
                 </a>
-                <a href="<?php echo BASE_URL . 'pages/settings/user_profile.php'; ?>" class="<?php echo ($current_page == 'user_profile.php') ? 'active' : ''; ?>">
-                    <i class="fa-solid fa-user-gear"></i> החשבון שלי
-                </a>
-            </div>
-        </div>
+            <?php endif; ?>
+        <?php endforeach; ?>
 
         <a href="<?php echo BASE_URL . 'logout.php'; ?>" class="logout-link">
             <i class="fa-solid fa-right-from-bracket"></i> התנתקות
         </a>
     </nav>
 </aside>
+
+<div class="floating-nav-wrapper mobile-only">
+    
+    <div class="bottom-nav-bar">
+        <ul id="navBarUl">
+            <?php foreach ($navigation as $item): ?>
+                <?php 
+                    $isActive = isNavActive($item, $current_page); 
+                    $hasSub = isset($item['submenu']);
+                ?>
+                <li class="list <?php echo $isActive ? 'active' : ''; ?> <?php echo $hasSub ? 'has-submenu' : ''; ?>">
+                    <a href="<?php echo $item['url']; ?>" class="nav-main-link">
+                        <span class="icon"><i class="fa-solid <?php echo $item['icon']; ?>"></i></span>
+                        <span class="text"><?php echo $item['name']; ?></span>
+                    </a>
+                    <?php if ($hasSub): ?>
+                        <div class="submenu-popup-container">
+                            <?php foreach ($item['submenu'] as $sub): ?>
+                                <a href="<?php echo $sub['url']; ?>" class="submenu-action-btn nav-page-link <?php echo ($current_page == $sub['file']) ? 'active-page' : ''; ?>">
+                                    <i class="fa-solid <?php echo $sub['icon']; ?>"></i> <?php echo $sub['name']; ?>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+            <div class="indicator" id="navIndicator"></div>
+        </ul>
+    </div>
+
+    <?php if ($show_plus_on_this_page): ?>
+    <div class="detached-plus-wrapper has-submenu">
+        <div class="plus-btn-detached">
+            <i class="fa-solid fa-plus"></i>
+        </div>
+        <div class="submenu-popup-container">
+            <a href="javascript:void(0);" onclick="openAddModalWithSelection('expense')" class="submenu-action-btn action-only expense-btn">
+                <i class="fa-solid fa-minus-circle"></i> הוצאה
+            </a>
+            <a href="javascript:void(0);" onclick="openAddModalWithSelection('income')" class="submenu-action-btn action-only income-btn">
+                <i class="fa-solid fa-plus-circle"></i> הכנסה
+            </a>
+        </div>
+    </div>
+    <?php endif; ?>
+</div>
 
 <main class="main-content">
     
@@ -295,6 +399,77 @@ function updateBadge(count) {
         badge.style.display = 'flex';
     } else {
         badge.style.display = 'none';
+    }
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const listItems = document.querySelectorAll('.bottom-nav-bar .list');
+    const indicator = document.getElementById('navIndicator');
+    const plusWrapper = document.querySelector('.detached-plus-wrapper');
+    const plusBtn = document.querySelector('.plus-btn-detached');
+    
+    if (!indicator) return; // הגנה למחשב
+
+    function moveIndicator(targetLi) {
+        const items = Array.from(targetLi.parentElement.children).filter(c => c.classList.contains('list'));
+        const index = items.indexOf(targetLi);
+        indicator.style.transform = `translateX(${index * -60}px)`;
+    }
+
+    // מיקום ראשוני
+    const initialActive = document.querySelector('.bottom-nav-bar .list.active');
+    if (initialActive) moveIndicator(initialActive);
+
+    function calculateAlignment(btn, popup) {
+        popup.classList.remove('align-left', 'align-right', 'align-center');
+        const rect = btn.getBoundingClientRect();
+        const screenW = window.innerWidth;
+        if (rect.left < 50) popup.classList.add('align-left');
+        else if (rect.right > screenW - 50) popup.classList.add('align-right');
+        else popup.classList.add('align-center');
+    }
+
+    listItems.forEach(item => {
+        const link = item.querySelector('.nav-main-link');
+        link.addEventListener('click', (e) => {
+            if (item.classList.contains('has-submenu')) {
+                e.preventDefault();
+                const popup = item.querySelector('.submenu-popup-container');
+                calculateAlignment(item, popup);
+                listItems.forEach(li => { if(li !== item) li.classList.remove('show-submenu') });
+                item.classList.toggle('show-submenu');
+            }
+        });
+    });
+
+    if (plusBtn) {
+        plusBtn.addEventListener('click', () => {
+            const popup = plusWrapper.querySelector('.submenu-popup-container');
+            calculateAlignment(plusWrapper, popup);
+            plusWrapper.classList.toggle('open');
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.floating-nav-wrapper')) {
+            document.querySelectorAll('.show-submenu, .open').forEach(el => el.classList.remove('show-submenu', 'open'));
+        }
+    });
+});
+
+// פונקציה לפתיחת מודאל הוספה עם בחירה מראש
+function openAddModalWithSelection(type) {
+    // מפעיל את כפתור הפתיחה המקורי שיש ב-index.php
+    const floatingBtn = document.querySelector('.floating-btn');
+    if (floatingBtn) floatingBtn.click();
+    
+    // בוחר את סוג הפעולה בטופס
+    const radio = document.getElementById('type-' + type);
+    if (radio) {
+        radio.checked = true;
+        filterCategories(); // מעדכן את הרשימה
     }
 }
 </script>
