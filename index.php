@@ -141,7 +141,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
                 <div class="page-header-actions flex-between" style="margin-bottom: 25px;">
                     <div style="display: flex; align-items: center; gap: 15px;">
-                        <h1 class="section-title" style="margin-bottom: 0;">סיכום חודשי</h1>
+                        <h1 class="section-title" style="margin-bottom: 0;">נתוני החודש</h1>
                     </div>
                     
                     <div class="month-selector">
@@ -164,9 +164,9 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                     <div class="kpi-card income">
                         <div class="kpi-title">
                             <i class="fa-solid fa-arrow-trend-up" style="color: var(--success);"></i>
-                            הכנסות החודש
+                             הכנסות
                             <?php 
-                                $info_label = "הכנסות";
+                                $info_label = "הכנסות החודש";
                                 $info_key = "month_income"; 
                                 include(ROOT_PATH . '/assets/includes/info_label.php'); 
                             ?>
@@ -177,9 +177,9 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                     <div class="kpi-card expense">
                         <div class="kpi-title">
                             <i class="fa-solid fa-arrow-trend-down" style="color: var(--error);"></i>
-                             הוצאות החודש
+                             הוצאות
                             <?php 
-                                $info_label = "הוצאות";
+                                $info_label = "הוצאות החודש";
                                 $info_key = "month_expenses"; // המזהה מהמסד
                                 include(ROOT_PATH . '/assets/includes/info_label.php'); 
                             ?>                        
