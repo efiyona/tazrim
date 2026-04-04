@@ -2380,3 +2380,119 @@ body {
 .transaction-item:active {
     background-color: var(--gray-light);
 }
+
+/* =========================================
+   Custom Select Box (בורר קטגוריות מתקדם)
+========================================= */
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+    user-select: none;
+    margin-top: 5px;
+}
+
+.custom-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    background-color: var(--input-bg);
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.custom-select-trigger:hover, .custom-select-wrapper.open .custom-select-trigger {
+    border-color: var(--main);
+    background-color: var(--white);
+}
+
+.custom-select-wrapper.open .custom-select-trigger {
+    box-shadow: 0 0 0 4px var(--main-light);
+}
+
+.selected-cat-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.selected-cat-info i {
+    color: var(--text-light);
+    width: 24px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+/* צובע את האייקון הנבחר בירוק */
+.custom-select-wrapper.open .selected-cat-info i,
+.custom-select-wrapper:hover .selected-cat-info i {
+    color: var(--main);
+}
+
+.custom-select-options {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 1px solid #eee;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+}
+
+.custom-select-wrapper.open .custom-select-options {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.custom-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    cursor: pointer;
+    transition: 0.2s;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.custom-option:last-child {
+    border-bottom: none;
+}
+
+.custom-option:hover {
+    background-color: var(--main-light);
+    color: var(--main);
+}
+
+.custom-option:hover i {
+    color: var(--main);
+}
+
+.custom-option i {
+    color: var(--text-light);
+    width: 24px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.custom-option span {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+/* עיצוב פס הגלילה הפנימי של התפריט */
+.custom-select-options::-webkit-scrollbar { width: 6px; }
+.custom-select-options::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 10px; }

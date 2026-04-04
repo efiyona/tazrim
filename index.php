@@ -13,20 +13,16 @@ if (isset($_GET['m']) && isset($_GET['y'])) {
     $selected_month = (int)$_GET['m'];
     $selected_year = (int)$_GET['y'];
     
-    // אבטחת תאריכים
     if ($selected_month < 1 || $selected_month > 12) { $selected_month = (int)date('m'); }
     if ($selected_year < 2000 || $selected_year > 2100) { $selected_year = (int)date('Y'); }
 
-    // שמירה בזיכרון
     $_SESSION['view_month'] = $selected_month;
     $_SESSION['view_year'] = $selected_year;
 } else {
-    // משיכה מהזיכרון, ואם אין - ברירת מחדל לחודש הנוכחי
     $selected_month = $_SESSION['view_month'] ?? (int)date('m');
     $selected_year = $_SESSION['view_year'] ?? (int)date('Y');
 }
 
-// הגדרת חודש קודם והבא (לכפתורי הניווט)
 $prev_month = $selected_month - 1;
 $prev_year = $selected_year;
 if ($prev_month == 0) { $prev_month = 12; $prev_year--; }
@@ -35,7 +31,6 @@ $next_month = $selected_month + 1;
 $next_year = $selected_year;
 if ($next_month == 13) { $next_month = 1; $next_year++; }
 
-// מערך שמות חודשים בעברית
 $hebrew_months = [
     1 => 'ינואר', 2 => 'פברואר', 3 => 'מרץ', 4 => 'אפריל', 
     5 => 'מאי', 6 => 'יוני', 7 => 'יולי', 8 => 'אוגוסט', 
@@ -43,11 +38,9 @@ $hebrew_months = [
 ];
 $month_name = $hebrew_months[$selected_month];
 
-// 1. שליפת נתוני הבית וחישוב יתרת מציאות
 $home_data = selectOne('homes', ['id' => $home_id]);
 $initial_balance = $home_data['initial_balance'] ?? 0;
 
-// לוגיקה שמרנית: הכנסות נספרות רק עד היום (כולל), הוצאות נספרות תמיד (כולל עתידיות)
 $real_balance_query = "SELECT 
     COALESCE(SUM(CASE WHEN type = 'income' AND transaction_date <= '$today_il' THEN amount ELSE 0 END), 0) - 
     COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as net_balance
@@ -58,7 +51,6 @@ $balance_result = mysqli_query($conn, $real_balance_query);
 $balance_data = mysqli_fetch_assoc($balance_result);
 $current_bank_balance = $initial_balance + $balance_data['net_balance'];
 
-// 2. חישוב הכנסות החודש
 $month_income_query = "SELECT SUM(amount) as total FROM transactions 
                        WHERE home_id = $home_id AND type = 'income' 
                        AND MONTH(transaction_date) = $selected_month 
@@ -67,7 +59,6 @@ $result_income = mysqli_query($conn, $month_income_query);
 $income_data = mysqli_fetch_assoc($result_income);
 $total_income = $income_data['total'] ?? 0;
 
-// 3. חישוב הוצאות החודש
 $month_expense_query = "SELECT SUM(amount) as total FROM transactions 
                         WHERE home_id = $home_id AND type = 'expense' 
                         AND MONTH(transaction_date) = $selected_month 
@@ -76,9 +67,8 @@ $result_expense = mysqli_query($conn, $month_expense_query);
 $expense_data = mysqli_fetch_assoc($result_expense);
 $total_expense = $expense_data['total'] ?? 0;
 
-$limit = 4; // כמות ראשונית להצגה
+$limit = 4;
 
-// 1. שאילתת ממתינות (עתידיות) - מוגבל ל-4
 $pending_query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name 
                   FROM transactions t 
                   LEFT JOIN categories c ON t.category = c.id 
@@ -91,7 +81,6 @@ $pending_query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name
                   LIMIT $limit";
 $pending_result = mysqli_query($conn, $pending_query);
 
-// 2. שאילתת אחרונות (עבר) - מוגבל ל-4
 $recent_query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name 
                  FROM transactions t 
                  LEFT JOIN categories c ON t.category = c.id 
@@ -104,7 +93,6 @@ $recent_query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name
                  LIMIT $limit";
 $recent_result = mysqli_query($conn, $recent_query);
 
-/// 5. שאילתה לשליפת קטגוריות עם סיכום הוצאות חודשי - ממוין מהגבוה לנמוך
 $categories_budget_query = "SELECT 
                             c.id, c.name, c.icon, c.budget_limit,
                             COALESCE(SUM(CASE 
@@ -118,7 +106,7 @@ $categories_budget_query = "SELECT
                         AND c.type = 'expense'
                         AND c.is_active = 1
                         GROUP BY c.id, c.name, c.icon, c.budget_limit
-                        ORDER BY current_spending DESC"; // הוספת המיון כאן
+                        ORDER BY current_spending DESC";
 $result_categories = mysqli_query($conn, $categories_budget_query);
 ?>
 
@@ -167,7 +155,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                              הוצאות
                             <?php 
                                 $info_label = "הוצאות החודש";
-                                $info_key = "month_expenses"; // המזהה מהמסד
+                                $info_key = "month_expenses"; 
                                 include(ROOT_PATH . '/assets/includes/info_label.php'); 
                             ?>                        
                         </div>
@@ -194,7 +182,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                                 יתרה בחשבון
                                 <?php 
                                     $info_label = "יתרה בחשבון";
-                                    $info_key = "real_balance"; // המזהה מהמסד
+                                    $info_key = "real_balance"; 
                                     include(ROOT_PATH . '/assets/includes/info_label.php'); 
                                 ?>
                             </label>
@@ -309,11 +297,9 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                             $budget = $cat['budget_limit'];
                             $spent = $cat['current_spending'];
 
-                            // --- הפילטר שלנו: אם אין הוצאות החודש, דלג לקטגוריה הבאה ---
                             if ($spent == 0) {
                                 continue;
                             }
-                            // ---------------------------------------------------------
 
                             $percent = ($budget > 0) ? min(($spent / $budget) * 100, 100) : 0;
                             $is_over_budget = ($budget > 0 && $spent > $budget);
@@ -389,8 +375,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                 <button onclick="closeCatDetails()" class="close-modal-btn">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="cat-details-content">
-                    </div>
+                <div id="cat-details-content"></div>
             </div>
         </div>
     </div>
@@ -439,8 +424,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
                     <div class="input-group">
                         <label>קטגוריה</label>
-                        <div class="category-grid-selector" id="category-grid-container">
-                            </div>
+                        <div id="category-grid-container"></div>
                         <input type="hidden" name="category_id" id="selected-category-id" required>
                     </div>
 
@@ -498,7 +482,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
                     <div class="input-group">
                         <label>קטגוריה</label>
-                        <div class="category-grid-selector" id="edit-category-grid-container"></div>
+                        <div id="edit-category-grid-container"></div>
                         <input type="hidden" name="category_id" id="edit-selected-category-id" required>
                     </div>
 
@@ -518,11 +502,9 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
     const currentMonth = <?php echo $selected_month; ?>;
     const currentYear = <?php echo $selected_year; ?>;
 
-    // ניהול מונים נפרדים לשני האזורים
     let recentOffset = 4;
     let pendingOffset = 4;
 
-    // 1. מאזין לכפתור טעינת פעולות אחרונות
     document.getElementById('loadMoreBtn')?.addEventListener('click', function() {
         if (this.getAttribute('data-state') === 'expanded') {
             collapseTransactions('recent', 'recent-transactions-list', this);
@@ -531,7 +513,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         loadTransactions('recent', recentOffset, 'recent-transactions-list', this);
     });
 
-    // 2. מאזין לכפתור טעינת פעולות ממתינות
     document.getElementById('loadMorePendingBtn')?.addEventListener('click', function() {
         if (this.getAttribute('data-state') === 'expanded') {
             collapseTransactions('pending', 'pending-transactions-list', this);
@@ -540,7 +521,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         loadTransactions('pending', pendingOffset, 'pending-transactions-list', this);
     });
 
-    // פונקציה חכמה אחת שטוענת נתונים לפי סוג (status)
     function loadTransactions(status, offset, containerId, btn) {
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> טוען...';
@@ -554,18 +534,15 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                 if (html.trim() === "" || html.trim() === "NO_MORE") {
                     setButtonToExpanded(btn);
                 } else {
-                    // עוטפים את הנתונים החדשים בקלאס ייעודי כדי שנוכל למחוק רק אותם בסגירה
                     const wrappedHtml = `<div class="ajax-loaded-${status}">${html}</div>`;
                     document.getElementById(containerId).insertAdjacentHTML('beforeend', wrappedHtml);
                     
-                    // מקדמים את המונה רק אחרי טעינה מוצלחת
                     if (status === 'recent') recentOffset += 4;
                     if (status === 'pending') pendingOffset += 4;
 
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                     
-                    // בודקים אם הגענו לסוף הרשימה (פחות מ-4 פעולות חזרו)
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = html;
                     if (tempDiv.querySelectorAll('.transaction-item').length < 4) {
@@ -580,7 +557,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
             });
     }
 
-    // פונקציה שהופכת את הכפתור ל"סגור רשימה"
     function setButtonToExpanded(btn) {
         btn.innerText = 'סגור רשימה';
         btn.disabled = false;
@@ -588,22 +564,17 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         btn.style.backgroundColor = 'var(--gray)';
     }
 
-    // פונקציה שכווצת חזרה רשימה ספציפית
     function collapseTransactions(status, containerId, btn) {
-        // מחיקת כל הבלוקים שנטענו ב-AJAX עבור הסטטוס הספציפי
         const loadedItems = document.querySelectorAll(`.ajax-loaded-${status}`);
         loadedItems.forEach(item => item.remove());
         
-        // איפוס המונה הרלוונטי
         if (status === 'recent') recentOffset = 4;
         if (status === 'pending') pendingOffset = 4;
         
-        // החזרת הכפתור למצבו המקורי
         btn.innerHTML = status === 'pending' ? 'הצג עוד ממתינות...' : 'הצג עוד...';
         btn.removeAttribute('data-state');
-        btn.style.backgroundColor = ''; // מחזיר לעיצוב הרגיל של ה-CSS
+        btn.style.backgroundColor = ''; 
         
-        // גלילה חלקה חזרה לראש האזור
         document.getElementById(containerId).parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -659,6 +630,90 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
     
     const allCategories = <?php echo json_encode($categories_array); ?>;
 
+    // === מנוע ה-Custom Select (בורר הקטגוריות החדש) ===
+    function buildCustomSelect(containerId, hiddenInputId, type, selectedId = null) {
+        const container = document.getElementById(containerId);
+        const hiddenInput = document.getElementById(hiddenInputId);
+        
+        container.innerHTML = '';
+        
+        const filteredCats = allCategories.filter(cat => cat.type === type);
+        
+        if (filteredCats.length === 0) {
+            container.innerHTML = '<div style="color:var(--error); font-size:0.9rem; padding: 10px;">לא נמצאו קטגוריות</div>';
+            hiddenInput.value = '';
+            return;
+        }
+
+        let selectedCat = filteredCats.find(cat => cat.id == selectedId);
+        if (!selectedCat) {
+            selectedCat = filteredCats[0];
+        }
+        hiddenInput.value = selectedCat.id;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'custom-select-wrapper';
+        
+        const iconClassInit = selectedCat.icon ? selectedCat.icon : 'fa-tag';
+        
+        let optionsHTML = '';
+        filteredCats.forEach(cat => {
+            const iconClass = cat.icon ? cat.icon : 'fa-tag';
+            optionsHTML += `
+                <div class="custom-option" data-value="${cat.id}" data-name="${cat.name}" data-icon="${iconClass}">
+                    <i class="fa-solid ${iconClass}"></i> <span>${cat.name}</span>
+                </div>
+            `;
+        });
+
+        wrapper.innerHTML = `
+            <div class="custom-select-trigger">
+                <div class="selected-cat-info">
+                    <i class="fa-solid ${iconClassInit}" style="color: var(--main);"></i> <span>${selectedCat.name}</span>
+                </div>
+                <i class="fa-solid fa-chevron-down" style="color: #ccc; font-size: 0.9rem;"></i>
+            </div>
+            <div class="custom-select-options">
+                ${optionsHTML}
+            </div>
+        `;
+        
+        container.appendChild(wrapper);
+
+        const trigger = wrapper.querySelector('.custom-select-trigger');
+        const options = wrapper.querySelectorAll('.custom-option');
+        
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+                if(w !== wrapper) w.classList.remove('open');
+            });
+            wrapper.classList.toggle('open');
+        });
+
+        options.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const val = this.getAttribute('data-value');
+                const name = this.getAttribute('data-name');
+                const icon = this.getAttribute('data-icon');
+                
+                hiddenInput.value = val;
+                wrapper.querySelector('.selected-cat-info').innerHTML = `<i class="fa-solid ${icon}" style="color: var(--main);"></i> <span>${name}</span>`;
+                
+                wrapper.classList.remove('open');
+            });
+        });
+    }
+
+    // סגירת כל הדרופדאונים בלחיצה בחוץ
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+            w.classList.remove('open');
+        });
+    });
+
+
     floatingBtn.addEventListener('click', () => {
         addModal.style.display = 'block';
         resetAddForm(); 
@@ -685,40 +740,8 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
     function filterCategories() {
         const selectedType = document.querySelector('input[name="type"]:checked').value;
-        const gridContainer = document.getElementById('category-grid-container');
-        const hiddenInput = document.getElementById('selected-category-id');
-        
-        gridContainer.innerHTML = ''; 
-        hiddenInput.value = ''; 
-
-        allCategories.forEach(cat => {
-            if (cat.type === selectedType) {
-                const label = document.createElement('label');
-                label.className = 'cat-tile';
-                
-                const radio = document.createElement('input');
-                radio.type = 'radio';
-                radio.name = 'cat_tile_selection'; 
-                radio.value = cat.id;
-                
-                radio.addEventListener('change', function() {
-                    hiddenInput.value = this.value;
-                });
-
-                const tileContent = document.createElement('div');
-                tileContent.className = 'tile-content';
-                
-                const iconClass = cat.icon ? cat.icon : 'fa-tag';
-                tileContent.innerHTML = `
-                    <div class="cat-icon"><i class="fa-solid ${iconClass}"></i></div>
-                    <span class="cat-name-label">${cat.name}</span>
-                `;
-
-                label.appendChild(radio);
-                label.appendChild(tileContent);
-                gridContainer.appendChild(label);
-            }
-        });
+        // קורא לפונקציה החדשה שלנו שבונות את הדרופדאון
+        buildCustomSelect('category-grid-container', 'selected-category-id', selectedType);
     }
 
     addForm.addEventListener('submit', function(e) {
@@ -770,12 +793,11 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         });
     });
 
-    window.onclick = function(event) {
-        const catDetailsModal = document.getElementById('category-details-modal');
-        if (event.target == catDetailsModal) {
-            catDetailsModal.style.display = "none";
+    window.addEventListener('click', function(event) {
+        if (event.target == addModal) {
+            closeAddModal();
         }
-    }
+    });
 </script>
 
 <script>
@@ -791,7 +813,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
             .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
-                    window.location.reload(); // רענון כדי לעדכן את כל הגרפים והמספרים
+                    window.location.reload();
                 } else {
                     alert('שגיאה במחיקה: ' + (data.message || 'אירעה שגיאה.'));
                 }
@@ -814,38 +836,9 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         document.getElementById('edit-trans-amount').value = amount;
         document.getElementById('edit-trans-desc').value = desc;
         document.getElementById('edit-trans-type').value = type;
-        document.getElementById('edit-selected-category-id').value = categoryId;
         
-        // יצירת גריד הקטגוריות בהתאם לסוג (הוצאה/הכנסה)
-        const gridContainer = document.getElementById('edit-category-grid-container');
-        gridContainer.innerHTML = '';
-        
-        allCategories.forEach(cat => {
-            if (cat.type === type) {
-                const label = document.createElement('label');
-                label.className = 'cat-tile';
-                
-                const radio = document.createElement('input');
-                radio.type = 'radio';
-                radio.name = 'edit_cat_tile_selection'; 
-                radio.value = cat.id;
-                if(cat.id == categoryId) radio.checked = true;
-                
-                radio.addEventListener('change', function() {
-                    document.getElementById('edit-selected-category-id').value = this.value;
-                });
-
-                const iconClass = cat.icon ? cat.icon : 'fa-tag';
-                label.innerHTML = `
-                    <div class="tile-content">
-                        <div class="cat-icon"><i class="fa-solid ${iconClass}"></i></div>
-                        <span class="cat-name-label">${cat.name}</span>
-                    </div>
-                `;
-                label.insertBefore(radio, label.firstChild);
-                gridContainer.appendChild(label);
-            }
-        });
+        // יצירת הדרופדאון החדש בפופאפ העריכה
+        buildCustomSelect('edit-category-grid-container', 'edit-selected-category-id', type, categoryId);
 
         editModal.style.display = 'block';
     }
@@ -895,7 +888,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         });
     });
 
-    // סגירת הפופאפ בלחיצה בחוץ
     window.addEventListener('click', function(event) {
         if (event.target == editModal) {
             closeEditTransModal();
@@ -903,4 +895,3 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
     });
 </script>
 </html>
-
