@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>טסט תפריט ניווט תחתון צף - גרסה 2</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f3f4f6;       
+            --nav-bg: #ffffff;         
+            --main-color: #29b669;     
+            --text-color: #666666;
+            --income-color: #237227;   
+            --expense-color: #dc2626;  
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Assistant', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            min-height: 100vh;
+            background: var(--bg-color);
+            padding-bottom: 30px; 
+        }
+
+        /* 2. המעטפת החדשה: מחזיקה את התפריט בצד אחד ואת הפלוס בצד שני */
+        .floating-nav-wrapper {
+            position: fixed;
+            bottom: 30px;
+            display: flex;
+            align-items: flex-end; /* מיישר את הפלוס והתפריט לתחתית */
+            gap: 15px; /* הרווח בין התפריט לפלוס */
+            z-index: 100;
+        }
+
+        /* הבר הצף הראשי (4 אייקונים) */
+        .bottom-nav-bar {
+            background: var(--nav-bg);
+            height: 70px;
+            border-radius: 40px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+            padding: 0 10px; /* ריווח פנימי קל בקצוות */
+            display: flex;
+            align-items: center;
+        }
+
+        .bottom-nav-bar ul {
+            display: flex;
+            position: relative; /* קריטי כדי שהעיגול ירוץ בתוכו במדויק */
+            list-style: none;
+        }
+
+        /* קיבוע רוחב מוחלט כדי שהמתמטיקה של העיגול תהיה מושלמת */
+        .bottom-nav-bar ul li.list {
+            position: relative;
+            width: 70px; 
+            height: 70px;
+            z-index: 1;
+        }
+
+        .bottom-nav-bar ul li.list > a {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .bottom-nav-bar ul li.list > a .icon {
+            position: relative;
+            display: block;
+            line-height: 70px; 
+            font-size: 1.4rem;
+            text-align: center;
+            transition: 0.5s;
+            color: var(--text-color);
+        }
+
+        /* קפיצת האייקון למעלה */
+        .bottom-nav-bar ul li.list.active > a .icon {
+            transform: translateY(-35px); 
+            color: #fff;
+        }
+
+        .bottom-nav-bar ul li.list > a .text {
+            position: absolute;
+            color: var(--text-color);
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            transition: 0.5s;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .bottom-nav-bar ul li.list.active > a .text {
+            opacity: 1;
+            transform: translateY(12px);
+            color: var(--main-color);
+        }
+
+        /* =========================================
+           1. התיקון של האינדיקטור (העיגול שזז)
+        ========================================= */
+        .indicator {
+            position: absolute;
+            top: -35px; /* חצי מגובה העיגול כדי שייצא למעלה */
+            right: 0; /* מתחיל בדיוק מהקצה הימני של ה-ul */
+            width: 70px; /* תואם לרוחב ה-li */
+            height: 70px;
+            background: var(--main-color);
+            border-radius: 50%;
+            border: 6px solid var(--bg-color); /* יוצר את אפקט הניתוק מהרקע */
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* אנימציה אלסטית רכה */
+            z-index: 0;
+        }
+
+        /* הפינות המעוגלות של החיתוך (Masking) */
+        .indicator::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: -22px;
+            width: 20px; height: 20px;
+            background: transparent;
+            border-top-right-radius: 20px;
+            box-shadow: 1px -10px 0 0 var(--bg-color);
+        }
+
+        .indicator::after {
+            content: '';
+            position: absolute;
+            top: 50%; right: -22px;
+            width: 20px; height: 20px;
+            background: transparent;
+            border-top-left-radius: 20px;
+            box-shadow: -1px -10px 0 0 var(--bg-color);
+        }
+
+        /* תזוזה מדויקת בכפולות של 70 פיקסלים שמאלה (בערך שלילי כי זה RTL) */
+        .bottom-nav-bar ul li.list:nth-child(1).active ~ .indicator { transform: translateX(0); }
+        .bottom-nav-bar ul li.list:nth-child(2).active ~ .indicator { transform: translateX(-70px); }
+        .bottom-nav-bar ul li.list:nth-child(3).active ~ .indicator { transform: translateX(-140px); }
+        .bottom-nav-bar ul li.list:nth-child(4).active ~ .indicator { transform: translateX(-210px); }
+
+        /* =========================================
+           כפתור הפלוס (מופרד לחלוטין משמאל)
+        ========================================= */
+        .detached-plus-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .plus-btn-detached {
+            width: 60px;
+            height: 60px;
+            background: var(--main-color);
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.6rem;
+            box-shadow: 0 8px 20px rgba(35,114,39,0.3);
+            cursor: pointer;
+            transition: 0.3s;
+            margin-bottom: 5px; /* מיישר אותו יפה ביחס לתפריט העגלגל */
+        }
+
+        .detached-plus-wrapper.open .plus-btn-detached {
+            transform: scale(0.9) rotate(45deg); 
+            background: #888; 
+            box-shadow: none;
+        }
+
+        /* תת תפריט פלוס */
+        .plus-submenu-popup {
+            display: flex;
+            gap: 12px;
+            position: absolute;
+            bottom: 80px; 
+            right: 50%; /* מרכוז מוחלט ב-RTL */
+            transform: translateX(50%) translateY(20px);
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .detached-plus-wrapper.open .plus-submenu-popup {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(50%) translateY(0);
+        }
+
+        .submenu-action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            background: white;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 800;
+            font-size: 0.8rem;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+
+        .submenu-action-btn i { font-size: 1.4rem; margin-bottom: 6px; }
+        .submenu-action-btn.expense-btn { color: var(--expense-color); }
+        .submenu-action-btn.expense-btn:hover { border-color: var(--expense-color); background: #fee2e2; }
+        .submenu-action-btn.income-btn { color: var(--income-color); }
+        .submenu-action-btn.income-btn:hover { border-color: var(--income-color); background: #f0fdf4; }
+
+        /* =========================================
+           תת תפריט הגדרות מודרני
+        ========================================= */
+        .nav-submenu-popup {
+            position: absolute;
+            bottom: 85px; 
+            right: 50%; /* מרכוז ב-RTL */
+            transform: translateX(50%) translateY(20px) scale(0.9);
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px); 
+            border-radius: 18px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 170px;
+            padding: 8px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .bottom-nav-bar ul li.list.show-submenu .nav-submenu-popup {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(50%) translateY(0) scale(1);
+        }
+
+        .nav-submenu-popup a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border-radius: 12px;
+            transition: 0.2s;
+        }
+
+        .nav-submenu-popup a i {
+            font-size: 1.1rem;
+            color: var(--main-color);
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-submenu-popup a:hover {
+            background-color: var(--bg-color);
+            color: var(--main-color);
+            transform: translateX(-3px);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="floating-nav-wrapper">
+        
+        <div class="bottom-nav-bar">
+            <ul>
+                <li class="list active" id="navHome">
+                    <a href="#home">
+                        <span class="icon"><i class="fa-solid fa-house"></i></span>
+                        <span class="text">ראשי</span>
+                    </a>
+                </li>
+                <li class="list" id="navReports">
+                    <a href="#reports">
+                        <span class="icon"><i class="fa-solid fa-chart-pie"></i></span>
+                        <span class="text">דוחות</span>
+                    </a>
+                </li>
+                <li class="list" id="navBudget">
+                    <a href="#budget">
+                        <span class="icon"><i class="fa-solid fa-wallet"></i></span>
+                        <span class="text">תקציב</span>
+                    </a>
+                </li>
+                
+                <li class="list has-submenu" id="navSettings">
+                    <a href="javascript:void(0);">
+                        <span class="icon"><i class="fa-solid fa-gear"></i></span>
+                        <span class="text">הגדרות</span>
+                    </a>
+                    <div class="nav-submenu-popup">
+                        <a href="#manage-home"><i class="fa-solid fa-house-user"></i> ניהול הבית</a>
+                        <a href="#profile"><i class="fa-solid fa-user-gear"></i> פרופיל שלי</a>
+                    </div>
+                </li>
+
+                <div class="indicator"></div>
+            </ul>
+        </div>
+
+        <div class="detached-plus-wrapper" id="plusMenuWrapper">
+            <div class="plus-btn-detached" onclick="togglePlusMenu()">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+            <div class="plus-submenu-popup">
+                <a href="#add-expense" class="submenu-action-btn expense-btn">
+                    <i class="fa-solid fa-minus-circle"></i> הוצאה
+                </a>
+                <a href="#add-income" class="submenu-action-btn income-btn">
+                    <i class="fa-solid fa-plus-circle"></i> הכנסה
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+        const listItems = document.querySelectorAll('.bottom-nav-bar .list');
+
+        // לוגיקת ניווט רגיל
+        listItems.forEach((item) => {
+            item.addEventListener('click', function(e) {
+                // מונע השתלטות אם לוחצים על הלינקים הפנימיים של ההגדרות
+                if (e.target.closest('.nav-submenu-popup')) return;
+
+                const hasSubmenu = this.classList.contains('has-submenu');
+                const isShowingSubmenu = this.classList.contains('show-submenu');
+
+                // הגיוני לסגור את תפריט הפלוס אם בחרנו לנווט לעמוד אחר
+                document.getElementById('plusMenuWrapper').classList.remove('open');
+
+                // מנקה את המצבים מהכפתורים האחרים ומזיז את העיגול
+                listItems.forEach((li) => {
+                    li.classList.remove('active');
+                    li.classList.remove('show-submenu');
+                });
+                this.classList.add('active');
+
+                // פותח את תת התפריט של ההגדרות אם צריך
+                if (hasSubmenu) {
+                    if (!isShowingSubmenu) {
+                        this.classList.add('show-submenu');
+                    } else {
+                        this.classList.remove('show-submenu');
+                    }
+                }
+            });
+        });
+
+        // לוגיקת כפתור הפלוס (עכשיו מנותקת לחלוטין מהעיגול הירוק!)
+        function togglePlusMenu() {
+            const plusWrapper = document.getElementById('plusMenuWrapper');
+            const isOpened = plusWrapper.classList.contains('open');
+            
+            // סוגר את תת תפריט ההגדרות אם הוא פתוח (כדי שלא יסתירו אחד את השני)
+            document.querySelectorAll('.has-submenu').forEach(li => {
+                li.classList.remove('show-submenu');
+            });
+
+            if (!isOpened) {
+                plusWrapper.classList.add('open');
+                // הסרנו מכאן את הפקודה שכיבתה את האייקונים בבר הראשי!
+            } else {
+                plusWrapper.classList.remove('open');
+            }
+        }
+
+        // סגירה חכמה של תתי תפריטים אם לוחצים בכל מקום אחר במסך
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.floating-nav-wrapper')) {
+                document.querySelectorAll('.has-submenu').forEach(li => {
+                    li.classList.remove('show-submenu');
+                });
+                document.getElementById('plusMenuWrapper').classList.remove('open');
+            }
+        });
+    </script>
+
+</body>
+</html>
