@@ -32,6 +32,7 @@ if (isset($_POST['login_btn'])) {
             // התחברות מוצלחת - יצירת סשן
             $_SESSION['id'] = $user['id'];
             $_SESSION['first_name'] = $user['first_name'];
+            $_SESSION['last_name'] = $user['last_name'];
             $_SESSION['nickname'] = $user['nickname'];
             $_SESSION['home_id'] = $user['home_id'];
             $_SESSION['role'] = $user['role'];
@@ -161,6 +162,8 @@ if (isset($_POST['register_btn'])) {
             // 5. התחברות אוטומטית והפניה
             $_SESSION['id'] = $user_id;
             $_SESSION['first_name'] = $first_name;
+            $_SESSION['last_name'] = $last_name;
+            $_SESSION['nickname'] = $user['nickname'];
             $_SESSION['home_id'] = $target_home_id;
             $_SESSION['role'] = $userData['role'];
 

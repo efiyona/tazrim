@@ -116,26 +116,29 @@ while($row = mysqli_fetch_assoc($budget_result)) {
 
         <main class="content-wrapper">
             
-            <div class="page-header-actions" style="margin-bottom: 20px;">
-                <h1 class="section-title" style="margin-bottom: 0;">דוחות ותובנות</h1>
-                <p style="color: var(--text-light); font-size: 0.9rem; margin-top: 5px;">ניתוח פיננסי מעמיק ומעקב תקציבים</p>
-            </div>
+            <?php 
+                $is_current_month = ($current_month == date('m') && $current_year == date('Y')); 
+            ?>
 
-            <div class="month-navigator">
-                <a href="reports.php?m=<?php echo $next_month; ?>&y=<?php echo $next_year; ?>" class="month-nav-btn">
-                    <i class="fa-solid fa-chevron-right"></i> הבא
-                </a>
-                
-                <div class="current-month-display">
-                    <?php echo $month_names[$current_month] . " " . $current_year; ?>
-                    <?php if($current_month != date('m') || $current_year != date('Y')): ?>
-                        <a href="reports.php?m=<?php echo date('m'); ?>&y=<?php echo date('Y'); ?>" style="font-size: 0.8rem; display: block; text-align: center; text-decoration: none; color: #888; margin-top: 5px;">חזור לנוכחי</a>
-                        <?php endif; ?>
+            <div class="page-header-actions flex-between" style="margin-bottom: 25px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <h1 class="section-title" style="margin-bottom: 0;">דוחות ותובנות</h1>
                 </div>
                 
-                <a href="reports.php?m=<?php echo $prev_month; ?>&y=<?php echo $prev_year; ?>" class="month-nav-btn">
-                    קודם <i class="fa-solid fa-chevron-left"></i>
-                </a>
+                <div class="month-selector">
+                    <?php if (!$is_current_month): ?>
+                        <a href="<?php echo BASE_URL . '/pages/reports.php?m=' . date('m') . '&y=' . date('Y'); ?>" class="btn-return-today">
+                             היום
+                        </a>
+                    <?php endif; ?>
+                    <a href="?m=<?php echo $prev_month; ?>&y=<?php echo $prev_year; ?>" class="month-btn"><i class="fa-solid fa-chevron-right"></i></a>
+                    
+                    <div class="current-month-display">
+                        <?php echo $month_names[$current_month] . ' ' . $current_year; ?>
+                    </div>
+                    
+                    <a href="?m=<?php echo $next_month; ?>&y=<?php echo $next_year; ?>" class="month-btn"><i class="fa-solid fa-chevron-left"></i></a>
+                </div>
             </div>
 
             <div class="kpi-grid">

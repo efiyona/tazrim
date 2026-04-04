@@ -13,6 +13,7 @@ if (!isset($_SESSION['id'])) {
         if ($user) {
             $_SESSION['id'] = $user['id'];
             $_SESSION['first_name'] = $user['first_name'];
+            $_SESSION['last_name'] = $user['last_name'];
             $_SESSION['nickname'] = $user['nickname'];
             $_SESSION['home_id'] = $user['home_id'];
             $_SESSION['role'] = $user['role'];

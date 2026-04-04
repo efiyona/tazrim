@@ -59,7 +59,7 @@ $is_settings_active = in_array($current_page, $settings_pages);
             
             <div class="user-profile-section">
                 <div class="user-avatar">
-                    <img src="https://ui-avatars.com/api/?name=<?php echo $_SESSION['first_name']; ?>&background=237227&color=fff" alt="פרופיל">
+                    <img src="https://ui-avatars.com/api/?name=<?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>&background=29b669&color=fff" alt="פרופיל">
                 </div>
                 <div class="user-details-text">
                     <span class="welcome-text">ברוכים הבאים!</span>

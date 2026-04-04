@@ -142,19 +142,18 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                 <div class="page-header-actions flex-between" style="margin-bottom: 25px;">
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <h1 class="section-title" style="margin-bottom: 0;">סיכום חודשי</h1>
-                        
-                        <?php if (!$is_current_month): ?>
-                            <a href="index.php?m=<?php echo date('m'); ?>&y=<?php echo date('Y'); ?>" class="btn-return-today">
-                                <i class="fa-solid fa-calendar-day"></i> הנוכחי
-                            </a>
-                        <?php endif; ?>
                     </div>
                     
                     <div class="month-selector">
+                        <?php if (!$is_current_month): ?>
+                            <a href="<?php echo BASE_URL . '/pages/reports.php?m=' . date('m') . '&y=' . date('Y'); ?>" class="btn-return-today">
+                                היום
+                            </a>
+                        <?php endif; ?>
                         <a href="?m=<?php echo $prev_month; ?>&y=<?php echo $prev_year; ?>" class="month-btn"><i class="fa-solid fa-chevron-right"></i></a>
                         
                         <div class="current-month-display">
-                            <i class="fa-regular fa-calendar"></i> <?php echo $month_name . ' ' . $selected_year; ?>
+                            <?php echo $month_name . ' ' . $selected_year; ?>
                         </div>
                         
                         <a href="?m=<?php echo $next_month; ?>&y=<?php echo $next_year; ?>" class="month-btn"><i class="fa-solid fa-chevron-left"></i></a>
