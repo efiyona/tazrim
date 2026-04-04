@@ -161,19 +161,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                 </div>
                 
                 <div class="kpi-grid">
-                    <div class="kpi-card income">
-                        <div class="kpi-title">
-                            <i class="fa-solid fa-arrow-trend-up" style="color: var(--success);"></i>
-                             הכנסות
-                            <?php 
-                                $info_label = "הכנסות החודש";
-                                $info_key = "month_income"; 
-                                include(ROOT_PATH . '/assets/includes/info_label.php'); 
-                            ?>
-                        </div>
-                        <div class="kpi-amount success-text"><?php echo number_format($total_income) . '₪'; ?>+</div>
-                    </div>
-                    
                     <div class="kpi-card expense">
                         <div class="kpi-title">
                             <i class="fa-solid fa-arrow-trend-down" style="color: var(--error);"></i>
@@ -185,6 +172,18 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                             ?>                        
                         </div>
                         <div class="kpi-amount error-text"><?php echo number_format($total_expense) . '₪'; ?>-</div>
+                    </div>
+                    <div class="kpi-card income">
+                        <div class="kpi-title">
+                            <i class="fa-solid fa-arrow-trend-up" style="color: var(--success);"></i>
+                             הכנסות
+                            <?php 
+                                $info_label = "הכנסות החודש";
+                                $info_key = "month_income"; 
+                                include(ROOT_PATH . '/assets/includes/info_label.php'); 
+                            ?>
+                        </div>
+                        <div class="kpi-amount success-text"><?php echo number_format($total_income) . '₪'; ?>+</div>
                     </div>
                 </div>
                             
