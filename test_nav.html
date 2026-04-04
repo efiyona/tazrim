@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>טסט תפריט ניווט תחתון צף - מנוע מיקום אוטומטי</title>
+    <title>טסט תפריט ניווט תחתון צף - מנוע דינמי 100%</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -46,126 +46,6 @@
         }
 
         /* =========================================
-           הבר הראשי
-        ========================================= */
-        .bottom-nav-bar {
-            background: var(--nav-bg);
-            height: 60px; 
-            border-radius: 35px; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.06); 
-            padding: 0 10px; 
-            display: flex;
-            align-items: center;
-        }
-
-        .bottom-nav-bar ul {
-            display: flex;
-            position: relative; 
-            list-style: none;
-        }
-
-        .bottom-nav-bar ul li.list {
-            position: relative;
-            width: 60px; 
-            height: 60px;
-            z-index: 1;
-        }
-
-        .bottom-nav-bar ul li.list > a {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            width: 100%;
-            height: 100%;
-            text-align: center;
-            font-weight: 500;
-            text-decoration: none;
-        }
-
-        .bottom-nav-bar ul li.list > a .icon {
-            position: relative;
-            display: block;
-            line-height: 60px; 
-            font-size: 1.25rem; 
-            text-align: center;
-            transition: 0.5s;
-            color: var(--text-color);
-        }
-
-        .bottom-nav-bar ul li.list.active > a .icon {
-            transform: translateY(-30px); 
-            color: #fff;
-        }
-
-        .bottom-nav-bar ul li.list.show-submenu:not(.active) > a .icon {
-            color: var(--main-color);
-            transform: rotate(90deg);
-        }
-        .bottom-nav-bar ul li.list.show-submenu:not(.active) > a .text {
-            color: var(--main-color);
-        }
-        .bottom-nav-bar ul li.list.active.show-submenu > a .icon {
-            transform: translateY(-30px) rotate(90deg);
-        }
-
-        .bottom-nav-bar ul li.list > a .text {
-            position: absolute;
-            color: var(--text-color);
-            font-weight: 700;
-            font-size: 0.7rem;
-            letter-spacing: 0.02em;
-            transition: 0.5s;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        .bottom-nav-bar ul li.list.active > a .text {
-            opacity: 1;
-            transform: translateY(10px);
-            color: var(--main-color);
-        }
-
-        .indicator {
-            position: absolute;
-            top: -30px; 
-            right: 0; 
-            width: 60px; 
-            height: 60px;
-            background: var(--main-color);
-            border-radius: 50%;
-            border: 6px solid var(--bg-color); 
-            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            z-index: 0;
-        }
-
-        .indicator::before {
-            content: '';
-            position: absolute;
-            top: 50%; left: -22px;
-            width: 20px; height: 20px;
-            background: transparent;
-            border-top-right-radius: 20px;
-            box-shadow: 1px -10px 0 0 var(--bg-color);
-        }
-
-        .indicator::after {
-            content: '';
-            position: absolute;
-            top: 50%; right: -22px;
-            width: 20px; height: 20px;
-            background: transparent;
-            border-top-left-radius: 20px;
-            box-shadow: -1px -10px 0 0 var(--bg-color);
-        }
-
-        .bottom-nav-bar ul li.list:nth-child(1).active ~ .indicator { transform: translateX(0); }
-        .bottom-nav-bar ul li.list:nth-child(2).active ~ .indicator { transform: translateX(-60px); }
-        .bottom-nav-bar ul li.list:nth-child(3).active ~ .indicator { transform: translateX(-120px); }
-        .bottom-nav-bar ul li.list:nth-child(4).active ~ .indicator { transform: translateX(-180px); }
-
-        /* =========================================
            כפתור הפלוס
         ========================================= */
         .detached-plus-wrapper {
@@ -198,7 +78,123 @@
         }
 
         /* =========================================
-           מכלול הבועות הקופצות - מיקום אוטומטי!
+           הבר הראשי הדינמי
+        ========================================= */
+        .bottom-nav-bar {
+            background: var(--nav-bg);
+            height: 60px; 
+            border-radius: 35px; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06); 
+            padding: 0 10px; 
+            display: flex;
+            align-items: center;
+        }
+
+        .bottom-nav-bar ul {
+            display: flex;
+            position: relative; 
+            list-style: none;
+        }
+
+        .bottom-nav-bar ul li.list {
+            position: relative;
+            width: 60px; 
+            height: 60px;
+            z-index: 1;
+        }
+
+        .bottom-nav-bar ul li.list > a.nav-main-link {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .bottom-nav-bar ul li.list > a.nav-main-link .icon {
+            position: relative;
+            display: block;
+            line-height: 60px; 
+            font-size: 1.25rem; 
+            text-align: center;
+            transition: 0.5s;
+            color: var(--text-color);
+        }
+
+        .bottom-nav-bar ul li.list.active > a.nav-main-link .icon {
+            transform: translateY(-30px); 
+            color: #fff;
+        }
+
+        .bottom-nav-bar ul li.list.show-submenu:not(.active) > a.nav-main-link .icon {
+            color: var(--main-color);
+            transform: rotate(90deg);
+        }
+        .bottom-nav-bar ul li.list.show-submenu:not(.active) > a.nav-main-link .text {
+            color: var(--main-color);
+        }
+        .bottom-nav-bar ul li.list.active.show-submenu > a.nav-main-link .icon {
+            transform: translateY(-30px) rotate(90deg);
+        }
+
+        .bottom-nav-bar ul li.list > a.nav-main-link .text {
+            position: absolute;
+            color: var(--text-color);
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.02em;
+            transition: 0.5s;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .bottom-nav-bar ul li.list.active > a.nav-main-link .text {
+            opacity: 1;
+            transform: translateY(10px);
+            color: var(--main-color);
+        }
+
+        /* האינדיקטור עכשיו זז רק על ידי JavaScript! (אין יותר hardcoded CSS) */
+        .indicator {
+            position: absolute;
+            top: -30px; 
+            right: 0; /* JS יחשב את המיקום משמאל/ימין */
+            width: 60px; 
+            height: 60px;
+            background: var(--main-color);
+            border-radius: 50%;
+            border: 6px solid var(--bg-color); 
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            z-index: 0;
+        }
+
+        .indicator::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: -22px;
+            width: 20px; height: 20px;
+            background: transparent;
+            border-top-right-radius: 20px;
+            box-shadow: 1px -10px 0 0 var(--bg-color);
+        }
+
+        .indicator::after {
+            content: '';
+            position: absolute;
+            top: 50%; right: -22px;
+            width: 20px; height: 20px;
+            background: transparent;
+            border-top-left-radius: 20px;
+            box-shadow: -1px -10px 0 0 var(--bg-color);
+        }
+
+        /* =========================================
+           תתי תפריטים אוניברסליים (אוניברסלי לכל כפתור!)
         ========================================= */
         .submenu-popup-container {
             display: flex;
@@ -211,51 +207,34 @@
             z-index: 10;
         }
 
-        .plus-submenu { bottom: 70px; }
-        .settings-submenu { bottom: 75px; }
+        /* גובה דינמי אוניברסלי */
+        .detached-plus-wrapper .submenu-popup-container { bottom: 70px; }
+        .bottom-nav-bar .submenu-popup-container { bottom: 75px; }
 
-        /* -- מצבי חשיפה (האנימציה משתנה בהתאם לכיוון) -- */
-        
-        /* 1. מצב ממורכז (ברירת מחדל לאמצע) */
-        .submenu-popup-container.align-center {
-            right: 50%;
-            left: auto;
-            transform: translateX(50%) translateY(20px);
+        /* קפיצה דינמית לכל תת-תפריט אם אבא שלו 'פעיל' וקפץ למעלה */
+        .bottom-nav-bar ul li.list.active .submenu-popup-container { bottom: 105px; }
+
+        /* חשיפת התפריטים */
+        .detached-plus-wrapper.open .submenu-popup-container,
+        .bottom-nav-bar ul li.list.show-submenu .submenu-popup-container {
+            opacity: 1;
+            visibility: visible;
         }
+
+        /* מנוע יישור (מוזן מ-JS) */
+        .submenu-popup-container.align-center { right: 50%; left: auto; transform: translateX(50%) translateY(20px); }
         .detached-plus-wrapper.open .submenu-popup-container.align-center,
-        .bottom-nav-bar ul li.list.show-submenu .submenu-popup-container.align-center {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(50%) translateY(0);
-        }
+        .bottom-nav-bar ul li.list.show-submenu .submenu-popup-container.align-center { transform: translateX(50%) translateY(0); }
 
-        /* 2. מצב הצמדה ימינה (לכפתורים בצד ימין של המסך) */
-        .submenu-popup-container.align-right {
-            right: 0;
-            left: auto;
-            transform: translateX(0) translateY(20px);
-        }
+        .submenu-popup-container.align-right { right: 0; left: auto; transform: translateX(0) translateY(20px); }
         .detached-plus-wrapper.open .submenu-popup-container.align-right,
-        .bottom-nav-bar ul li.list.show-submenu .submenu-popup-container.align-right {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(0) translateY(0);
-        }
+        .bottom-nav-bar ul li.list.show-submenu .submenu-popup-container.align-right { transform: translateX(0) translateY(0); }
 
-        /* 3. מצב הצמדה שמאלה (לכפתורים בצד שמאל של המסך - כמו הפלוס שלנו כרגע) */
-        .submenu-popup-container.align-left {
-            left: 0;
-            right: auto;
-            transform: translateX(0) translateY(20px);
-        }
+        .submenu-popup-container.align-left { left: 0; right: auto; transform: translateX(0) translateY(20px); }
         .detached-plus-wrapper.open .submenu-popup-container.align-left,
-        .bottom-nav-bar ul li.list.show-submenu .submenu-popup-container.align-left {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(0) translateY(0);
-        }
+        .bottom-nav-bar ul li.list.show-submenu .submenu-popup-container.align-left { transform: translateX(0) translateY(0); }
 
-        /* עיצוב הגלולה */
+        /* עיצוב כפתורי הפעולה הפנימיים */
         .submenu-action-btn {
             display: flex;
             flex-direction: row; 
@@ -282,7 +261,7 @@
         .submenu-action-btn i { font-size: 1.1rem; }
 
         .submenu-action-btn:hover {
-            transform: translateY(-2px); /* שינינו לקפיצה למעלה כדי להתאים לכל הכיוונים */
+            transform: translateY(-2px); 
             color: var(--main-color);
             border-color: var(--main-color);
             box-shadow: 0 10px 20px rgba(41, 182, 105, 0.15);
@@ -293,8 +272,8 @@
             border-color: var(--main) !important;
             color: var(--main) !important;
         }
-
         .submenu-action-btn.active-page i { color: var(--main) !important; }
+
         .submenu-action-btn.expense-btn { color: var(--expense-color); }
         .submenu-action-btn.expense-btn:hover { border-color: var(--expense-color); background: #fee2e2; }
         .submenu-action-btn.income-btn { color: var(--main-color); } 
@@ -305,171 +284,196 @@
 <body>
 
     <div class="floating-nav-wrapper">
-        
+
         <div class="bottom-nav-bar">
-            <ul>
-                <li class="list active" id="navHome">
-                    <a href="#home">
+            <ul id="navBarUl">
+                <li class="list active">
+                    <a href="#home" class="nav-main-link">
                         <span class="icon"><i class="fa-solid fa-house"></i></span>
                         <span class="text">ראשי</span>
                     </a>
                 </li>
-                <li class="list" id="navReports">
-                    <a href="#reports">
+                
+                <li class="list">
+                    <a href="#reports" class="nav-main-link">
                         <span class="icon"><i class="fa-solid fa-chart-pie"></i></span>
                         <span class="text">דוחות</span>
                     </a>
                 </li>
-                <li class="list" id="navBudget">
-                    <a href="#budget">
+                
+                <li class="list">
+                    <a href="#budget" class="nav-main-link">
                         <span class="icon"><i class="fa-solid fa-wallet"></i></span>
                         <span class="text">תקציב</span>
                     </a>
                 </li>
                 
-                <li class="list has-submenu" id="navSettings">
-                    <a href="javascript:void(0);">
+                <li class="list has-submenu">
+                    <a href="javascript:void(0);" class="nav-main-link">
                         <span class="icon"><i class="fa-solid fa-gear"></i></span>
                         <span class="text">הגדרות</span>
                     </a>
-                    
-                    <div class="submenu-popup-container settings-submenu">
-                        <a href="#manage-home" class="submenu-action-btn sim-settings-click">
+                    <div class="submenu-popup-container">
+                        <a href="#manage-home" class="submenu-action-btn nav-page-link">
                             <i class="fa-solid fa-house-user"></i> ניהול הבית
                         </a>
-                        <a href="#profile" class="submenu-action-btn sim-settings-click">
+                        <a href="#profile" class="submenu-action-btn nav-page-link">
                             <i class="fa-solid fa-user-gear"></i> פרופיל שלי
                         </a>
                     </div>
                 </li>
 
-                <div class="indicator"></div>
+                <div class="indicator" id="navIndicator"></div>
             </ul>
         </div>
 
-        <div class="detached-plus-wrapper" id="plusMenuWrapper">
-            <div class="plus-btn-detached" onclick="togglePlusMenu()">
+        <div class="detached-plus-wrapper has-submenu">
+            <div class="plus-btn-detached">
                 <i class="fa-solid fa-plus"></i>
             </div>
             
-            <div class="submenu-popup-container plus-submenu">
-                <a href="#add-expense" class="submenu-action-btn expense-btn" onclick="closeAllMenus()">
+            <div class="submenu-popup-container">
+                <a href="#add-expense" class="submenu-action-btn action-only expense-btn">
                     <i class="fa-solid fa-minus-circle"></i> הוצאה
                 </a>
-                <a href="#add-income" class="submenu-action-btn income-btn" onclick="closeAllMenus()">
+                <a href="#add-income" class="submenu-action-btn action-only income-btn">
                     <i class="fa-solid fa-plus-circle"></i> הכנסה
                 </a>
             </div>
         </div>
-
+        
     </div>
 
     <script>
-        const listItems = document.querySelectorAll('.bottom-nav-bar .list');
-        let lastActiveNav = document.getElementById('navHome');
+        document.addEventListener('DOMContentLoaded', () => {
+            const listItems = document.querySelectorAll('.bottom-nav-bar .list');
+            const indicator = document.getElementById('navIndicator');
+            const plusWrapper = document.querySelector('.detached-plus-wrapper');
+            const plusBtn = document.querySelector('.plus-btn-detached');
+            
+            // שומר זיכרון דינמי של העמוד האחרון (בהפעלה הוא תופס את מי שיש לו active ב-HTML)
+            let lastActiveNav = Array.from(listItems).find(li => li.classList.contains('active')) || listItems[0];
 
-        // ==== מנוע המיקום האוטומטי (Smart Auto-Alignment) ====
-        function calculateSubmenuAlignment(buttonElement, popupElement) {
-            // ניקוי מצבים קודמים
-            popupElement.classList.remove('align-left', 'align-right', 'align-center');
-            
-            const btnRect = buttonElement.getBoundingClientRect();
-            const popupWidth = popupElement.offsetWidth || 140; // נותן רוחב ברירת מחדל אם טרם רונדר
-            const screenWidth = window.innerWidth;
-            
-            // חישוב איפה הקצוות של הבועה ייפלו אם נמרכז אותה
-            const centerLeftEdge = btnRect.left + (btnRect.width / 2) - (popupWidth / 2);
-            const centerRightEdge = btnRect.right - (btnRect.width / 2) + (popupWidth / 2);
-            
-            const safetyPadding = 15; // מרחק ביטחון מהקצה של המסך
-            
-            if (centerLeftEdge < safetyPadding) {
-                // מתנגש בצד שמאל -> הצמד לשמאל
-                popupElement.classList.add('align-left');
-            } else if (centerRightEdge > screenWidth - safetyPadding) {
-                // מתנגש בצד ימין -> הצמד לימין
-                popupElement.classList.add('align-right');
-            } else {
-                // יש מספיק מקום -> תמרכז את זה יפה
-                popupElement.classList.add('align-center');
+            // פונקציה דינמית להזזת העיגול (תעבוד תמיד, לא משנה כמה כפתורים יש!)
+            function moveIndicator(targetLi) {
+                if (!indicator || !targetLi) return;
+                const ul = targetLi.parentElement;
+                // יוצר מערך רק מהליסטים, ללא העיגול עצמו
+                const items = Array.from(ul.children).filter(child => child.classList.contains('list'));
+                const index = items.indexOf(targetLi);
+                // RTL: כל קפיצה היא מינוס 60 פיקסל שמאלה
+                indicator.style.transform = `translateX(${index * -60}px)`;
             }
-        }
-        // ========================================================
 
-        function closeAllMenus() {
-            document.querySelectorAll('.has-submenu').forEach(li => {
-                li.classList.remove('show-submenu');
-            });
-            document.getElementById('plusMenuWrapper').classList.remove('open');
-        }
+            // הפעלת מיקום ראשוני של העיגול
+            moveIndicator(lastActiveNav);
 
-        // סימולציית בחירת תת-תפריט
-        document.querySelectorAll('.sim-settings-click').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                closeAllMenus();
-                listItems.forEach(li => li.classList.remove('active'));
-                document.querySelectorAll('.submenu-action-btn').forEach(b => b.classList.remove('active-page'));
+            // פונקציית יישור אוטומטית למניעת חיתוך (נשארה זהה וחכמה)
+            function calculateSubmenuAlignment(buttonElement, popupElement) {
+                if (!popupElement) return;
+                popupElement.classList.remove('align-left', 'align-right', 'align-center');
                 
-                this.classList.add('active-page');
+                const btnRect = buttonElement.getBoundingClientRect();
+                const popupWidth = popupElement.offsetWidth || 140; 
+                const screenWidth = window.innerWidth;
                 
-                const settingsTab = document.getElementById('navSettings');
-                settingsTab.classList.add('active');
-                lastActiveNav = settingsTab;
-            });
-        });
+                const centerLeftEdge = btnRect.left + (btnRect.width / 2) - (popupWidth / 2);
+                const centerRightEdge = btnRect.right - (btnRect.width / 2) + (popupWidth / 2);
+                const safetyPadding = 15; 
+                
+                if (centerLeftEdge < safetyPadding) popupElement.classList.add('align-left');
+                else if (centerRightEdge > screenWidth - safetyPadding) popupElement.classList.add('align-right');
+                else popupElement.classList.add('align-center');
+            }
 
-        // לחיצה על כפתור בתפריט הראשי
-        listItems.forEach((item) => {
-            item.addEventListener('click', function(e) {
-                if (e.target.closest('.submenu-popup-container')) return;
+            function closeAllMenus() {
+                document.querySelectorAll('.has-submenu').forEach(el => el.classList.remove('show-submenu', 'open'));
+            }
 
-                const hasSubmenu = this.classList.contains('has-submenu');
-                document.getElementById('plusMenuWrapper').classList.remove('open');
-
-                if (hasSubmenu) {
-                    const popup = this.querySelector('.submenu-popup-container');
-                    
-                    // מפעיל את מנוע המיקום בדיוק רגע לפני שזה נפתח!
-                    if (!this.classList.contains('show-submenu')) {
-                        calculateSubmenuAlignment(this, popup);
-                    }
-                    
-                    this.classList.toggle('show-submenu');
-                } else {
+            // לוגיקה אוניברסלית ללחיצה על תתי-תפריט המהווים *מעבר עמוד* (כמו "ניהול הבית")
+            document.querySelectorAll('.nav-page-link').forEach(btn => {
+                btn.addEventListener('click', function(e) {
                     closeAllMenus();
+                    listItems.forEach(li => li.classList.remove('active'));
                     document.querySelectorAll('.submenu-action-btn').forEach(b => b.classList.remove('active-page'));
                     
-                    listItems.forEach(li => li.classList.remove('active'));
-                    this.classList.add('active');
-                    lastActiveNav = this; 
+                    this.classList.add('active-page');
+                    
+                    // מזהה אוטומטית מי האבא שלו בבר, ומדליק אותו!
+                    const parentLi = this.closest('li.list');
+                    if (parentLi) {
+                        parentLi.classList.add('active');
+                        lastActiveNav = parentLi;
+                        moveIndicator(parentLi);
+                    }
+                });
+            });
+
+            // לוגיקה אוניברסלית ללחיצה על תתי-תפריט שהם *פעולות* (כמו "הוסף הוצאה")
+            document.querySelectorAll('.action-only').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    closeAllMenus();
+                    // לא משנה את מצב הניווט. נשאר באותו עמוד.
+                });
+            });
+
+            // לחיצה על הבר המרכזי
+            listItems.forEach((item) => {
+                // רק הלחיצה הישירה על הכפתור, לא על תת התפריט שלו
+                const mainLink = item.querySelector('.nav-main-link');
+                if (!mainLink) return;
+
+                mainLink.addEventListener('click', function(e) {
+                    const parentLi = this.closest('li.list');
+                    const hasSubmenu = parentLi.classList.contains('has-submenu');
+                    
+                    if (plusWrapper) plusWrapper.classList.remove('open');
+
+                    if (hasSubmenu) {
+                        const popup = parentLi.querySelector('.submenu-popup-container');
+                        if (!parentLi.classList.contains('show-submenu') && popup) {
+                            calculateSubmenuAlignment(parentLi, popup);
+                        }
+                        
+                        // סוגר תפריטים אחרים
+                        listItems.forEach(li => { if (li !== parentLi) li.classList.remove('show-submenu') });
+                        parentLi.classList.toggle('show-submenu');
+                    } else {
+                        closeAllMenus();
+                        document.querySelectorAll('.submenu-action-btn').forEach(b => b.classList.remove('active-page'));
+                        
+                        listItems.forEach(li => li.classList.remove('active'));
+                        parentLi.classList.add('active');
+                        lastActiveNav = parentLi;
+                        moveIndicator(parentLi);
+                    }
+                });
+            });
+
+            // לחיצה על כפתור הפלוס
+            if (plusBtn) {
+                plusBtn.addEventListener('click', function(e) {
+                    const isOpened = plusWrapper.classList.contains('open');
+                    
+                    listItems.forEach(li => li.classList.remove('show-submenu'));
+
+                    if (!isOpened) {
+                        const popup = plusWrapper.querySelector('.submenu-popup-container');
+                        calculateSubmenuAlignment(plusWrapper, popup);
+                        plusWrapper.classList.add('open');
+                    } else {
+                        plusWrapper.classList.remove('open');
+                    }
+                });
+            }
+
+            // קליק בחוץ 
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.floating-nav-wrapper')) {
+                    closeAllMenus();
                 }
             });
-        });
 
-        // לחיצה על כפתור הפלוס
-        function togglePlusMenu() {
-            const plusWrapper = document.getElementById('plusMenuWrapper');
-            const popup = plusWrapper.querySelector('.submenu-popup-container');
-            const isOpened = plusWrapper.classList.contains('open');
-            
-            document.querySelectorAll('.has-submenu').forEach(li => {
-                li.classList.remove('show-submenu');
-            });
-
-            if (!isOpened) {
-                // מפעיל את מנוע המיקום האוטומטי גם על הפלוס!
-                calculateSubmenuAlignment(plusWrapper, popup);
-                plusWrapper.classList.add('open');
-            } else {
-                plusWrapper.classList.remove('open');
-            }
-        }
-
-        // לחיצה מחוץ לאזור
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.floating-nav-wrapper')) {
-                closeAllMenus();
-            }
         });
     </script>
 
