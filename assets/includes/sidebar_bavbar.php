@@ -400,6 +400,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 listItems.forEach(li => { if(li !== item) li.classList.remove('show-submenu') });
                 item.classList.toggle('show-submenu');
+            } else {
+                // לחיצה על תפריט רגיל - הפעלת ספינר הטעינה
+                if (!item.classList.contains('active')) {
+                    const iconEl = link.querySelector('.icon i');
+                    if (iconEl) {
+                        iconEl.className = 'fa-solid fa-spinner fa-spin';
+                    }
+                }
             }
         });
     });
