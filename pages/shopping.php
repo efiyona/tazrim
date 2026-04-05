@@ -230,35 +230,37 @@ $is_setup_needed = ($cats_count == 0);
             }
         }
 
-        function updatePlusMenuUI() {
-            const plusWrapper = document.querySelector('.detached-plus-wrapper');
-            if (!plusWrapper) return;
-            const submenu = plusWrapper.querySelector('.submenu-popup-container');
-            if (!submenu) return;
+function updatePlusMenuUI() {
+    const plusWrapper = document.querySelector('.detached-plus-wrapper');
+    if (!plusWrapper) return;
+    const submenu = plusWrapper.querySelector('.submenu-popup-container');
+    if (!submenu) return;
 
-            // האם יש מוצרים פעילים במסך? (שורות שהן לא "רפאים" ולא בתהליך מחיקה)
-            const hasActiveItems = $('.active-row').not('.pending-delete').length > 0;
-            const existingTrashBtn = submenu.querySelector('.expense-btn');
+    // האם יש מוצרים פעילים במסך?
+    const hasActiveItems = $('.active-row').not('.pending-delete').length > 0;
+    
+    // התיקון כאן: חיפוש לפי הקלאס החדש (danger-solid-btn)
+    const existingTrashBtn = submenu.querySelector('.danger-solid-btn'); 
 
-            // נוסיף או נסיר את פח האשפה בהתאם, בזמן אמת!
-            if (hasActiveItems && !existingTrashBtn) {
-                submenu.insertAdjacentHTML('afterbegin', `
-                    <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn danger-solid-btn">
-                        <i class="fa-solid fa-trash-can"></i> נקה את כל הרשימה
-                    </a>
-                `);
-            } else if (!hasActiveItems && existingTrashBtn) {
-                existingTrashBtn.remove();
-            }
+    // נוסיף או נסיר את פח האשפה בהתאם, בזמן אמת!
+    if (hasActiveItems && !existingTrashBtn) {
+        submenu.insertAdjacentHTML('afterbegin', `
+            <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn danger-solid-btn">
+                <i class="fa-solid fa-trash-can"></i> נקה את כל הרשימה
+            </a>
+        `);
+    } else if (!hasActiveItems && existingTrashBtn) {
+        existingTrashBtn.remove();
+    }
 
-            // נבדוק האם יש בכלל כפתורים בתוך הפלוס (או שהוא נשאר ריק לגמרי)
-            const hasAnyButtons = submenu.querySelectorAll('.submenu-action-btn').length > 0;
-            if (!hasAnyButtons) {
-                plusWrapper.style.display = 'none';
-            } else {
-                plusWrapper.style.display = 'flex';
-            }
-        }
+    // נבדוק האם יש בכלל כפתורים בתוך הפלוס (או שהוא נשאר ריק לגמרי)
+    const hasAnyButtons = submenu.querySelectorAll('.submenu-action-btn').length > 0;
+    if (!hasAnyButtons) {
+        plusWrapper.style.display = 'none';
+    } else {
+        plusWrapper.style.display = 'flex';
+    }
+}
 
         // --- מערכת רשימת הקניות הרגילה ---
         $(document).ready(function() {
