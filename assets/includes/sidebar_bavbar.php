@@ -418,6 +418,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.show-submenu').forEach(el => el.classList.remove('show-submenu'));
         }
     });
+    
+     // עדכון מיקום האינדיקטור בעת שינוי גודל המסך
+     window.addEventListener('resize', () => {
+        const activeItem = document.querySelector('.bottom-nav-bar .list.active');
+        if (activeItem) moveIndicator(activeItem);
+     });
 });
 </script>
 

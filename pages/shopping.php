@@ -243,7 +243,7 @@ $is_setup_needed = ($cats_count == 0);
             // נוסיף או נסיר את פח האשפה בהתאם, בזמן אמת!
             if (hasActiveItems && !existingTrashBtn) {
                 submenu.insertAdjacentHTML('afterbegin', `
-                    <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn expense-btn">
+                    <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn danger-solid-btn">
                         <i class="fa-solid fa-trash-can"></i> נקה את כל הרשימה
                     </a>
                 `);
@@ -481,7 +481,7 @@ $is_setup_needed = ($cats_count == 0);
                 // א. הוספת כפתור "ניקוי עגלה" אם יש מוצרים פעילים
                 if (data.active_categories && data.active_categories.length > 0) {
                     submenu.innerHTML += `
-                        <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn expense-btn">
+                        <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn danger-solid-btn">
                             <i class="fa-solid fa-trash-can"></i> נקה את כל הרשימה
                         </a>
                     `;

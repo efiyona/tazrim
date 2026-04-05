@@ -2513,6 +2513,14 @@ body {
     z-index: 0;
 }
 
+/* המעטפת של כפתור הפלוס - קריטי למרכוז הפופאפ! */
+.detached-plus-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* כפתור הפלוס */
 .plus-btn-detached {
     width: 60px;
@@ -2638,4 +2646,15 @@ body {
 .show-submenu .submenu-popup-container.align-left, 
 .open .submenu-popup-container.align-left { 
     transform: translateX(0) translateY(0); 
+}
+
+/* כפתור מחיקה - צבע אדום קבוע (כמו Hover) */
+.submenu-action-btn.danger-solid-btn {
+    color: var(--error) !important;
+    border-color: var(--error) !important;
+    background-color: #fee2e2 !important;
+}
+
+.submenu-action-btn.danger-solid-btn:hover {
+    background-color: #fecaca !important; /* אדום טיפה יותר כהה במעבר עכבר */
 }
