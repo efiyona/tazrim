@@ -349,7 +349,7 @@ function toggleNotifications() {
 document.addEventListener('DOMContentLoaded', () => {
     const listItems = document.querySelectorAll('.bottom-nav-bar .list');
     const indicator = document.getElementById('navIndicator');
-    const itemWidth = 65; // רוחב האייקון ב-user.css
+    const itemWidth = 70; // רוחב האייקון ב-user.css
 
     // --- תיקון מנוע המיקום האוטומטי (Auto-Alignment) ---
     // שינוי לוגיקה שתתעדף מרכוז אלא אם באמת יש חריגה מהמסך

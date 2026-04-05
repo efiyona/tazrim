@@ -46,7 +46,7 @@ input, select, textarea {
 }
 
 body {
-    background-color: var(--white);
+    background-color: var(--gray-light);
     line-height: 1.3rem;
     font-size: 18px;
     direction: rtl; /* הבטחת כיווניות לאורך כל האתר */
@@ -59,7 +59,9 @@ body {
 .flex-between { display: flex; align-items: center; justify-content: space-between; }
 .text-center { text-align: center; }
 .w-full { width: 100%; }
-.bg-gray { background-color: var(--gray); }
+.bg-gray {
+    background-color: var(--gray-light);
+}
 .hidden { display: none; }
 
 /* =========================================
@@ -2471,34 +2473,36 @@ body {
 body.no-scroll {
     overflow: hidden;
 }
+
 /* =========================================
-   Global Floating Navigation (תפריט צף גלובלי)
+   Global Floating Navigation - עיצוב מכונס ומושלם
 ========================================= */
+.sidebar, .mobile-menu-btn, .sidebar-overlay { display: none !important; }
+body {
+    padding-bottom: 120px !important;
+}
+.main-content { margin-right: 0 !important; width: 100% !important; }
 
-/* הסרת הסיידבר הישן מהתצוגה */
-.sidebar, .mobile-menu-btn { display: none !important; }
-.main-content { margin-right: 0 !important; }
-
-/* מעטפת התפריט */
 .floating-nav-wrapper {
     position: fixed;
     bottom: 25px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    flex-direction: row; /* ב-RTL האלמנט הראשון יהיה ימין והשני שמאל */
-    align-items: flex-end;
-    gap: 12px;
-    z-index: 2100;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+    z-index: 222;
+    direction: rtl;
 }
 
-/* הבר המרכזי */
+/* הבר הראשי */
 .bottom-nav-bar {
     background: var(--white);
-    height: 65px; /* מוגדל מעט למחשב */
-    border-radius: 40px;
+    height: 70px; /* מוגדל כדי להכיל תמיד טקסט ואייקון בנוחות */
+    border-radius: 35px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    padding: 0 12px;
+    padding: 0 5px; /* פדינג קטן רק בקצוות */
     display: flex;
     align-items: center;
 }
@@ -2507,17 +2511,22 @@ body.no-scroll {
     display: flex;
     position: relative;
     list-style: none;
-    padding: 0;
     margin: 0;
+    padding: 0;
+    height: 100%;
+    align-items: center;
 }
 
 .bottom-nav-bar ul li.list {
     position: relative;
-    width: 65px;
-    height: 65px;
-    z-index: 1;
+    width: 70px; /* תא מדויק ורחב לכל כפתור */
+    height: 70px;
+    z-index: 2; /* מעל האינדיקטור */
 }
 
+/* =========================================
+   עיצוב הכפתורים, האייקונים והטקסט בתפריט
+========================================= */
 .nav-main-link {
     display: flex;
     flex-direction: column;
@@ -2526,53 +2535,61 @@ body.no-scroll {
     width: 100%;
     height: 100%;
     text-decoration: none;
-    transition: 0.3s;
-}
-
-/* אפקט Hover לאייקונים שלא נבחרו */
-.list:not(.active) .nav-main-link:hover .icon {
-    color: var(--main);
-    transform: scale(1.1);
 }
 
 .nav-main-link .icon {
-    font-size: 1.4rem;
-    transition: 0.5s;
-    color: var(--text-light);
+    font-size: 1.25rem; /* הוגדל משמעותית כדי לבלוט מעל הטקסט */
+    transition: transform 0.4s ease, color 0.4s ease;
+    color: var(--text); /* צבע אחיד כחול/אפרפר */
+    margin-bottom: 2px;
 }
 
-/* צבע אייקון נבחר - לבן! */
-.list.active .nav-main-link .icon {
-    transform: translateY(-32px);
-    color: var(--white) !important;
+/* הבטחה שהאייקון של FontAwesome מקבל את הצבע שנגדיר לו */
+.nav-main-link .icon i {
+    color: inherit !important;
 }
 
 .nav-main-link .text {
-    position: absolute;
-    font-weight: 800;
-    font-size: 0.75rem;
-    transition: 0.5s;
-    opacity: 0;
-    transform: translateY(20px);
-    color: var(--main);
+    font-weight: 500; /* הטקסט עכשיו עדין ולא מודגש */
+    font-size: 0.8rem;
+    transition: color 0.4s ease;
+    color: var(--text); /* תואם בדיוק לצבע האייקון */
 }
 
+/* =========================================
+   מצבים פעילים (Active / Hover / Open)
+========================================= */
+
+/* כשהפריט נבחר - גם האייקון וגם הטקסט הופכים ללבן נקי ובוהק */
+.list.active .nav-main-link .icon,
 .list.active .nav-main-link .text {
-    opacity: 1;
-    transform: translateY(12px);
+    color: #ffffff !important;
 }
 
-/* האינדיקטור - שוליים אפורים צרים יותר */
+/* מחווה של סיבוב האייקון כשתת-תפריט פתוח (180 מעלות) */
+.list.show-submenu .nav-main-link .icon {
+    transform: rotate(180deg);
+    color: var(--main) !important; /* ירוק כשהוא רק פתוח */
+}
+
+/* אם הוא גם העמוד הפעיל (לבן) וגם נפתח - שומר על הלבן תוך כדי סיבוב */
+.list.active.show-submenu .nav-main-link .icon {
+    transform: rotate(180deg);
+    color: #ffffff !important;
+}
+
+/* האינדיקטור - יושב נקי *בתוך* הבר */
 .indicator {
     position: absolute;
-    top: -32px;
-    width: 65px;
-    height: 65px;
+    top: 5px; /* ממורכז אנכית בתוך ה-70px */
+    right: 5px; /* מתחיל בדיוק באמצע התא הראשון (70 רוחב תא, 60 אינדיקטור -> 5px מכל צד) */
+    width: 60px; 
+    height: 60px;
     background: var(--main);
     border-radius: 50%;
-    /* שינוי: מ-6px ל-3px למראה צר ואלגנטי */
-    border: 3.5px solid var(--gray); 
-    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: none; 
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 0;
 }
 
 /* כפתור הפלוס */
@@ -2585,74 +2602,119 @@ body.no-scroll {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
-    box-shadow: 0 8px 20px rgba(35, 114, 39, 0.3);
+    font-size: 1.5rem;
+    box-shadow: 0 8px 20px rgba(35, 114, 39, 0.2);
     cursor: pointer;
-    transition: 0.3s;
-}
-
-.plus-btn-detached:hover {
-    transform: scale(1.05);
-    background-color: var(--main-dark);
+    transition: 0.4s ease;
 }
 
 .detached-plus-wrapper.open .plus-btn-detached {
-    transform: scale(0.9) rotate(45deg);
-    background: #888;
+    transform: rotate(45deg); /* הופך ל-X אלגנטי */
+    background: var(--error); /* צבע אדום מסמן "סגירה" */
 }
 
-/* תתי תפריטים */
+/* =========================================
+   תתי תפריטים - רוחב אחיד ויישור מדויק
+========================================= */
 .submenu-popup-container {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     position: absolute;
     opacity: 0;
     visibility: hidden;
     transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     z-index: 20;
+    bottom: 85px; /* גובה אחיד לכולם כי אין יותר קפיצות */
 }
-
-.bottom-nav-bar .submenu-popup-container { bottom: 80px; }
-.list.active .submenu-popup-container { bottom: 112px; }
-.detached-plus-wrapper .submenu-popup-container { bottom: 75px; }
 
 .show-submenu .submenu-popup-container, .open .submenu-popup-container {
     opacity: 1;
     visibility: visible;
 }
 
+/* מנוע המרכוז שתיקנו קודם - נשאר זהה */
+.submenu-popup-container.align-center { right: 50%; left: auto; transform: translateX(50%) translateY(15px); }
+.show-submenu .submenu-popup-container.align-center, .open .submenu-popup-container.align-center { transform: translateX(50%) translateY(0); }
+.submenu-popup-container.align-right { right: 0; left: auto; transform: translateX(0) translateY(15px); }
+.show-submenu .submenu-popup-container.align-right, .open .submenu-popup-container.align-right { transform: translateX(0) translateY(0); }
+.submenu-popup-container.align-left { left: 0; right: auto; transform: translateX(0) translateY(15px); }
+.show-submenu .submenu-popup-container.align-left, .open .submenu-popup-container.align-left { transform: translateX(0) translateY(0); }
+
+/* כפתורי התת-תפריט - רוחב אחיד! */
 .submenu-action-btn {
     display: flex;
+    flex-direction: row; 
     align-items: center;
-    justify-content: center;
-    padding: 0 22px;
+    justify-content: flex-start; /* מצמיד את כל הטקסטים לימין (התחלה ב-RTL) */
+    padding: 0 20px; 
     gap: 12px;
-    width: max-content;
-    min-width: 140px;
-    height: 48px;
-    border-radius: 24px;
+    width: 100%; /* מכריח את הכפתור למלא את כל רוחב הקונטיינר */
+    min-width: 170px; /* רוחב אחיד מינימלי לכולם */
+    height: 48px; 
+    border-radius: 24px; 
     background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
     text-decoration: none;
-    color: var(--text);
+    color: var(--text-color);
     font-weight: 700;
     font-size: 0.95rem;
     border: 1.5px solid #eee;
     transition: 0.2s;
+    white-space: nowrap; 
 }
 
-/* Hover לתתי תפריטים */
+.submenu-action-btn i { font-size: 1.1rem; width: 20px; text-align: center; }
+
 .submenu-action-btn:hover {
-    border-color: var(--main);
+    transform: translateY(-2px); 
     color: var(--main);
-    transform: translateY(-2px);
-    background: var(--white);
+    border-color: var(--main);
+    box-shadow: 0 10px 20px rgba(41, 182, 105, 0.15);
 }
 
 .submenu-action-btn.active-page {
-    background: var(--main-light);
-    color: var(--main);
-    border-color: var(--main);
+    background-color: var(--main-light) !important;
+    border-color: var(--main) !important;
+    color: var(--main) !important;
 }
 
+.submenu-action-btn.active-page i { color: var(--main) !important; }
+.submenu-action-btn.expense-btn { color: var(--error); }
+.submenu-action-btn.expense-btn:hover { border-color: var(--error); background: #fee2e2; }
+.submenu-action-btn.income-btn { color: var(--main); } 
+.submenu-action-btn.income-btn:hover { background: #f0fdf4; border-color: var(--main); }
+
+/* =========================================
+   יישור אוטומטי חכם לתתי-תפריטים (Popup Alignment)
+========================================= */
+.submenu-popup-container.align-center { 
+    right: 50%; 
+    left: auto; 
+    transform: translateX(50%) translateY(20px); 
+}
+.show-submenu .submenu-popup-container.align-center, 
+.open .submenu-popup-container.align-center { 
+    transform: translateX(50%) translateY(0); 
+}
+
+.submenu-popup-container.align-right { 
+    right: 0; 
+    left: auto; 
+    transform: translateX(0) translateY(20px); 
+}
+.show-submenu .submenu-popup-container.align-right, 
+.open .submenu-popup-container.align-right { 
+    transform: translateX(0) translateY(0); 
+}
+
+.submenu-popup-container.align-left { 
+    left: 0; 
+    right: auto; 
+    transform: translateX(0) translateY(20px); 
+}
+.show-submenu .submenu-popup-container.align-left, 
+.open .submenu-popup-container.align-left { 
+    transform: translateX(0) translateY(0); 
+}

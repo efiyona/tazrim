@@ -494,7 +494,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
             </div>
         </div>
     </div>
-
+    <?php include(ROOT_PATH . '/assets/includes/global_info_modal.php'); ?>
 </body>
 
 <script>
