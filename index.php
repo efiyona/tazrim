@@ -621,7 +621,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
             });
     }
 </script>
-
 <script>
     const addModal = document.getElementById('add-transaction-modal');
     const floatingBtn = document.querySelector('.floating-btn');
@@ -647,12 +646,10 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         const wrapper = document.createElement('div');
         wrapper.className = 'custom-select-wrapper';
 
-        // בדיקה אם יש קטגוריה נבחרת (בעריכה) או שזה מצב התחלתי (הוספה)
         let selectedCat = filteredCats.find(cat => cat.id == selectedId);
         let triggerHTML = '';
 
         if (!selectedCat) {
-            // מצב ברירת מחדל - לא נבחרה קטגוריה
             hiddenInput.value = '';
             triggerHTML = `
                 <div class="selected-cat-info" style="color: #888;">
@@ -661,7 +658,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                 <i class="fa-solid fa-chevron-down" style="color: #ccc; font-size: 0.9rem;"></i>
             `;
         } else {
-            // קטגוריה קיימת (למשל בעריכה)
             hiddenInput.value = selectedCat.id;
             const iconClassInit = selectedCat.icon ? selectedCat.icon : 'fa-tag';
             triggerHTML = `
@@ -712,26 +708,25 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                 const icon = this.getAttribute('data-icon');
                 
                 hiddenInput.value = val;
-                // צובע בחזרה למראה הנבחר הרגיל אחרי שלחצו על משהו
                 wrapper.querySelector('.selected-cat-info').innerHTML = `<i class="fa-solid ${icon}" style="color: var(--main);"></i> <span style="color: var(--text);">${name}</span>`;
-                
                 wrapper.classList.remove('open');
             });
         });
     }
 
-    // סגירת כל הדרופדאונים בלחיצה בחוץ
     document.addEventListener('click', function() {
         document.querySelectorAll('.custom-select-wrapper').forEach(w => {
             w.classList.remove('open');
         });
     });
 
-
-    floatingBtn.addEventListener('click', () => {
-        addModal.style.display = 'block';
-        resetAddForm(); 
-    });
+    // 1. התיקון כאן: הגנה מקריסה במקרה שהכפתור הישן כבר לא קיים במסך
+    if (floatingBtn) {
+        floatingBtn.addEventListener('click', () => {
+            addModal.style.display = 'block';
+            resetAddForm(); 
+        });
+    }
 
     function closeAddModal() {
         addModal.style.display = 'none';
@@ -754,7 +749,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
     function filterCategories() {
         const selectedType = document.querySelector('input[name="type"]:checked').value;
-        // קורא לפונקציה החדשה שלנו שבונות את הדרופדאון
         buildCustomSelect('category-grid-container', 'selected-category-id', selectedType);
     }
 
@@ -764,14 +758,13 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         const submitBtn = document.getElementById('submit-trans-btn');
         const msgBox = document.getElementById('add-trans-msg');
         
-        // --- חסימת השליחה אם לא נבחרה קטגוריה ---
         const selectedCatId = document.getElementById('selected-category-id').value;
         if (!selectedCatId) {
             msgBox.style.display = 'block';
             msgBox.style.backgroundColor = '#fee2e2';
             msgBox.style.color = 'var(--error)';
             msgBox.innerText = 'נא לבחור קטגוריה מהרשימה.';
-            return; // עוצר את השמירה כאן
+            return; 
         }
         
         submitBtn.disabled = true;
@@ -861,7 +854,6 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         document.getElementById('edit-trans-desc').value = desc;
         document.getElementById('edit-trans-type').value = type;
         
-        // יצירת הדרופדאון החדש בפופאפ העריכה
         buildCustomSelect('edit-category-grid-container', 'edit-selected-category-id', type, categoryId);
 
         editModal.style.display = 'block';
@@ -873,18 +865,20 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
     }
 
     editForm.addEventListener('submit', function(e) {
-        
         e.preventDefault(); 
-        // --- חסימת השליחה אם לא נבחרה קטגוריה ---
+        
+        // 2. התיקון כאן: חובה להגדיר את המשתנים בתוך פונקציית הלחיצה!
+        const submitBtn = document.getElementById('submit-edit-trans-btn');
+        const msgBox = document.getElementById('edit-trans-msg');
+
         const selectedCatId = document.getElementById('edit-selected-category-id').value;
         if (!selectedCatId) {
             msgBox.style.display = 'block';
             msgBox.style.backgroundColor = '#fee2e2';
             msgBox.style.color = 'var(--error)';
             msgBox.innerText = 'נא לבחור קטגוריה מהרשימה.';
-            return; // עוצר את השמירה כאן
+            return; 
         }
-        // -----------------------------------------
         
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> שומר...';
