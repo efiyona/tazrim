@@ -1,51 +1,44 @@
 <?php
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 
-// --- הגדרת הניווט המרכזית ---
+/**
+ * הגדרת הניווט המרכזית
+ * 'plus_modal' => אם קיים, יוצג כפתור פלוס משמאל לתפריט שיפתח את המודאל המבוקש.
+ */
 $navigation = [
     [
         'name' => 'ראשי',
         'icon' => 'fa-house',
         'url' => BASE_URL . 'index.php',
-        'file' => 'index.php'
+        'file' => 'index.php',
+        'plus_modal' => 'add-transaction-modal'
     ],
     [
         'name' => 'דוחות',
         'icon' => 'fa-chart-line',
-        'url' => BASE_URL . 'pages/reports.php', // וודא שהנתיב תואם לתיקיות שלך
-        'file' => 'reports.php'
+        'url' => BASE_URL . 'pages/reports.php',
+        'file' => 'reports.php',
+        'plus_modal' => null // ללא פלוס
     ],
     [
         'name' => 'קניות',
-        'icon' => 'fa-shopping-cart',
+        'icon' => 'fa-cart-shopping',
         'url' => BASE_URL . 'pages/shopping.php',
-        'file' => 'shopping.php'
+        'file' => 'shopping.php',
+        'plus_modal' => 'add-shopping-item-modal' 
     ],
     [
         'name' => 'הגדרות',
         'icon' => 'fa-gear',
         'url' => 'javascript:void(0);',
         'file' => ['manage_home.php', 'user_profile.php'],
+        'plus_modal' => null,
         'submenu' => [
             ['name' => 'ניהול הבית', 'icon' => 'fa-house-user', 'url' => BASE_URL . 'pages/settings/manage_home.php', 'file' => 'manage_home.php'],
             ['name' => 'החשבון שלי', 'icon' => 'fa-user-gear', 'url' => BASE_URL . 'pages/settings/user_profile.php', 'file' => 'user_profile.php']
         ]
     ]
 ];
-
-
-$plus_button_configs = [
-    'index.php' => [
-        'show' => true,
-        'modal_id' => 'add-transaction-modal'
-    ],
-    'reports.php' => [
-        'show' => true,
-        'modal_id' => 'filter-reports-modal' 
-    ]
-];
-
-$current_plus = $plus_button_configs[$current_page] ?? ['show' => false];
 
 function isNavActive($nav_item, $current_page) {
     if (isset($nav_item['file'])) {
@@ -55,9 +48,15 @@ function isNavActive($nav_item, $current_page) {
     return false;
 }
 
-// מציאת ההגדרות של הדף הנוכחי לטובת כפתור הפלוס
-$show_plus_on_this_page = $current_plus['show'];
-$target_modal_id = $current_plus['modal_id'] ?? '';
+// מציאת הגדרות הדף הנוכחי
+$current_config = null;
+foreach ($navigation as $item) {
+    if (isNavActive($item, $current_page)) {
+        $current_config = $item;
+        break;
+    }
+}
+$target_modal_id = $current_config['plus_modal'] ?? null;
 ?>
 
 <div class="floating-nav-wrapper">
@@ -87,7 +86,7 @@ $target_modal_id = $current_plus['modal_id'] ?? '';
             <div class="indicator" id="navIndicator"></div>
         </ul>
     </div>
-    <?php if ($show_plus_on_this_page): ?>
+   <?php if ($target_modal_id): ?>
     <div class="detached-plus-wrapper">
         <div class="plus-btn-detached" onclick="openDynamicModal('<?php echo $target_modal_id; ?>')">
             <i class="fa-solid fa-plus"></i>
