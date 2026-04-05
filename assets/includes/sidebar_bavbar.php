@@ -18,7 +18,7 @@ $navigation = [
         'icon' => 'fa-chart-line',
         'url' => BASE_URL . 'pages/reports.php',
         'file' => 'reports.php',
-        'plus_modal' => null // ללא פלוס
+        'plus_modal' => null,
     ],
     [
         'name' => 'קניות',

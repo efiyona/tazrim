@@ -136,19 +136,6 @@ $is_setup_needed = ($cats_count == 0);
                         <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>טוען רשימות...
                     </div>
                 </div>
-
-                <div class="fabs-wrapper">
-                    <button class="fab-btn fab-clear" id="btnClearAllFAB" title="נקה את כל הרשימה">
-                        <i class="fa-solid fa-trash-can fa-trash-can-white"></i>
-                    </button>
-
-                    <div class="fab-container">
-                        <div class="fab-menu" id="fabMenu"></div>
-                        <button class="fab-btn" id="fabToggle">
-                            <i class="fa-solid fa-plus"></i>
-                        </button>
-                    </div>
-                </div>
             <?php endif; ?>
 
         </main>
@@ -229,6 +216,50 @@ $is_setup_needed = ($cats_count == 0);
     </script>
     <?php else: ?>
     <script>
+        function clearEntireList() {
+            if(confirm('האם למחוק את כל המוצרים ברשימה?')) {
+                // קודם כל סוגרים את בועת הפלוס שפתוחה
+                const plusWrapper = document.querySelector('.detached-plus-wrapper');
+                if (plusWrapper) plusWrapper.classList.remove('open');
+                
+                $.post('../app/ajax/clear_shopping_list.php', function(response) {
+                    $('.category-block').fadeOut(400, function() {
+                        loadShoppingLists(); 
+                    });
+                });
+            }
+        }
+
+        function updatePlusMenuUI() {
+            const plusWrapper = document.querySelector('.detached-plus-wrapper');
+            if (!plusWrapper) return;
+            const submenu = plusWrapper.querySelector('.submenu-popup-container');
+            if (!submenu) return;
+
+            // האם יש מוצרים פעילים במסך? (שורות שהן לא "רפאים" ולא בתהליך מחיקה)
+            const hasActiveItems = $('.active-row').not('.pending-delete').length > 0;
+            const existingTrashBtn = submenu.querySelector('.expense-btn');
+
+            // נוסיף או נסיר את פח האשפה בהתאם, בזמן אמת!
+            if (hasActiveItems && !existingTrashBtn) {
+                submenu.insertAdjacentHTML('afterbegin', `
+                    <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn expense-btn">
+                        <i class="fa-solid fa-trash-can"></i> נקה את כל הרשימה
+                    </a>
+                `);
+            } else if (!hasActiveItems && existingTrashBtn) {
+                existingTrashBtn.remove();
+            }
+
+            // נבדוק האם יש בכלל כפתורים בתוך הפלוס (או שהוא נשאר ריק לגמרי)
+            const hasAnyButtons = submenu.querySelectorAll('.submenu-action-btn').length > 0;
+            if (!hasAnyButtons) {
+                plusWrapper.style.display = 'none';
+            } else {
+                plusWrapper.style.display = 'flex';
+            }
+        }
+
         // --- מערכת רשימת הקניות הרגילה ---
         $(document).ready(function() {
             $('#fabToggle').on('click', function(e) { e.stopPropagation(); $('#fabMenu').fadeToggle(200); });
@@ -278,7 +309,9 @@ $is_setup_needed = ($cats_count == 0);
                 
                 const newGhost = buildItemRowHtml({ id: 'new', item_name: '', quantity: '1' }, catId, true);
                 $ghostRow.parent().append(newGhost);
+                
                 updateAiButtonVisibility(catId);
+                updatePlusMenuUI(); // <--- הוספנו את הפקודה שמעדכנת את הפלוס מיד!
             });
 
             $(document).on('focus', '.active-row input', function() {
@@ -323,24 +356,11 @@ $is_setup_needed = ($cats_count == 0);
                     const timer = setTimeout(function() {
                         $row.slideUp(300, function() {
                             $(this).remove();
-                            // הסרנו את הקוד שהעלים את החנות עצמה! עכשיו החנות תישאר גלויה וריקה.
+                            updatePlusMenuUI();
                         });
                         if (itemId !== 'new') deleteItemFromDB(itemId);
                     }, 800);
                     $row.data('deleteTimer', timer);
-                }
-            });
-
-            $('#btnClearAllFAB').on('click', function() {
-                if(confirm('האם למחוק את כל המוצרים ברשימה?')) {
-                    const btn = $(this);
-                    btn.html('<i class="fa-solid fa-spinner fa-spin"></i>');
-                    $.post('../app/ajax/clear_shopping_list.php', function(response) {
-                        $('.category-block').fadeOut(400, function() {
-                            loadShoppingLists(); 
-                            btn.html('<i class="fa-solid fa-trash-can fa-trash-can-white"></i>'); 
-                        });
-                    });
                 }
             });
 
@@ -409,43 +429,99 @@ $is_setup_needed = ($cats_count == 0);
         }
 
         function loadShoppingLists(openCategoryId = null) {
-            $.get('../app/ajax/fetch_shopping_lists.php', function(response) {
-                try {
-                    // בדיקה אם response הוא כבר אובייקט או מחרוזת
-                    const data = (typeof response === 'object') ? response : JSON.parse(response);
-                    if(data.status !== 'success') return;
+    $.get('../app/ajax/fetch_shopping_lists.php', function(response) {
+        try {
+            // בדיקה אם response הוא כבר אובייקט או מחרוזת
+            const data = (typeof response === 'object') ? response : JSON.parse(response);
+            if(data.status !== 'success') return;
 
-                    let listsHtml = ''; 
-                    let fabHtml = '';
+            let listsHtml = ''; 
 
-                    if (data.active_categories.length === 0) {
-                        listsHtml = `<div style="text-align:center; padding: 40px; color:#888;" id="empty-state-msg">
-                            <i class="fa-solid fa-basket-shopping fa-2x" style="margin-bottom: 10px; color:#ddd;"></i><br>
-                            הרשימה ריקה! לחצו על ה- + למטה כדי להתחיל.
-                        </div>`;
-                        $('#btnClearAllFAB').hide(); 
-                    } else {
-                        data.active_categories.forEach(cat => {
-                            // אם זה ה-ID שביקשנו לפתוח, נשלח true ל-isOpen
-                            const shouldBeOpen = (openCategoryId && cat.id == openCategoryId);
-                            listsHtml += buildCategoryBlock(cat, true, shouldBeOpen);
-                        });
-                        $('#btnClearAllFAB').fadeIn(); 
-                    }
-                    $('#shopping-lists-container').html(listsHtml);
+            // 1. בניית הקטגוריות הפעילות על המסך (עם הפונקציה המקורית שלך!)
+            if (data.active_categories.length === 0) {
+                listsHtml = `<div style="text-align:center; padding: 40px; color:#888;" id="empty-state-msg">
+                    <i class="fa-solid fa-basket-shopping fa-2x" style="margin-bottom: 10px; color:#ddd;"></i><br>
+                    הרשימה ריקה! לחצו על ה- + למטה כדי להתחיל.
+                </div>`;
+            } else {
+                data.active_categories.forEach(cat => {
+                    const shouldBeOpen = (openCategoryId && cat.id == openCategoryId);
+                    // כאן אנחנו קוראים לפונקציה המקורית שלך ששומרת על כל העיצוב!
+                    listsHtml += buildCategoryBlock(cat, true, shouldBeOpen);
+                });
+            }
+            $('#shopping-lists-container').html(listsHtml);
 
-                    // עדכון תפריט הפלוס (חנויות ריקות)
-                    if (data.empty_categories.length === 0) {
-                        fabHtml = `<div class="fab-menu-item" style="color:#aaa; cursor:default; justify-content:center;">אין חנויות מוגדרות</div>`;
-                    } else {
-                        data.empty_categories.forEach(cat => {
-                            fabHtml += `<div class="fab-menu-item" onclick="openEmptyCategory(${cat.id}, '${cat.name}', '${cat.icon}', this)"><i class="fa-solid ${cat.icon}"></i> <span>${cat.name}</span></div>`;
-                        });
-                    }
-                    $('#fabMenu').html(fabHtml);
-                } catch (e) { console.error("שגיאה בטעינת הרשימה:", e); }
-            });
-        }
+            // =========================================================================
+            // 2. השתלטות (Hijack) על כפתור הפלוס הגלובלי של התפריט הצף!
+            // =========================================================================
+            const plusWrapper = document.querySelector('.detached-plus-wrapper');
+            if (plusWrapper) {
+                plusWrapper.classList.add('has-submenu'); 
+                const plusBtn = plusWrapper.querySelector('.plus-btn-detached');
+                
+                // דורסים את הלחיצה המקורית כדי שיפתח בועה
+                plusBtn.onclick = function(e) {
+                    e.preventDefault();
+                    const popup = plusWrapper.querySelector('.submenu-popup-container');
+                    if (typeof calculateAlignment === "function") calculateAlignment(plusWrapper, popup);
+                    plusWrapper.classList.toggle('open');
+                };
+
+                // מוודאים שיש קונטיינר לבועה
+                let submenu = plusWrapper.querySelector('.submenu-popup-container');
+                if (!submenu) {
+                    submenu = document.createElement('div');
+                    submenu.className = 'submenu-popup-container';
+                    plusWrapper.appendChild(submenu);
+                }
+
+                submenu.innerHTML = ''; // מנקים תוכן קודם
+
+                // א. הוספת כפתור "ניקוי עגלה" אם יש מוצרים פעילים
+                if (data.active_categories && data.active_categories.length > 0) {
+                    submenu.innerHTML += `
+                        <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn expense-btn">
+                            <i class="fa-solid fa-trash-can"></i> נקה את כל הרשימה
+                        </a>
+                    `;
+                }
+
+                // ב. הוספת החנויות הריקות ככפתורי גלולה - חיבור לפונקציה המקורית שלך!
+                if (data.empty_categories && data.empty_categories.length > 0) {
+                    data.empty_categories.forEach(cat => {
+                        const iconClass = cat.icon ? cat.icon : 'fa-cart-plus';
+                        // שים לב: אנחנו קוראים ל-openEmptyCategory המקורית שלך, וסוגרים את הפלוס
+                        submenu.innerHTML += `
+                            <a href="javascript:void(0);" onclick="handleEmptyCategoryClick(${cat.id}, '${cat.name}', '${iconClass}', this)" class="submenu-action-btn" id="plus-cat-${cat.id}">
+                                <i class="fa-solid ${iconClass}"></i> ${cat.name}
+                            </a>
+                        `;
+                    });
+                }
+
+                // ג. אם הכל ריק לחלוטין - נעלים את הפלוס
+                if (data.active_categories.length === 0 && data.empty_categories.length === 0) {
+                    plusWrapper.style.display = 'none';
+                } else {
+                    plusWrapper.style.display = 'flex';
+                }
+            }
+
+        } catch (e) { console.error("שגיאה בטעינת הרשימה:", e); }
+    });
+}
+
+// פונקציית עזר קטנה שסוגרת את תפריט הפלוס ומפעילה את הלוגיקה המקורית שלך
+function handleEmptyCategoryClick(id, name, icon, element) {
+    const plusWrapper = document.querySelector('.detached-plus-wrapper');
+    if (plusWrapper) plusWrapper.classList.remove('open');
+    
+    // קורא לפונקציה המקורית שלך שעושה את ההוספה והפוקוס
+    if (typeof openEmptyCategory === "function") {
+        openEmptyCategory(id, name, icon, element);
+    }
+}
 
         // שינינו ל-type="number" אבל הסרנו את inputmode="numeric" והוספנו enterkeyhint
         function buildItemRowHtml(item, catId, isGhost = false) {
@@ -565,24 +641,25 @@ $is_setup_needed = ($cats_count == 0);
         }
 
         function openEmptyCategory(id, name, icon, btnElement) {
+            // אם החנות כבר מופיעה במסך, פשוט נקפוץ אליה
             if ($(`#cat-block-${id}`).length > 0) {
                 $(`#cat-block-${id} .ghost-name`).focus();
-                $('#fabMenu').fadeOut(200); return;
+                return;
             }
+            
+            // בונים את החנות ומכניסים למסך
             const fakeCat = { id: id, name: name, icon: icon };
             const newBlockHtml = buildCategoryBlock(fakeCat, false, true);
             
             $('#empty-state-msg').remove();
             $('#shopping-lists-container').append(newBlockHtml);
-            $('#btnClearAllFAB').fadeIn(); 
             
-            $(btnElement).remove();
-            
-            if($('#fabMenu').children().length === 0) {
-                $('#fabMenu').html(`<div class="fab-menu-item" style="color:#aaa; cursor:default; justify-content:center;">אין חנויות מוגדרות</div>`);
-            }
-            $('#fabMenu').fadeOut(200);
+            // קופצים מיד לפוקוס על שורת ההקלדה
             $(`#cat-block-${id} .ghost-name`).focus();
+            
+            // מעלימים את החנות מתפריט הפלוס ומעדכנים את התפריט בזמן אמת!
+            $(`#plus-cat-${id}`).remove();
+            updatePlusMenuUI();
         }
 
         function saveItemToDB($row) {
