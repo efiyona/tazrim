@@ -320,23 +320,41 @@ function updateBadge(count) {
 </script>
 
 <script>
-/**
- * פונקציה לפתיחת מודאל לפי ID שנשלח מהגדרות העמוד
- */
+// --- הפונקציה בחוץ! עכשיו היא גלובלית ומונעת חיתוך בכל האתר ---
+function calculateAlignment(btn, popup) {
+    if(!popup) return;
+    popup.classList.remove('align-left', 'align-right', 'align-center');
+    
+    const rect = btn.getBoundingClientRect();
+    const screenW = window.innerWidth;
+    const popupWidth = popup.offsetWidth || 200; 
+    
+    const btnCenter = rect.left + (rect.width / 2);
+    const halfPopup = (popupWidth / 2) + 20; 
+
+    // אם אין מספיק מקום משמאל - נצמיד לשמאל (מובייל)
+    if (btnCenter < halfPopup) {
+        popup.classList.add('align-left'); 
+    } 
+    // אם אין מספיק מקום מימין - נצמיד לימין
+    else if (screenW - btnCenter < halfPopup) {
+        popup.classList.add('align-right'); 
+    } 
+    // אם יש מקום - תמיד נמרכז בצורה סימטרית ומושלמת!
+    else {
+        popup.classList.add('align-center'); 
+    }
+}
+
 function openDynamicModal(modalId) {
     if (!modalId) return;
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'block';
-        // נעילת גלילה (אם קיים global_modals.js)
         document.body.classList.add('no-scroll');
-        
-        // אתחול ספציפי למודאל הוספת פעולה ב-index.php
         if (modalId === 'add-transaction-modal' && typeof resetAddForm === "function") {
             resetAddForm();
         }
-    } else {
-        console.error("Modal not found: " + modalId);
     }
 }
 
@@ -350,33 +368,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const indicator = document.getElementById('navIndicator');
     const itemWidth = 70; // רוחב האייקון ב-user.css
 
-    // --- תיקון מנוע המיקום האוטומטי (Auto-Alignment) ---
-    // שינוי לוגיקה שתתעדף מרכוז אלא אם באמת יש חריגה מהמסך
-    function calculateAlignment(btn, popup) {
-        popup.classList.remove('align-left', 'align-right', 'align-center');
-        
-        const rect = btn.getBoundingClientRect();
-        const popupWidth = popup.offsetWidth || 150; // הערכת רוחב אם טרם הוצג
-        const screenW = window.innerWidth;
-        
-        // חישוב המרחק של מרכז הכפתור מהקצוות
-        const distFromLeft = rect.left + (rect.width / 2);
-        const distFromRight = screenW - distFromLeft;
-        
-        // אם המרחק מכל צד גדול מחצי רוחב הפופאפ + שוליים בטחון (10px), נמרכז
-        const halfPopup = (popupWidth / 2) + 10;
-        
-        if (distFromLeft < halfPopup) {
-            popup.classList.add('align-left');
-        } else if (distFromRight < halfPopup) {
-            popup.classList.add('align-right');
-        } else {
-            popup.classList.add('align-center');
-        }
-    }
-
-    // ניהול הזזת האינדיקטור
     function moveIndicator(targetLi) {
+        if (!indicator || !targetLi) return;
         const items = Array.from(targetLi.parentElement.children).filter(c => c.classList.contains('list'));
         const index = items.indexOf(targetLi);
         indicator.style.transform = `translateX(${index * -itemWidth}px)`;
@@ -385,15 +378,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialActive = document.querySelector('.bottom-nav-bar .list.active');
     if (initialActive) moveIndicator(initialActive);
 
-    // לחיצה על תפריטים עם תת-תפריט
     listItems.forEach(item => {
         const link = item.querySelector('.nav-main-link');
         link.addEventListener('click', (e) => {
             if (item.classList.contains('has-submenu')) {
                 e.preventDefault();
+                
+                const plusWrapper = document.querySelector('.detached-plus-wrapper');
+                if (plusWrapper) plusWrapper.classList.remove('open');
+
                 const popup = item.querySelector('.submenu-popup-container');
                 
-                // חישוב מיקום מחדש בכל פתיחה
                 if (!item.classList.contains('show-submenu')) {
                     calculateAlignment(item, popup);
                 }
@@ -401,7 +396,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 listItems.forEach(li => { if(li !== item) li.classList.remove('show-submenu') });
                 item.classList.toggle('show-submenu');
             } else {
-                // לחיצה על תפריט רגיל - הפעלת ספינר הטעינה
                 if (!item.classList.contains('active')) {
                     const iconEl = link.querySelector('.icon i');
                     if (iconEl) {
@@ -412,18 +406,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // סגירה בלחיצה בחוץ
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.floating-nav-wrapper')) {
             document.querySelectorAll('.show-submenu').forEach(el => el.classList.remove('show-submenu'));
+            document.querySelectorAll('.detached-plus-wrapper.open').forEach(el => el.classList.remove('open'));
         }
     });
-    
-     // עדכון מיקום האינדיקטור בעת שינוי גודל המסך
-     window.addEventListener('resize', () => {
-        const activeItem = document.querySelector('.bottom-nav-bar .list.active');
-        if (activeItem) moveIndicator(activeItem);
-     });
 });
 </script>
 
