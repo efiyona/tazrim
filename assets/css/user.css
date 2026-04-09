@@ -2914,6 +2914,232 @@ body.auth-forgot .auth-switch a {
     cursor: not-allowed;
 }
 
+/* אזור «התזרים באייפון» — עמוד החשבון (נטען ב-AJAX) */
+.ios-tazrim-panel .ios-tazrim-lead {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--text-dark);
+    margin: 0 0 18px 0;
+}
+
+.ios-tazrim-help {
+    margin-bottom: 14px !important;
+}
+
+.ios-tazrim-primary-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+}
+
+.ios-api-token-input {
+    border: none;
+    background: transparent;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    flex-grow: 1;
+    color: #475569;
+    min-width: 0;
+}
+
+.ios-shortcuts-section {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.ios-shortcuts-title {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    color: var(--text-dark);
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ios-shortcuts-guide {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px 14px 16px;
+    margin-bottom: 18px;
+}
+
+.ios-shortcuts-guide-lead {
+    margin: 0 0 12px 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.ios-shortcuts-steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ios-shortcuts-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+}
+
+.ios-shortcuts-step-num {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    color: var(--main);
+    font-size: 0.8rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.ios-shortcuts-step-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: right;
+}
+
+.ios-shortcuts-step-title {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--text-dark);
+}
+
+.ios-shortcuts-step-text {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #64748b;
+}
+
+.ios-shortcuts-links-label {
+    margin: 0 0 10px 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.ios-shortcut-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ios-shortcut-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    color: var(--text-dark) !important;
+    text-decoration: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    text-align: right;
+}
+
+@media (hover: hover) {
+    .ios-shortcut-add-btn:hover {
+        border-color: var(--main);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        background: #fafafa;
+    }
+}
+
+.ios-shortcut-add-btn:active {
+    background: #f1f5f9;
+}
+
+.ios-shortcut-add-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--sub_main-light, #e8f4f8);
+    color: var(--main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+}
+
+.ios-shortcut-add-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-start;
+}
+
+.ios-shortcut-add-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    line-height: 1.3;
+}
+
+.ios-shortcut-add-hint {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.ios-shortcut-add-chevron {
+    flex-shrink: 0;
+    color: #cbd5e1;
+    font-size: 0.75rem;
+}
+
+.ios-shortcuts-empty {
+    margin: 8px 0 0 0 !important;
+}
+
+.ios-tazrim-error {
+    padding: 14px;
+    border-radius: 10px;
+    background: #fef2f2;
+    color: var(--error);
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.ios-tazrim-loading {
+    text-align: center;
+    padding: 28px 16px;
+    color: var(--text-light);
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
 .management-divider {
     border: 0;
     border-top: 1px solid #f1f5f9;

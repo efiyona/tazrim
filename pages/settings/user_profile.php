@@ -102,6 +102,12 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
         .preference-item:last-child { border-bottom: none; }
         .preference-info h4 { margin: 0 0 4px 0; font-size: 1rem; color: var(--text-dark); }
         .preference-info p { margin: 0; font-size: 0.8rem; color: var(--text-light); }
+
+        .ios-tazrim-card-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
     </style>
 </head>
 <body class="bg-gray">
@@ -246,7 +252,19 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
                         </div>
                     </div>
 
-                    <div class="card danger-card">
+                    <div class="card full-width-card" id="ios-tazrim-card">
+                        <div class="card-header ios-tazrim-card-header">
+                            <h3><i class="fa-brands fa-apple" aria-hidden="true"></i> התזרים באייפון</h3>
+                        </div>
+                        <div class="card-body-padding" id="ios-tazrim-panel-mount">
+                            <div class="ios-tazrim-loading">
+                                <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                                <span>טוען את האזור…</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card danger-card full-width-card">
                         <div class="card-body-padding">
 
                             <div class="management-block" style="margin-bottom: 0;">
@@ -421,6 +439,130 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
                 });
             });
         }
+
+        function escapeHtmlIos(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        function refreshIosTazrimPanel() {
+            const mount = document.getElementById('ios-tazrim-panel-mount');
+            if (!mount) return;
+
+            mount.innerHTML = '<div class="ios-tazrim-loading"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>טוען…</span></div>';
+
+            fetch('<?php echo BASE_URL; ?>app/ajax/get_ios_tazrim_panel.php', { credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.status === 'success' && data.html) {
+                        mount.innerHTML = data.html;
+                        return;
+                    }
+                    const msg = data.message || 'לא ניתן לטעון את האזור.';
+                    mount.innerHTML = '<div class="ios-tazrim-error">' + escapeHtmlIos(msg) + '</div>';
+                })
+                .catch(function() {
+                    mount.innerHTML = '<div class="ios-tazrim-error">שגיאת תקשורת עם השרת.</div>';
+                });
+        }
+
+        function iosPanelCopyToken() {
+            const tokenInput = document.getElementById('ios-api-token-display');
+            if (!tokenInput) return;
+            tokenInput.select();
+            navigator.clipboard.writeText(tokenInput.value);
+
+            const msg = document.getElementById('ios-copy-msg');
+            if (msg) {
+                msg.style.display = 'block';
+                setTimeout(function() { msg.style.display = 'none'; }, 2000);
+            }
+        }
+
+        function iosPanelDeleteToken() {
+            tazrimConfirm({
+                title: 'מחיקת מפתח חיבור',
+                message: 'למחוק את מפתח החיבור? קיצורי הדרך והחיבורים שמשתמשים בו לא יעבדו עד שתיצור מפתח חדש.',
+                confirmText: 'מחק מפתח',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function(ok) {
+                if (!ok) return;
+
+                const btn = document.getElementById('btn-ios-delete-api-token');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מוחק...';
+                }
+
+                fetch('<?php echo BASE_URL; ?>app/ajax/delete_api_token.php', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        refreshIosTazrimPanel();
+                    } else {
+                        tazrimAlert({
+                            title: 'שגיאה',
+                            message: data.message || 'שגיאה במחיקת המפתח.'
+                        });
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
+                        }
+                    }
+                })
+                .catch(() => {
+                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
+                    }
+                });
+            });
+        }
+
+        function iosPanelGenerateToken() {
+            const btn = document.getElementById('btn-ios-generate-api');
+            if (!btn) return;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> יוצר מפתח…';
+
+            fetch('<?php echo BASE_URL; ?>app/ajax/generate_api_token.php', {
+                method: 'POST'
+            })
+            .then(async response => {
+                const text = await response.text();
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    console.error('Server Error Output:', text);
+                    throw new Error('השרת שלח תשובה לא תקינה.');
+                }
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    refreshIosTazrimPanel();
+                } else {
+                    tazrimAlert({ title: 'שגיאה', message: data.message || 'אירעה שגיאה.' });
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-key"></i> יצירת מפתח חיבור';
+                }
+            })
+            .catch(err => {
+                tazrimAlert({ title: 'שגיאה', message: err.message || 'אירעה שגיאה.' });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-key"></i> יצירת מפתח חיבור';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('ios-tazrim-panel-mount')) {
+                refreshIosTazrimPanel();
+            }
+        });
     </script>
 
     <script>

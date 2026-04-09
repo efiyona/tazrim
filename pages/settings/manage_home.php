@@ -64,11 +64,6 @@ if ($shopping_stores_result) {
 // 5. שליפת כל המשתמשים השייכים לבית זה
 $members_query = "SELECT first_name, nickname, role, email FROM users WHERE home_id = $home_id ORDER BY (role = 'admin') DESC, first_name ASC";
 $members_result = mysqli_query($conn, $members_query);
-
-// בדיקה האם קיים כבר מפתח API למשתמש הנוכחי
-$token_check_query = "SELECT token FROM api_tokens WHERE user_id = $user_id LIMIT 1";
-$token_check_result = mysqli_query($conn, $token_check_query);
-$existing_token = mysqli_fetch_assoc($token_check_result);
 ?>
 
 <!DOCTYPE html>
@@ -118,30 +113,6 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                                     </a>
                                 </div>
                                 <p class="block-help">שלח את הקוד הזה לשותפים כדי שיצטרפו לבית שלך.</p>
-                            </div>
-
-                            <div class="management-block">
-                                <span class="block-label">חיבור לאייפון (API Key):</span>
-                                <?php if ($existing_token): ?>
-                                    <div class="api-token-block-v2">
-                                        <div class="api-wrapper-v2">
-                                            <input type="text" id="api-token-display" value="<?php echo htmlspecialchars($existing_token['token'], ENT_QUOTES, 'UTF-8'); ?>" readonly>
-                                            <button type="button" onclick="copyApiToken()" class="copy-btn-v2" title="העתק מפתח">
-                                                <i class="fa-regular fa-copy"></i>
-                                            </button>
-                                        </div>
-                                        <div id="copy-msg" style="display: none;" class="success-text-small">
-                                            <i class="fa-solid fa-check"></i> המפתח הועתק!
-                                        </div>
-                                        <button type="button" id="btn-delete-api-token" class="btn-api-token-delete" onclick="deleteApiToken()">
-                                            <i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת
-                                        </button>
-                                    </div>
-                                <?php else: ?>
-                                    <button type="button" id="btn-generate-api" class="btn-generate-v2" onclick="generateApiToken()">
-                                        <i class="fa-solid fa-key"></i> יצירת מפתח חיבור ראשון
-                                    </button>
-                                <?php endif; ?>
                             </div>
 
                             <hr class="management-divider">
@@ -1050,97 +1021,6 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 .catch(() => {
                     tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
                 });
-            });
-        }
-    </script>
-
-    <script>
-        // העתקת המפתח לקליפבורד
-        function copyApiToken() {
-            const tokenInput = document.getElementById('api-token-display');
-            tokenInput.select();
-            navigator.clipboard.writeText(tokenInput.value);
-            
-            const msg = document.getElementById('copy-msg');
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; }, 2000);
-        }
-
-        function deleteApiToken() {
-            tazrimConfirm({
-                title: 'מחיקת מפתח חיבור',
-                message: 'למחוק את מפתח החיבור? האפליקציה באייפון לא תוכל להתחבר עד שתיצור מפתח חדש.',
-                confirmText: 'מחק מפתח',
-                cancelText: 'ביטול',
-                danger: true
-            }).then(function(ok) {
-                if (!ok) return;
-
-                const btn = document.getElementById('btn-delete-api-token');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מוחק...';
-                }
-
-                fetch('<?php echo BASE_URL; ?>/app/ajax/delete_api_token.php', {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        window.location.reload();
-                    } else {
-                        tazrimAlert({
-                            title: 'שגיאה',
-                            message: data.message || 'שגיאה במחיקת המפתח.'
-                        });
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
-                        }
-                    }
-                })
-                .catch(() => {
-                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
-                    }
-                });
-            });
-        }
-
-        function generateApiToken() {
-            const btn = document.getElementById('btn-generate-api');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מייצר...';
-
-            fetch('<?php echo BASE_URL; ?>app/ajax/generate_api_token.php', {
-                method: 'POST'
-            })
-            .then(async response => {
-                const text = await response.text();
-                try {
-                    return JSON.parse(text);
-                } catch(e) {
-                    // אם השרת שלח שגיאת PHP במקום JSON, נראה אותה בקונסול
-                    console.error("Server Error Output:", text);
-                    throw new Error("השרת שלח תשובה לא תקינה. בדוק את הקונסול.");
-                }
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    window.location.reload();
-                } else {
-                    tazrimAlert({ title: 'שגיאה', message: data.message || 'אירעה שגיאה.' });
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-key"></i> ניסיון חוזר';
-                }
-            })
-            .catch(err => {
-                tazrimAlert({ title: 'שגיאה', message: err.message || 'אירעה שגיאה.' });
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-key"></i> ניסיון חוזר';
             });
         }
     </script>

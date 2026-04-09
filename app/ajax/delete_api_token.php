@@ -1,6 +1,7 @@
 <?php
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
+include(ROOT_PATH . '/assets/includes/auth_check.php');
 
 header('Content-Type: application/json; charset=utf-8');
 
