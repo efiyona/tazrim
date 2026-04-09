@@ -283,7 +283,7 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
         <div class="modal-content" style="max-width: 450px;">
             <div class="modal-header">
                 <h3 id="cat-modal-title">קטגוריה חדשה</h3>
-                <button type="button" onclick="closeCategoryModal()" class="close-modal-btn">&times;</button>
+                <button type="button" onclick="closeCategoryModal()" class="close-modal-btn">סגור</button>
             </div>
             <div class="modal-body">
                 <form id="category-form">

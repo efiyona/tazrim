@@ -133,7 +133,7 @@ $is_setup_needed = ($cats_count == 0);
 
                 <div id="shopping-lists-container">
                     <div style="text-align:center; padding: 40px; color:#888;">
-                        <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>טוען רשימות...
+                        <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>רגע…
                     </div>
                 </div>
             <?php endif; ?>
@@ -200,7 +200,7 @@ $is_setup_needed = ($cats_count == 0);
             }
 
             const btn = $('#finish-setup-btn');
-            btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> מכין את הרשימות...');
+            btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> רגע…');
             msgBox.hide();
 
             $.post('../app/ajax/setup_shopping_categories.php', { categories: selectedStores }, function(response) {

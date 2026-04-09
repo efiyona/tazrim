@@ -1,7 +1,7 @@
 <div id="global-info-modal" class="modal">
     <div class="modal-content" style="max-width: 400px; text-align: center; border-radius: 20px;">
         <div class="modal-header" style="justify-content: center; position: relative; border-bottom: none; padding-bottom: 0;">
-            <button type="button" onclick="closeInfoModal()" class="close-modal-btn" style="position: absolute; left: 20px; top: 20px;">&times;</button>
+            <button type="button" onclick="closeInfoModal()" class="close-modal-btn" style="position: absolute; left: 20px; top: 20px;">סגור</button>
             <div style="font-size: 2.5rem; color: var(--main); margin-bottom: 10px;">
                 <i class="fa-solid fa-circle-info"></i>
             </div>
@@ -11,7 +11,7 @@
             <p id="global-info-content" style="color: var(--text-light); line-height: 1.6; font-size: 0.95rem; margin: 0;">
                 כאן יופיע טקסט ההסבר שיוזרק דינמית.
             </p>
-            <button onclick="closeInfoModal()" class="btn-primary" style="margin-top: 25px; width: 100%; border-radius: 12px;">הבנתי, תודה!</button>
+            <button type="button" onclick="closeInfoModal()" class="btn-primary" style="margin-top: 25px; width: 100%; border-radius: 12px;">הבנתי</button>
         </div>
     </div>
 </div>

@@ -232,7 +232,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
                     <?php if (mysqli_num_rows($pending_result) == 4): ?>
                         <button id="loadMorePendingBtn" class="btn-load-more w-full" style="margin-top: 20px;">
-                        הצג עוד ממתינות...
+                        עוד ממתינות
                         </button>
                     <?php endif; ?>
                 </div>
@@ -284,7 +284,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
                     <?php if (mysqli_num_rows($recent_result) == 4): ?>
                         <button id="loadMoreBtn" class="btn-load-more w-full" style="margin-top: 20px;">
-                        הצג עוד...
+                        עוד אחרונות
                         </button>
                     <?php endif; ?>
                 </div>
@@ -357,7 +357,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
                         <div class="ai-card-body" id="ai-insight-content">
                             <p class="ai-intro-text">לחצו על הכפתור כדי לקבל ניתוח חכם של קצב ההוצאות שלכם החודש (Burn Rate).</p>
                             <button id="btn-generate-insight" class="btn-ai-generate" onclick="generateAIInsight()">
-                                <i class="fa-solid fa-robot"></i> נתח את החודש שלי עכשיו
+                                <i class="fa-solid fa-robot"></i> תובנה לחודש
                             </button>
                         </div>
                     </div>
@@ -371,7 +371,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="selected-cat-name"></h3>
-                <button onclick="closeCatDetails()" class="close-modal-btn">&times;</button>
+                <button type="button" onclick="closeCatDetails()" class="close-modal-btn">סגור</button>
             </div>
             <div class="modal-body">
                 <div id="cat-details-content"></div>
@@ -392,7 +392,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         <div class="modal-content" style="max-width: 450px;">
             <div class="modal-header">
                 <h3>הוספת פעולה חדשה</h3>
-                <button type="button" onclick="closeAddModal()" class="close-modal-btn">&times;</button>
+                <button type="button" onclick="closeAddModal()" class="close-modal-btn">סגור</button>
             </div>
             <div class="modal-body">
                 <form id="add-transaction-form">
@@ -456,7 +456,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         <div class="modal-content" style="max-width: 450px;">
             <div class="modal-header">
                 <h3>עריכת פעולה</h3>
-                <button type="button" onclick="closeEditTransModal()" class="close-modal-btn">&times;</button>
+                <button type="button" onclick="closeEditTransModal()" class="close-modal-btn">סגור</button>
             </div>
             <div class="modal-body">
                 <form id="edit-transaction-form">
@@ -522,7 +522,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
     function loadTransactions(status, offset, containerId, btn) {
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> טוען...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> רגע…';
         btn.disabled = true;
         
         const url = `app/ajax/fetch_transactions.php?offset=${offset}&status=${status}&m=${currentMonth}&y=${currentYear}`;
@@ -557,7 +557,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
     }
 
     function setButtonToExpanded(btn) {
-        btn.innerText = 'סגור רשימה';
+        btn.innerText = 'סגור';
         btn.disabled = false;
         btn.setAttribute('data-state', 'expanded');
         btn.style.backgroundColor = 'var(--gray)';
@@ -570,7 +570,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         if (status === 'recent') recentOffset = 4;
         if (status === 'pending') pendingOffset = 4;
         
-        btn.innerHTML = status === 'pending' ? 'הצג עוד ממתינות...' : 'הצג עוד...';
+        btn.innerHTML = status === 'pending' ? 'עוד ממתינות' : 'עוד אחרונות';
         btn.removeAttribute('data-state');
         btn.style.backgroundColor = ''; 
         
@@ -584,7 +584,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
 
         modal.style.display = 'block';
         title.innerText = 'פירוט הוצאות: ' + catName;
-        content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> טוען נתונים...</div>';
+        content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> רגע…</div>';
 
         fetch(`app/ajax/fetch_category_details.php?cat_id=${catId}&m=${currentMonth}&y=${currentYear}`)
             .then(response => response.text())
@@ -608,7 +608,7 @@ $result_categories = mysqli_query($conn, $categories_budget_query);
         const btn = document.getElementById('btn-generate-insight');
         const content = document.getElementById('ai-insight-content');
 
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מנתח נתונים, אנא המתן...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מנתח…';
         btn.disabled = true;
 
         fetch(`app/ajax/generate_ai_insight.php?m=${currentMonth}&y=${currentYear}`)
