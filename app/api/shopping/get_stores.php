@@ -64,14 +64,19 @@ $cat_query = "SELECT id, name, icon FROM shopping_categories WHERE home_id = $ho
 $cat_result = mysqli_query($conn, $cat_query);
 
 $stores = [];
+$stores_list = [];
 while ($row = mysqli_fetch_assoc($cat_result)) {
     $emoji = getEmoji($row['icon'] ?? '');
     $display_name = $emoji . ' ' . $row['name'];
-    $stores[$display_name] = (int)$row['id'];
+    $id = (int)$row['id'];
+    $stores[$display_name] = $id;
+    // מערך נוח לקיצור בדרך (בחירה מרשימה → Get Dictionary Value: id)
+    $stores_list[] = ['id' => $id, 'name' => $display_name];
 }
 
 echo json_encode([
     'status' => 'success',
     'stores' => $stores,
+    'stores_list' => $stores_list,
 ], JSON_UNESCAPED_UNICODE);
 exit();
