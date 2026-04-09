@@ -1,7 +1,7 @@
 <?php
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
-include_once(ROOT_PATH . '/app/functions/push_functions.php'); // טעינת המנוע של הפוש
+require_once ROOT_PATH . '/app/functions/budget_overrun_push.php'; // פוש + maybeSendBudgetOverrunPush
 
 header('Content-Type: application/json');
 
@@ -76,40 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 8. בדיקת חריגה מתקציב הקטגוריה (Budget Alert)
         // ==========================================
         if ($type === 'expense') {
-            // א. שליפת פרטי הקטגוריה והתקציב שלה
-            $cat_query = "SELECT name, budget_limit FROM categories WHERE id = $category_id LIMIT 1";
-            $cat_result = mysqli_query($conn, $cat_query);
-            $cat_data = mysqli_fetch_assoc($cat_result);
-
-            if ($cat_data && $cat_data['budget_limit'] > 0) {
-                $budget_limit = $cat_data['budget_limit'];
-                $cat_name = $cat_data['name'];
-
-                // ב. חישוב סך ההוצאות בקטגוריה זו בחודש הנוכחי
-                $start_of_month = date('Y-m-01');
-                $end_of_month = date('Y-m-t');
-
-                $sum_query = "SELECT SUM(amount) as total_spent FROM transactions 
-                              WHERE home_id = $home_id 
-                              AND category = $category_id 
-                              AND type = 'expense' 
-                              AND transaction_date BETWEEN '$start_of_month' AND '$end_of_month'";
-                $sum_result = mysqli_query($conn, $sum_query);
-                $sum_data = mysqli_fetch_assoc($sum_result);
-                $total_spent = $sum_data['total_spent'] ?? 0;
-
-                // ג. בדיקה אם הגענו או עברנו את התקציב
-                if ($total_spent >= $budget_limit) {
-                    $alert_title = "⚠️ חריגה מתקציב!";
-                    $total_spent_formatted = number_format($total_spent);
-                    $budget_formatted = number_format($budget_limit);
-                    
-                    $alert_body = "הגעתם ל-100% מהתקציב בקטגוריית '$cat_name'. (הוצאתם $total_spent_formatted מתוך $budget_formatted ₪).";
-                    
-                    // נשלח את התראת החריגה לכל בני הבית במכה אחת
-                    sendPushToEntireHome($home_id, $alert_title, $alert_body, BASE_URL);
-                }
-            }
+            maybeSendBudgetOverrunPush($home_id, $category_id);
         }
         // ==========================================
 

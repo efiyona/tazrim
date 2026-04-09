@@ -7,14 +7,19 @@ use Minishlink\WebPush\Subscription;
 
 // פונקציית עזר שמונעת שגיאות במקרה שהמפתחות טרם הוגדרו בקובץ ההגדרות
 function getWebPushAuth() {
-    if (!defined('VAPID_PUBLIC_KEY') || !defined('VAPID_PRIVATE_KEY') || empty(VAPID_PUBLIC_KEY)) {
+    if (!defined('VAPID_PUBLIC_KEY') || !defined('VAPID_PRIVATE_KEY')) {
+        return false;
+    }
+    $publicKey = VAPID_PUBLIC_KEY;
+    $privateKey = VAPID_PRIVATE_KEY;
+    if ($publicKey === '' || $privateKey === '') {
         return false;
     }
     return [
         'VAPID' => [
             'subject' => defined('SITE_URL') ? SITE_URL : 'mailto:admin@yourdomain.com',
-            'publicKey' => VAPID_PUBLIC_KEY,
-            'privateKey' => VAPID_PRIVATE_KEY,
+            'publicKey' => $publicKey,
+            'privateKey' => $privateKey,
         ],
     ];
 }

@@ -1,0 +1,97 @@
+Project uses a MySQL database.
+
+The database schema is a live source of truth and must be inspected using realtime introspection commands.
+
+Available database inspection tools:
+
+php scripts/db-introspect.php tables
+php scripts/db-introspect.php columns <table>
+
+
+=== DATABASE AWARENESS PROTOCOL ===
+
+The agent must maintain accurate awareness of the database structure while minimizing unnecessary calls.
+
+1. BEFORE planning backend features, database changes, or SQL:
+   - Inspect database tables if the task involves data, backend logic, or persistence.
+
+2. BEFORE writing SQL queries:
+   - Verify table existence.
+   - Verify column names and structure using introspection.
+   - Never assume schema structure.
+
+3. BEFORE modifying database structure (CREATE / ALTER / DROP):
+   - Re-check current table structure.
+   - Ensure the change does not already exist.
+
+4. WHEN reading or inserting data:
+   - Confirm relevant table structure if not already inspected during the current task.
+
+5. IF schema uncertainty exists at any time:
+   - Re-run introspection instead of guessing.
+
+6. Avoid redundant inspections:
+   - Do not repeatedly inspect the same table unless:
+     - schema changes are likely,
+     - a migration was executed,
+     - or assumptions may be outdated.
+
+7. Treat introspection results as valid only for the current task context.
+   Future tasks must re-check schema when relevant.
+
+
+=== SAFETY RULES ===
+
+- Never guess table or column names.
+- Prefer verification over assumptions.
+- Prefer existing project patterns and conventions.
+- Use prepared statements in PHP for all database queries.
+- Assume MySQL syntax and behavior.
+
+
+=== DEVELOPMENT BEHAVIOR ===
+
+During feature planning:
+- Validate database compatibility when persistence or data models are involved.
+- Suggest schema updates only after inspecting current structure.
+
+When unsure about database state:
+- Inspect again instead of reasoning from memory.
+
+=== DATABASE MIGRATION STRATEGY ===
+
+When implementing a feature that introduces new data requirements:
+
+1. Inspect existing database schema first.
+2. If required tables or columns do not exist:
+   - DO NOT immediately write PHP or SQL queries.
+   - First propose a database migration.
+3. Present the migration clearly before generating dependent code.
+4. Only generate backend code after schema compatibility is confirmed.
+
+Database design precedes application code.
+Never assume schema evolution already happened.
+
+## Database Change Safety Rule
+
+Before writing any PHP or SQL code that depends on database structure:
+
+1. Inspect current schema using:
+   php scripts/db-introspect.php tables
+   php scripts/db-introspect.php columns <table>
+
+2. Compare required schema with existing schema.
+
+3. If required tables or columns do not exist:
+   - DO NOT write PHP code yet.
+   - FIRST propose a SQL migration.
+   - Explain what schema change is required and why.
+   - Wait for approval before generating dependent code.
+
+4. Only after schema matches requirements:
+   - Generate PHP code using prepared statements.
+   - Follow existing project patterns.
+
+5. Never assume schema structure.
+6. Never silently invent columns or tables.
+7. Prefer minimal, backward-compatible migrations.

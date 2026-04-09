@@ -96,14 +96,19 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                             <div class="management-block">
                                 <span class="block-label">חיבור לאייפון (API Key):</span>
                                 <?php if ($existing_token): ?>
-                                    <div class="api-wrapper-v2">
-                                        <input type="text" id="api-token-display" value="<?php echo $existing_token['token']; ?>" readonly>
-                                        <button onclick="copyApiToken()" class="copy-btn-v2" title="העתק מפתח">
-                                            <i class="fa-regular fa-copy"></i>
+                                    <div class="api-token-block-v2">
+                                        <div class="api-wrapper-v2">
+                                            <input type="text" id="api-token-display" value="<?php echo htmlspecialchars($existing_token['token'], ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                                            <button type="button" onclick="copyApiToken()" class="copy-btn-v2" title="העתק מפתח">
+                                                <i class="fa-regular fa-copy"></i>
+                                            </button>
+                                        </div>
+                                        <div id="copy-msg" style="display: none;" class="success-text-small">
+                                            <i class="fa-solid fa-check"></i> המפתח הועתק!
+                                        </div>
+                                        <button type="button" id="btn-delete-api-token" class="btn-api-token-delete" onclick="deleteApiToken()">
+                                            <i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת
                                         </button>
-                                    </div>
-                                    <div id="copy-msg" style="display: none;" class="success-text-small">
-                                        <i class="fa-solid fa-check"></i> המפתח הועתק!
                                     </div>
                                 <?php else: ?>
                                     <button type="button" id="btn-generate-api" class="btn-generate-v2" onclick="generateApiToken()">
@@ -555,6 +560,40 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
             const msg = document.getElementById('copy-msg');
             msg.style.display = 'block';
             setTimeout(() => { msg.style.display = 'none'; }, 2000);
+        }
+
+        function deleteApiToken() {
+            if (!confirm('למחוק את מפתח החיבור? האפליקציה באייפון לא תוכל להתחבר עד שתיצור מפתח חדש.')) {
+                return;
+            }
+            const btn = document.getElementById('btn-delete-api-token');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מוחק...';
+            }
+
+            fetch('<?php echo BASE_URL; ?>/app/ajax/delete_api_token.php', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'שגיאה במחיקת המפתח.');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
+                    }
+                }
+            })
+            .catch(() => {
+                alert('שגיאת תקשורת עם השרת.');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
+                }
+            });
         }
 
         function generateApiToken() {

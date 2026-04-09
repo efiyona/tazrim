@@ -1854,6 +1854,13 @@ body {
 }
 
 /* עיצוב תיבת ה-API המודרנית */
+.api-token-block-v2 {
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .api-wrapper-v2 {
     display: flex;
     background: #f1f5f9;
@@ -1900,7 +1907,30 @@ body {
     color: var(--main);
     font-size: 0.75rem;
     font-weight: 700;
-    margin-top: 5px;
+    margin-top: 0;
+}
+
+.btn-api-token-delete {
+    width: 100%;
+    margin-top: 4px;
+    background: #fef2f2;
+    color: var(--error);
+    border: 1px solid #fecaca;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.btn-api-token-delete:hover:not(:disabled) {
+    background: #fee2e2;
+}
+
+.btn-api-token-delete:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .management-divider {

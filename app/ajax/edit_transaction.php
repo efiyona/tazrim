@@ -1,6 +1,8 @@
 <?php
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
+require_once ROOT_PATH . '/app/functions/budget_overrun_push.php';
+
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -27,6 +29,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (mysqli_query($conn, $update_query)) {
         mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
+
+        $after = mysqli_query($conn, "SELECT type, category FROM transactions WHERE id = $trans_id AND home_id = $home_id LIMIT 1");
+        if ($after) {
+            $row = mysqli_fetch_assoc($after);
+            if ($row && $row['type'] === 'expense') {
+                maybeSendBudgetOverrunPush($home_id, (int) $row['category']);
+            }
+        }
+
         echo json_encode(['status' => 'success']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'שגיאה בשמירת הנתונים.']);
