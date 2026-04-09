@@ -57,6 +57,37 @@ body {
     direction: rtl; /* הבטחת כיווניות לאורך כל האתר */
 }
 
+/* כותרות בסיס (דסקטופ); במובייל מוקטנות */
+h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--text);
+}
+h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text);
+}
+@media (max-width: 767.98px) {
+    h2 {
+        font-size: 1.2rem;
+    }
+    h3 {
+        font-size: 1.05rem;
+    }
+    .chart-header h3 {
+        font-size: 1.05rem;
+    }
+    .notif-header h3 {
+        font-size: 0.95rem;
+    }
+    .join-code-box h2 {
+        font-size: 1.65rem;
+    }
+}
+
 /* =========================================
    Utility Classes (מחלקות כלליות)
 ========================================= */
@@ -2329,9 +2360,8 @@ body.auth-forgot .auth-switch a {
         #manage-home-categories-panel .manage-categories-toolbar .section-subtitle {
             flex: 1 1 12rem;
             min-width: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         #manage-home-categories-panel .manage-categories-toolbar .btn-primary {
             flex-shrink: 0;
@@ -2362,9 +2392,8 @@ body.auth-forgot .auth-switch a {
         #manage-home-recurring-panel .manage-categories-toolbar .section-subtitle {
             flex: 1 1 12rem;
             min-width: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         #manage-home-recurring-panel .manage-categories-toolbar .btn-primary {
             flex-shrink: 0;
@@ -2395,9 +2424,8 @@ body.auth-forgot .auth-switch a {
         #manage-home-shopping-stores-panel .manage-categories-toolbar .section-subtitle {
             flex: 1 1 12rem;
             min-width: 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         #manage-home-shopping-stores-panel .manage-categories-toolbar .btn-primary {
             flex-shrink: 0;

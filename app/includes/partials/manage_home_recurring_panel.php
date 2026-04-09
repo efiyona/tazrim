@@ -7,14 +7,14 @@ $recurring_expenses = $recurring_expenses ?? [];
 $recurring_income = $recurring_income ?? [];
 ?>
 <div class="manage-categories-toolbar">
-    <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin: 0; color: var(--text);">פעולות קבועות</h2>
+    <h2 class="section-subtitle" style="margin: 0;">פעולות קבועות</h2>
     <button type="button" class="btn-primary" style="width: max-content; margin: 0; padding: 8px 20px; font-size: 0.95rem; border-radius: 10px; box-shadow: 0 4px 10px rgba(35, 114, 39, 0.2);" onclick="openAddRecurringModal()">
         הוספה <i class="fa-solid fa-plus"></i>
     </button>
 </div>
 
 <div class="card-header" style="margin-bottom: 12px;">
-    <h3>הוצאות קבועות</h3>
+    <h3>הוצאות</h3>
 </div>
 <div id="manage-recurring-expense-list">
     <?php if (count($recurring_expenses) === 0): ?>
@@ -59,7 +59,7 @@ $recurring_income = $recurring_income ?? [];
 </div>
 
 <div class="card-header" style="margin-top: 24px; margin-bottom: 12px;">
-    <h3>הכנסות קבועות</h3>
+    <h3>הכנסות</h3>
 </div>
 <div id="manage-recurring-income-list">
     <?php if (count($recurring_income) === 0): ?>

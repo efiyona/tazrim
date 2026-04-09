@@ -98,14 +98,14 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 
                 <div class="page-header-actions" style="margin-bottom: 25px;">
                     <h1 class="section-title" style="margin-bottom: 0;">ניהול הבית</h1>
-                    <p style="color: var(--text-light); font-size: 0.9rem; margin-top: 5px;">הגדרות, תקציבים, פעולות קבועות וחנויות קניות</p>
+                    <p style="color: var(--text-light); font-size: 0.9rem; margin-top: 5px;">הגדרות והעדפות</p>
                 </div>
 
                 <div class="management-grid">
                     
                     <div class="card">
                         <div class="card-header">
-                            <h3>פרטי הבית וחיבורים</h3>
+                            <h3>פרטי הבית</h3>
                         </div>
 
                         <div class="card-body-padding">
@@ -169,7 +169,7 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
 
                     <div class="card">
                         <div class="card-header">
-                            <h3>משתתפים בבית</h3>
+                            <h3>משתתפים</h3>
                         </div>
                         <div class="members-list" style="margin-top: 10px;">
                             <?php while ($member = mysqli_fetch_assoc($members_result)): 

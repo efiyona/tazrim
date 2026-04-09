@@ -6,15 +6,12 @@
 $shopping_stores = $shopping_stores ?? [];
 ?>
 <div class="manage-categories-toolbar">
-    <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin: 0; color: var(--text);">חנויות לרשימת קניות</h2>
+    <h2 class="section-subtitle" style="margin: 0;">חנויות קניות</h2>
     <button type="button" class="btn-primary" style="width: max-content; margin: 0; padding: 8px 20px; font-size: 0.95rem; border-radius: 10px; box-shadow: 0 4px 10px rgba(35, 114, 39, 0.2);" onclick="openAddShoppingStoreModal()">
         הוספה <i class="fa-solid fa-plus"></i>
     </button>
 </div>
 
-<div class="card-header" style="margin-bottom: 12px;">
-    <h3>ניהול חנויות</h3>
-</div>
 <div id="manage-shopping-stores-list">
     <?php if (count($shopping_stores) === 0): ?>
         <div class="empty-state text-center" style="padding: 40px; background: var(--white); border-radius: 15px;">

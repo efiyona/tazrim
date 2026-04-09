@@ -48,7 +48,7 @@
 
                 <?php if ($pending_result && mysqli_num_rows($pending_result) > 0): ?>
                 <div class="transactions-section" style="margin-bottom: 30px;">
-                    <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <h2 class="section-subtitle" style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
                         פעולות ממתינות
                     </h2>
 
@@ -97,7 +97,7 @@
 
 
                 <div class="transactions-section">
-                    <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin-bottom: 20px;">פעולות אחרונות</h2>
+                    <h2 class="section-subtitle" style="margin-bottom: 20px;">פעולות אחרונות</h2>
 
                     <div id="recent-transactions-list">
                         <?php if ($recent_result && mysqli_num_rows($recent_result) > 0): ?>
@@ -149,7 +149,7 @@
                 </div>
 
                 <section class="budget-section">
-                    <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin: 30px 0 20px;">קטגוריות</h2>
+                    <h2 class="section-subtitle" style="margin: 30px 0 20px;">קטגוריות</h2>
 
                     <div class="category-grid">
                         <?php if ($result_categories) {
