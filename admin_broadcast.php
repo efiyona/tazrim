@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $sent_count = 0;
     while ($home = mysqli_fetch_assoc($homes_result)) {
         // שימוש בפונקציה הקיימת שלא שונתה - שליחה לכלל בני הבית
-        sendPushToEntireHome($home['id'], $title, $body, $link);
+        sendPushToEntireHome($home['id'], $title, $body, $link, 'system');
         $sent_count++;
     }
     

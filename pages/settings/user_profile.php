@@ -15,6 +15,12 @@ $home_data = selectOne('homes', ['id' => $home_id]);
 // שליפת נתוני המשתמש הנוכחי
 $user_data = selectOne('users', ['id' => $user_id]);
 
+// העדפות התראות Push (ברמת משתמש) - מטבלה ייעודית
+$notify_prefs = selectOne('user_notification_preferences', ['user_id' => $user_id]);
+$notify_home = isset($notify_prefs['notify_home_transactions']) ? (int) $notify_prefs['notify_home_transactions'] : 1;
+$notify_budget = isset($notify_prefs['notify_budget']) ? (int) $notify_prefs['notify_budget'] : 1;
+$notify_system = isset($notify_prefs['notify_system']) ? (int) $notify_prefs['notify_system'] : 1;
+
 // זיהוי אם המשתמש גולש ממכשיר אפל (אייפון/אייפד, כולל iPadOS עם UA של מק) — להתראות / PWA
 $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 $is_ios = (bool) preg_match('/iPhone|iPad|iPod/i', $user_agent)
@@ -114,6 +120,39 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
             align-items: center;
             gap: 8px;
         }
+
+        .notif-section-block { margin-bottom: 4px; }
+        .notif-section-title {
+            margin: 0 0 12px 0;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .notif-device-banner {
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        .notif-device-banner.ok {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+        .notif-device-banner.muted {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+        }
+        .notif-device-banner.warn {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #b45309;
+        }
     </style>
 </head>
 <body class="bg-gray">
@@ -192,47 +231,68 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
                             <h3>העדפות והתראות</h3>
                         </div>
                         <div class="card-body-padding">
-                            
-                            <div id="not-subscribed-view" style="display: none; text-align: center; padding: 10px 0;">
-                                <div style="width: 70px; height: 70px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: #94a3b8;">
-                                    <i class="fa-solid fa-bell-slash" style="font-size: 2rem;"></i>
-                                </div>
-                                <h4 style="margin: 0 0 8px 0; color: var(--text-dark); font-weight: 800;">התראות כבויות</h4>
-                                <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px; line-height: 1.5;">
-                                    הפעלת התראות כדי לקבל עדכונים בזמן אמת על חריגות מתקציב, הוצאות חדשות של שותפים ועדכוני מערכת, ישירות למכשיר הזה.
+
+                            <!-- 1) מצב מכשיר (Push) -->
+                            <div class="notif-section-block">
+                                <h4 class="notif-section-title"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i> במכשיר הזה</h4>
+                                <p id="device-push-no-support" class="block-help" style="display: none; margin-bottom: 12px;">
+                                    הדפדפן או המכשיר לא תומכים בהתראות Push, או שהאתר לא מותקן כאפליקציה (PWA). נסה דפדפן מעודכן או הוסף למסך הבית.
                                 </p>
 
-                                <?php if ($is_ios): ?>
-                                <div style="background-color: #fffbeb; border: 1px solid #fde68a; color: #d97706; padding: 12px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 20px; text-align: right; line-height: 1.5;">
-                                    <strong style="display: block; margin-bottom: 5px;"><i class="fa-brands fa-apple"></i> משתמשי אייפון ואייפד:</strong> 
-                                    כדי להפעיל התראות, עליך קודם להוסיף את המערכת למסך הבית: לחץ על כפתור השיתוף (קובייה עם חץ) למטה &gt; "הוסף למסך הבית". לאחר מכן פתח את האפליקציה ממסך הבית והפעל.
+                                <div id="device-push-subscribed" style="display: none;">
+                                    <div class="notif-device-banner ok">
+                                        <strong>התראות Push מופעלות במכשיר הזה.</strong><br>
+                                        תקבל התראות כאן רק אם גם סוגי ההתראות למטה מופעלים בחשבון שלך.
+                                    </div>
+                                    <button type="button" id="btn-disable-notifications" onclick="disablePushSubscription()" style="width: 100%; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+                                        <i class="fa-solid fa-bell-slash"></i> בטל התראות במכשיר זה
+                                    </button>
                                 </div>
-                                <?php endif; ?>
 
-                                <button type="button" id="btn-enable-notifications" class="btn-primary" onclick="initPushSubscription()" style="width: 100%;">
-                                    הפעלת התראות במכשיר
-                                </button>
+                                <div id="device-push-unsubscribed" style="display: none;">
+                                    <div class="notif-device-banner muted">
+                                        <strong>במכשיר זה לא מופעלת קבלת Push.</strong><br>
+                                        עדיין אפשר להגדיר למטה מה תרצה לקבל — ההפעלה בפועל תתבצע אחרי שתאשר התראות במכשיר.
+                                    </div>
+                                    <?php if ($is_ios): ?>
+                                    <div class="notif-device-banner warn" style="margin-bottom: 14px;">
+                                        <strong><i class="fa-brands fa-apple"></i> אייפון / אייפד:</strong>
+                                        הוסף את התזרים למסך הבית (שיתוף → הוסף למסך הבית), פתח מהאייקון, ואז הפעל התראות.
+                                    </div>
+                                    <?php endif; ?>
+                                    <button type="button" id="btn-enable-notifications" class="btn-primary" onclick="initPushSubscription()" style="width: 100%;">
+                                        <i class="fa-solid fa-bell"></i> הפעלת התראות במכשיר
+                                    </button>
+                                </div>
                             </div>
 
-                            <div id="subscribed-view" style="display: none;">
+                            <hr class="management-divider" style="margin: 22px 0;">
+
+                            <!-- 2) העדפות משתמש (חל על החשבון) -->
+                            <div class="notif-section-block" id="push-preferences-block" style="display: none;">
+                                <h4 class="notif-section-title"><i class="fa-solid fa-sliders" aria-hidden="true"></i> מה לקבל ב-Push</h4>
+                                <p class="block-help" style="margin-bottom: 14px;">
+                                    ההגדרות נשמרות לחשבון שלך וחלות על כל המכשירים שבהם מופעלות התראות Push. התראות בתוך האפליקציה (פעמון) ימשיכו להופיע גם כשהמתגים כבויים.
+                                </p>
+
                                 <div class="preference-item">
                                     <div class="preference-info">
-                                        <h4>התראות חריגה מתקציב</h4>
-                                        <p>קבלת התראה כשהבית חורג מהתקציב החודשי שהוגדר לקטגוריה</p>
+                                        <h4>פעולות של בני הבית</h4>
+                                        <p>הוצאה או הכנסה חדשה שמישהו אחר בבית הזין — לא תקבל על פעולות שאתה מזין (לשאר השותפים כן).</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" id="pref_budget_alerts" checked onchange="updatePreference('budget_alerts', this.checked)">
+                                        <input type="checkbox" id="pref_notify_home" <?php echo $notify_home ? 'checked' : ''; ?> onchange="updateNotificationPreference('home_transactions', this)">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
-                                
+
                                 <div class="preference-item">
                                     <div class="preference-info">
-                                        <h4>התראות פעולה חדשה</h4>
-                                        <p>קבלת התראה על כל הוצאה או הכנסה שאחד מבני הבית הכניס</p>
+                                        <h4>התראות תקציב</h4>
+                                        <p>כשסך ההוצאות בקטגוריה מגיע לתקרה שהוגדרה לחודש הנוכחי.</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" id="pref_large_expenses" onchange="updatePreference('large_expenses', this.checked)">
+                                        <input type="checkbox" id="pref_notify_budget" <?php echo $notify_budget ? 'checked' : ''; ?> onchange="updateNotificationPreference('budget', this)">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
@@ -240,19 +300,13 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
                                 <div class="preference-item">
                                     <div class="preference-info">
                                         <h4>עדכוני מערכת</h4>
-                                        <p>קבלת עדכונים על שיפורים ועדכונים שביצענו</p>
+                                        <p>הודעות מוצר ושידורים מהצוות (למשל עדכונים ושיפורים).</p>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" id="pref_weekly_summary" checked onchange="updatePreference('weekly_summary', this.checked)">
+                                        <input type="checkbox" id="pref_notify_system" <?php echo $notify_system ? 'checked' : ''; ?> onchange="updateNotificationPreference('system', this)">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
-
-                                <hr class="management-divider" style="margin: 20px 0;">
-                                
-                                <button type="button" id="btn-disable-notifications" onclick="disablePushSubscription()" style="width: 100%; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
-                                    <i class="fa-solid fa-bell-slash"></i> בטל התראות במכשיר זה
-                                </button>
                             </div>
 
                         </div>
@@ -390,10 +444,32 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
             });
         }
 
-        // עדכון העדפות
-        function updatePreference(prefName, isChecked) {
-            console.log(`Preference ${prefName} changed to ${isChecked}`);
-            // TODO: Create AJAX call to save preferences to DB if needed
+        // העדפות התראות (ברמת משתמש)
+        function updateNotificationPreference(prefKey, inputEl) {
+            const isChecked = inputEl.checked;
+            inputEl.disabled = true;
+            const fd = new FormData();
+            fd.append('pref', prefKey);
+            fd.append('value', isChecked ? '1' : '0');
+            fetch('<?php echo BASE_URL; ?>app/ajax/save_notification_preferences.php', {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin'
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status !== 'success') {
+                    inputEl.checked = !isChecked;
+                    tazrimAlert({ title: 'לא נשמר', message: data.message || 'אירעה שגיאה בשמירה.' });
+                }
+            })
+            .catch(function() {
+                inputEl.checked = !isChecked;
+                tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
+            })
+            .finally(function() {
+                inputEl.disabled = false;
+            });
         }
 
         // פעולות אזור סכנה
@@ -586,31 +662,58 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
             return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
         }
 
-        // בדיקה בעת טעינת הדף: האם המכשיר הזה כבר מנוי להתראות?
+        window.__taNotifState = { support: true, subscribed: false, permission: 'default' };
+
+        function applyPushUiState() {
+            const subOn = document.getElementById('device-push-subscribed');
+            const subOff = document.getElementById('device-push-unsubscribed');
+            const noSupport = document.getElementById('device-push-no-support');
+            const prefs = document.getElementById('push-preferences-block');
+            if (!subOn || !subOff || !noSupport || !prefs) return;
+
+            const st = window.__taNotifState || { support: false, subscribed: false };
+            if (!st.support) {
+                noSupport.style.display = 'block';
+                subOn.style.display = 'none';
+                subOff.style.display = 'none';
+                prefs.style.display = 'none';
+                return;
+            }
+            noSupport.style.display = 'none';
+            subOn.style.display = st.subscribed ? 'block' : 'none';
+            subOff.style.display = st.subscribed ? 'none' : 'block';
+            prefs.style.display = st.subscribed ? 'block' : 'none';
+        }
+
         document.addEventListener("DOMContentLoaded", async () => {
-            const notSubView = document.getElementById('not-subscribed-view');
-            const subView = document.getElementById('subscribed-view');
-            
-            let isSubscribed = false;
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-                try {
-                    const register = await navigator.serviceWorker.getRegistration();
-                    if (register) {
-                        const subscription = await register.pushManager.getSubscription();
-                        if (subscription) isSubscribed = true;
-                    }
-                } catch (e) {
-                    console.error("Error checking subscription:", e);
-                }
+            const subOn = document.getElementById('device-push-subscribed');
+            const subOff = document.getElementById('device-push-unsubscribed');
+            if (!subOn || !subOff) return;
+
+            const support = ('serviceWorker' in navigator && 'PushManager' in window);
+            window.__taNotifState.support = support;
+            if (typeof Notification !== 'undefined') {
+                window.__taNotifState.permission = Notification.permission;
             }
 
-            if (isSubscribed) {
-                notSubView.style.display = 'none';
-                subView.style.display = 'block';
-            } else {
-                notSubView.style.display = 'block';
-                subView.style.display = 'none';
+            if (!support) {
+                applyPushUiState();
+                return;
             }
+
+            let isSubscribed = false;
+            try {
+                const register = await navigator.serviceWorker.getRegistration();
+                if (register) {
+                    const subscription = await register.pushManager.getSubscription();
+                    if (subscription) isSubscribed = true;
+                }
+            } catch (e) {
+                console.error("Error checking subscription:", e);
+            }
+
+            window.__taNotifState.subscribed = isSubscribed;
+            applyPushUiState();
         });
 
         // החזרנו את הפונקציה המדויקת שעבדה לך ב-manage_home!
@@ -621,9 +724,12 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מתחבר להגדרות המכשיר...';
 
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                alert('התראות לא נתמכות. וודא שהוספת את האתר למסך הבית (Add to Home Screen).');
+                tazrimAlert({
+                    title: 'תמיכה מוגבלת',
+                    message: 'התראות Push לא נתמכות כאן. נסה דפדפן מעודכן או הוסף את האתר למסך הבית (Add to Home Screen).'
+                });
                 btn.disabled = false;
-                btn.innerHTML = 'הפעלת התראות במכשיר';
+                btn.innerHTML = '<i class="fa-solid fa-bell"></i> הפעלת התראות במכשיר';
                 return;
             }
 
@@ -634,9 +740,12 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
                 // 2. בקשת אישור מהמשתמש
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') {
-                    alert('כדי לקבל התראות, עליך לאשר אותן בהגדרות הדפדפן/מכשיר.');
+                    tazrimAlert({
+                        title: 'נדרש אישור',
+                        message: 'כדי לקבל התראות Push, יש לאשר אותן בהגדרות הדפדפן או המכשיר.'
+                    });
                     btn.disabled = false;
-                    btn.innerHTML = 'הפעלת התראות במכשיר';
+                    btn.innerHTML = '<i class="fa-solid fa-bell"></i> הפעלת התראות במכשיר';
                     return;
                 }
 
@@ -657,48 +766,73 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    // הצלחה! מרעננים את הדף כדי להציג את תפריט ההעדפות
-                    window.location.reload();
-                } else {
-                    alert('שגיאה בשמירת המנוי: ' + result.message);
+                    window.__taNotifState.subscribed = true;
+                    window.__taNotifState.permission = 'granted';
+                    applyPushUiState();
                     btn.disabled = false;
-                    btn.innerHTML = 'נסה שוב';
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> הופעל בהצלחה';
+                    setTimeout(function() {
+                        btn.innerHTML = '<i class="fa-solid fa-bell"></i> הפעלת התראות במכשיר';
+                    }, 1200);
+                } else {
+                    tazrimAlert({ title: 'שגיאה', message: result.message || 'שגיאה בשמירת המנוי.' });
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-bell"></i> נסה שוב';
                 }
             } catch (error) {
                 console.error('Full Subscription Error:', error);
-                alert('שגיאה מפורטת: ' + error.name + " - " + error.message);
+                tazrimAlert({
+                    title: 'שגיאה',
+                    message: (error && error.message) ? (error.name + ': ' + error.message) : 'אירעה שגיאה בהפעלה.'
+                });
                 btn.disabled = false;
-                btn.innerHTML = 'נסה שוב';
+                btn.innerHTML = '<i class="fa-solid fa-bell"></i> נסה שוב';
             }
         }
 
         // פונקציית כיבוי ומחיקה
         async function disablePushSubscription() {
-            if(confirm("האם אתה בטוח שברצונך לכבות את ההתראות למכשיר זה?")) {
-                const btn = document.getElementById('btn-disable-notifications');
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מסיר מכשיר...';
-                
-                try {
-                    const register = await navigator.serviceWorker.getRegistration();
-                    if (register) {
-                        const subscription = await register.pushManager.getSubscription();
-                        if (subscription) {
-                            // מחיקה ממסד הנתונים
-                            await fetch('<?php echo BASE_URL; ?>app/ajax/delete_subscription.php', {
-                                method: 'POST',
-                                body: JSON.stringify({ endpoint: subscription.endpoint }),
-                                headers: { 'Content-Type': 'application/json' }
-                            });
-                            
-                            // ביטול המנוי ברמת הדפדפן
-                            await subscription.unsubscribe();
-                        }
+            const ok = await tazrimConfirm({
+                title: 'ביטול התראות במכשיר זה',
+                message: 'האם אתה בטוח שברצונך לכבות התראות במכשיר הנוכחי?',
+                confirmText: 'בטל התראות',
+                cancelText: 'חזור',
+                danger: true
+            });
+            if (!ok) return;
+
+            const btn = document.getElementById('btn-disable-notifications');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מסיר מכשיר...';
+            
+            try {
+                const register = await navigator.serviceWorker.getRegistration();
+                if (register) {
+                    const subscription = await register.pushManager.getSubscription();
+                    if (subscription) {
+                        // מחיקה ממסד הנתונים
+                        await fetch('<?php echo BASE_URL; ?>app/ajax/delete_subscription.php', {
+                            method: 'POST',
+                            body: JSON.stringify({ endpoint: subscription.endpoint }),
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        
+                        // ביטול המנוי ברמת הדפדפן
+                        await subscription.unsubscribe();
                     }
-                    window.location.reload();
-                } catch (e) {
-                    alert("שגיאה בביטול ההתראות: " + e.message);
-                    btn.innerHTML = '<i class="fa-solid fa-bell-slash"></i> בטל התראות במכשיר זה';
                 }
+                window.__taNotifState.subscribed = false;
+                applyPushUiState();
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-bell-slash"></i> בטל התראות במכשיר זה';
+            } catch (e) {
+                tazrimAlert({
+                    title: 'שגיאה בביטול התראות',
+                    message: e && e.message ? e.message : 'אירעה שגיאה בלתי צפויה.'
+                });
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
             }
         }
     </script>

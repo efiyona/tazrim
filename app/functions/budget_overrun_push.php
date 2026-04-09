@@ -54,7 +54,7 @@ if (!function_exists('maybeSendBudgetOverrunPush')) {
             $budget_formatted = number_format($budget_limit);
             $alert_body = "הגעתם ל-100% מהתקציב בקטגוריית '$cat_name'. (הוצאתם $total_spent_formatted מתוך $budget_formatted ₪).";
             $base = defined('BASE_URL') ? BASE_URL : '/';
-            sendPushToEntireHome($home_id, $alert_title, $alert_body, $base);
+            sendPushToEntireHome($home_id, $alert_title, $alert_body, $base, 'budget');
         }
     }
 }
