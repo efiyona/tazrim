@@ -2440,6 +2440,22 @@ body.auth-forgot .auth-switch a {
             white-space: nowrap;
         }
 
+        /* מובייל: שורות ניהול (פעולות/קטגוריות/חנויות) ברוחב מלא כמו בכרטיס משתתפים — ללא צמצום מיותר */
+        @media (max-width: 767.98px) {
+            #manage-home-categories-panel,
+            #manage-home-recurring-panel,
+            #manage-home-shopping-stores-panel {
+                width: 100%;
+            }
+            #manage-home-categories-panel .transaction-item,
+            #manage-home-recurring-panel .transaction-item,
+            #manage-home-shopping-stores-panel .transaction-item {
+                width: 100%;
+                max-width: none;
+                box-sizing: border-box;
+            }
+        }
+
         .join-code-box {
             background-color: var(--main-light);
             border: 2px dashed var(--main);

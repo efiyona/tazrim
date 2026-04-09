@@ -6,6 +6,11 @@ include(ROOT_PATH . '/assets/includes/auth_check.php');
 
 $home_id = $_SESSION['home_id'];
 
+$home_data = selectOne('homes', ['id' => $home_id]);
+if (!$home_data) {
+    $home_data = ['name' => ''];
+}
+
 include(ROOT_PATH . '/assets/includes/process_recurring.php');
 
 // --- ניהול חודש ושנה עם זיכרון בסשן ואבטחה ---

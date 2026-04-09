@@ -201,26 +201,20 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                     </div>
 
                     <div class="card full-width-card">
-                        <div class="card-body-padding">
-                            <div id="manage-home-recurring-panel">
-                                <?php include ROOT_PATH . '/app/includes/partials/manage_home_recurring_panel.php'; ?>
-                            </div>
+                        <div id="manage-home-recurring-panel">
+                            <?php include ROOT_PATH . '/app/includes/partials/manage_home_recurring_panel.php'; ?>
                         </div>
                     </div>
 
                     <div class="card full-width-card">
-                        <div class="card-body-padding">
-                            <div id="manage-home-categories-panel">
-                                <?php include ROOT_PATH . '/app/includes/partials/manage_home_categories_panel.php'; ?>
-                            </div>
+                        <div id="manage-home-categories-panel">
+                            <?php include ROOT_PATH . '/app/includes/partials/manage_home_categories_panel.php'; ?>
                         </div>
                     </div>
 
                     <div class="card full-width-card">
-                        <div class="card-body-padding">
-                            <div id="manage-home-shopping-stores-panel">
-                                <?php include ROOT_PATH . '/app/includes/partials/manage_home_shopping_stores_panel.php'; ?>
-                            </div>
+                        <div id="manage-home-shopping-stores-panel">
+                            <?php include ROOT_PATH . '/app/includes/partials/manage_home_shopping_stores_panel.php'; ?>
                         </div>
                     </div>
 
