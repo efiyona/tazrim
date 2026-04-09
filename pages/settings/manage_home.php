@@ -51,7 +51,17 @@ if ($recurring_result) {
     }
 }
 
-// 4. שליפת כל המשתמשים השייכים לבית זה
+// 4. שליפת חנויות רשימת קניות
+$shopping_stores_query = "SELECT id, name, icon, sort_order FROM shopping_categories WHERE home_id = $home_id ORDER BY sort_order ASC, id ASC";
+$shopping_stores_result = mysqli_query($conn, $shopping_stores_query);
+$shopping_stores = [];
+if ($shopping_stores_result) {
+    while ($store = mysqli_fetch_assoc($shopping_stores_result)) {
+        $shopping_stores[] = $store;
+    }
+}
+
+// 5. שליפת כל המשתמשים השייכים לבית זה
 $members_query = "SELECT first_name, nickname, role, email FROM users WHERE home_id = $home_id ORDER BY (role = 'admin') DESC, first_name ASC";
 $members_result = mysqli_query($conn, $members_query);
 
@@ -88,7 +98,7 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 
                 <div class="page-header-actions" style="margin-bottom: 25px;">
                     <h1 class="section-title" style="margin-bottom: 0;">ניהול הבית</h1>
-                    <p style="color: var(--text-light); font-size: 0.9rem; margin-top: 5px;">הגדרות, תקציבים ופעולות קבועות</p>
+                    <p style="color: var(--text-light); font-size: 0.9rem; margin-top: 5px;">הגדרות, תקציבים, פעולות קבועות וחנויות קניות</p>
                 </div>
 
                 <div class="management-grid">
@@ -202,6 +212,14 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                         <div class="card-body-padding">
                             <div id="manage-home-categories-panel">
                                 <?php include ROOT_PATH . '/app/includes/partials/manage_home_categories_panel.php'; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card full-width-card">
+                        <div class="card-body-padding">
+                            <div id="manage-home-shopping-stores-panel">
+                                <?php include ROOT_PATH . '/app/includes/partials/manage_home_shopping_stores_panel.php'; ?>
                             </div>
                         </div>
                     </div>
@@ -321,6 +339,39 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
 
                     <button type="submit" class="btn-primary" id="btn-save-cat" style="margin-top: 15px;">
                         <i class="fa-solid fa-save"></i> שמור קטגוריה
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="shopping-store-modal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 id="shopping-store-modal-title">חנות חדשה</h3>
+                <button type="button" onclick="closeShoppingStoreModal()" class="close-modal-btn" aria-label="סגור" title="סגור"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="shopping-store-form">
+                    <input type="hidden" name="store_id" id="shopping-store-id">
+                    <div class="input-group">
+                        <label>שם החנות</label>
+                        <div class="input-with-icon">
+                            <i class="fa-solid fa-store"></i>
+                            <input type="text" name="store_name" id="shopping-store-name" required placeholder="למשל: שופרסל">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>בחר אייקון</label>
+                        <div id="shopping-store-icon-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 10px;"></div>
+                        <input type="hidden" name="store_icon" id="shopping-store-icon" value="fa-cart-shopping">
+                    </div>
+
+                    <div id="shopping-store-msg" style="margin-bottom: 15px; font-weight: 700; text-align: center; display: none; padding: 10px; border-radius: 8px;"></div>
+
+                    <button type="submit" class="btn-primary" id="btn-save-shopping-store" style="margin-top: 15px;">
+                        <i class="fa-solid fa-save"></i> שמור חנות
                     </button>
                 </form>
             </div>
@@ -803,6 +854,138 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 btn.innerHTML = '<i class="fa-solid fa-save"></i> שמור קטגוריה';
             });
         });
+
+        // === ניהול חנויות רשימת קניות ===
+        const shoppingStoreModal = document.getElementById('shopping-store-modal');
+        const shoppingStoreForm = document.getElementById('shopping-store-form');
+        const fetchManageHomeShoppingStoresUrl = '<?php echo BASE_URL; ?>/app/ajax/fetch_manage_home_shopping_stores.php';
+        const shoppingStoreIconsList = ['fa-cart-shopping', 'fa-store', 'fa-leaf', 'fa-basket-shopping', 'fa-shop', 'fa-bag-shopping', 'fa-medkit', 'fa-drumstick-bite', 'fa-bread-slice', 'fa-plug', 'fa-box', 'fa-tag'];
+        const shoppingStoreIconGrid = document.getElementById('shopping-store-icon-grid');
+
+        shoppingStoreIconsList.forEach(icon => {
+            const div = document.createElement('div');
+            div.className = 'icon-option shopping-store-icon-option';
+            div.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+            div.onclick = () => selectShoppingStoreIcon(icon, div);
+            shoppingStoreIconGrid.appendChild(div);
+        });
+
+        function selectShoppingStoreIcon(icon, element) {
+            document.getElementById('shopping-store-icon').value = icon;
+            document.querySelectorAll('.shopping-store-icon-option').forEach(el => el.classList.remove('selected'));
+            if (element) {
+                element.classList.add('selected');
+            }
+        }
+
+        function refreshManageHomeShoppingStoresPanel() {
+            const panel = document.getElementById('manage-home-shopping-stores-panel');
+            if (!panel) {
+                return Promise.resolve();
+            }
+            panel.style.opacity = '0.55';
+            panel.style.pointerEvents = 'none';
+            return fetch(fetchManageHomeShoppingStoresUrl, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.ok && typeof data.html === 'string') {
+                        panel.innerHTML = data.html;
+                    } else {
+                        tazrimAlert({
+                            title: 'שגיאה',
+                            message: 'לא ניתן לרענן את רשימת החנויות.'
+                        });
+                    }
+                })
+                .catch(function () {
+                    tazrimAlert({
+                        title: 'שגיאה',
+                        message: 'שגיאת תקשורת בעת רענון החנויות.'
+                    });
+                })
+                .finally(function () {
+                    panel.style.opacity = '';
+                    panel.style.pointerEvents = '';
+                });
+        }
+
+        function openAddShoppingStoreModal() {
+            shoppingStoreForm.reset();
+            document.getElementById('shopping-store-id').value = '';
+            document.getElementById('shopping-store-modal-title').innerText = 'חנות חדשה';
+            document.getElementById('shopping-store-msg').style.display = 'none';
+            document.getElementById('btn-save-shopping-store').disabled = false;
+            document.getElementById('btn-save-shopping-store').innerHTML = '<i class="fa-solid fa-save"></i> שמור חנות';
+            selectShoppingStoreIcon('fa-cart-shopping', document.querySelector('.shopping-store-icon-option'));
+            shoppingStoreModal.style.display = 'block';
+        }
+
+        function openEditShoppingStoreModal(id, name, icon) {
+            shoppingStoreForm.reset();
+            document.getElementById('shopping-store-id').value = id;
+            document.getElementById('shopping-store-modal-title').innerText = 'עריכת חנות';
+            document.getElementById('shopping-store-name').value = name;
+            document.getElementById('shopping-store-msg').style.display = 'none';
+            document.getElementById('btn-save-shopping-store').disabled = false;
+            document.getElementById('btn-save-shopping-store').innerHTML = '<i class="fa-solid fa-save"></i> שמור שינויים';
+
+            const iconVal = icon || 'fa-cart-shopping';
+            document.getElementById('shopping-store-icon').value = iconVal;
+            document.querySelectorAll('.shopping-store-icon-option').forEach(el => {
+                el.classList.remove('selected');
+                if (el.innerHTML.includes(iconVal)) {
+                    el.classList.add('selected');
+                }
+            });
+
+            shoppingStoreModal.style.display = 'block';
+        }
+
+        function closeShoppingStoreModal() {
+            shoppingStoreModal.style.display = 'none';
+        }
+
+        shoppingStoreForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-shopping-store');
+            const msgBox = document.getElementById('shopping-store-msg');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> שומר...';
+            msgBox.style.display = 'none';
+
+            fetch('<?php echo BASE_URL; ?>/app/ajax/save_shopping_store.php', {
+                method: 'POST',
+                body: new FormData(shoppingStoreForm)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    closeShoppingStoreModal();
+                    msgBox.style.display = 'none';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-save"></i> שמור חנות';
+                    refreshManageHomeShoppingStoresPanel();
+                } else {
+                    msgBox.style.display = 'block';
+                    msgBox.style.backgroundColor = '#fee2e2';
+                    msgBox.style.color = 'var(--error)';
+                    msgBox.innerText = data.message || 'שגיאה בשמירת החנות.';
+                    btn.disabled = false;
+                    const isEdit = document.getElementById('shopping-store-id').value !== '';
+                    btn.innerHTML = isEdit ? '<i class="fa-solid fa-save"></i> שמור שינויים' : '<i class="fa-solid fa-save"></i> שמור חנות';
+                }
+            })
+            .catch(() => {
+                msgBox.style.display = 'block';
+                msgBox.style.backgroundColor = '#fee2e2';
+                msgBox.style.color = 'var(--error)';
+                msgBox.innerText = 'שגיאת תקשורת.';
+                btn.disabled = false;
+                const isEdit = document.getElementById('shopping-store-id').value !== '';
+                btn.innerHTML = isEdit ? '<i class="fa-solid fa-save"></i> שמור שינויים' : '<i class="fa-solid fa-save"></i> שמור חנות';
+            });
+        });
     </script>
 
     <script>
@@ -837,6 +1020,40 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 })
                 .catch(error => {
                     console.error('Error:', error);
+                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
+                });
+            });
+        }
+
+        function deleteShoppingStore(id) {
+            tazrimConfirm({
+                title: 'מחיקת חנות',
+                message: 'האם אתה בטוח שברצונך למחוק חנות זו? פריטי עבר ימשיכו להיות משויכים בחנות אחרת כברירת מחדל.',
+                confirmText: 'מחק',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function(ok) {
+                if (!ok) return;
+
+                const formData = new FormData();
+                formData.append('id', id);
+
+                fetch('<?php echo BASE_URL; ?>/app/ajax/delete_shopping_store.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        refreshManageHomeShoppingStoresPanel();
+                    } else {
+                        tazrimAlert({
+                            title: 'שגיאה במחיקה',
+                            message: data.message || 'אירעה שגיאה.'
+                        });
+                    }
+                })
+                .catch(() => {
                     tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
                 });
             });
