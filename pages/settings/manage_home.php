@@ -30,6 +30,7 @@ while ($cat = mysqli_fetch_assoc($categories_result)) {
         $income_cats[] = $cat;
     }
 }
+$categories_array = array_merge($expenses_cats, $income_cats);
 
 // 3. שליפת פעולות קבועות פעילות
 $recurring_query = "SELECT r.*, c.name as cat_name, c.icon as cat_icon 
@@ -38,6 +39,17 @@ $recurring_query = "SELECT r.*, c.name as cat_name, c.icon as cat_icon
                     WHERE r.home_id = $home_id AND r.is_active = 1 
                     ORDER BY r.day_of_month ASC";
 $recurring_result = mysqli_query($conn, $recurring_query);
+$recurring_expenses = [];
+$recurring_income = [];
+if ($recurring_result) {
+    while ($rec = mysqli_fetch_assoc($recurring_result)) {
+        if ($rec['type'] === 'expense') {
+            $recurring_expenses[] = $rec;
+        } else {
+            $recurring_income[] = $rec;
+        }
+    }
+}
 
 // 4. שליפת כל המשתמשים השייכים לבית זה
 $members_query = "SELECT first_name, nickname, role, email FROM users WHERE home_id = $home_id ORDER BY (role = 'admin') DESC, first_name ASC";
@@ -61,6 +73,7 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_user_css_href(), ENT_QUOTES, 'UTF-8'); ?>">
     <script src="<?php echo BASE_URL; ?>assets/js/tazrim_dialogs.js" defer></script>
+    <script src="<?php echo BASE_URL; ?>assets/js/global_modals.js" defer></script>
 
 </head>
 <body class="bg-gray">
@@ -177,31 +190,11 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3>פעולות קבועות</h3>
-                        </div>
-                        <div class="recurring-list">
-                            <?php if (mysqli_num_rows($recurring_result) > 0): ?>
-                                <?php while ($rec = mysqli_fetch_assoc($recurring_result)): ?>
-                                    <div class="recurring-list-item">
-                                        <div style="display: flex; align-items: center; gap: 15px;">
-                                            <div style="width: 40px; height: 40px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; color: var(--text-light);">
-                                                <i class="fa-solid <?php echo $rec['cat_icon'] ?: 'fa-tag'; ?>"></i>
-                                            </div>
-                                            <div>
-                                                <div style="font-weight: 700; color: var(--text);"><?php echo $rec['description']; ?></div>
-                                                <div style="font-size: 0.8rem; color: #666;">כל <?php echo $rec['day_of_month']; ?> בחודש | <span style="color: <?php echo $rec['type'] == 'expense' ? 'var(--error)' : 'var(--success)'; ?>; font-weight: 600;"><?php echo number_format($rec['amount']); ?> ₪</span></div>
-                                            </div>
-                                        </div>
-                                        <div class="action-btns">
-                                            <button class="btn-delete" onclick="deleteRecurring(<?php echo $rec['id']; ?>)"><i class="fa-solid fa-trash"></i></button>
-                                        </div>
-                                    </div>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <p style="text-align: center; color: #777; padding: 20px;">אין פעולות קבועות כרגע.</p>
-                            <?php endif; ?>
+                    <div class="card full-width-card">
+                        <div class="card-body-padding">
+                            <div id="manage-home-recurring-panel">
+                                <?php include ROOT_PATH . '/app/includes/partials/manage_home_recurring_panel.php'; ?>
+                            </div>
                         </div>
                     </div>
 
@@ -217,6 +210,71 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
             </div>
             </main>
             </div>
+
+    <div id="recurring-modal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 id="rec-modal-title">הוספת פעולה חדשה</h3>
+                <button type="button" onclick="closeRecurringModal()" class="close-modal-btn" aria-label="סגור" title="סגור"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="recurring-form">
+                    <input type="hidden" name="recurring_id" id="recurring-id" value="">
+
+                    <div class="modern-toggle" id="rec-type-toggle">
+                        <input type="radio" name="rec_type" id="type-expense" value="expense" checked onchange="filterRecurringCategories()">
+                        <label for="type-expense" class="toggle-option expense">הוצאה (-)</label>
+
+                        <input type="radio" name="rec_type" id="type-income" value="income" onchange="filterRecurringCategories()">
+                        <label for="type-income" class="toggle-option income">הכנסה (+)</label>
+                    </div>
+
+                    <div class="input-group">
+                        <label>תיאור הפעולה</label>
+                        <div class="input-with-icon">
+                            <i class="fa-solid fa-pen"></i>
+                            <input type="text" name="rec_description" id="rec-description" required placeholder="למשל: קניות בסופר" pattern=".*\S+.*" title="לא ניתן להזין רק רווחים">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>סכום (₪)</label>
+                        <div class="input-with-icon">
+                            <i class="fa-solid fa-shekel-sign"></i>
+                            <input type="number" name="rec_amount" id="rec-amount" step="0.01" min="0.01" required placeholder="0.00" style="font-size: 1.2rem; font-weight: 800;">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>קטגוריה</label>
+                        <div id="rec-category-grid-container"></div>
+                        <input type="hidden" name="rec_category" id="rec-selected-category-id" value="">
+                    </div>
+
+                    <div class="input-group">
+                        <label>תאריך</label>
+                        <div class="input-with-icon">
+                            <i class="fa-regular fa-calendar-days"></i>
+                            <input type="date" name="transaction_date" id="rec-trans-date" value="<?php echo date('Y-m-d'); ?>" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="margin-top: 20px; text-align: right;">
+                        <label class="checkbox-container" style="font-size: 0.95rem; font-weight: 600;">
+                            <input type="checkbox" checked disabled aria-hidden="true" tabindex="-1">
+                            פעולה אוטומטית חודשית
+                        </label>
+                    </div>
+
+                    <div id="rec-msg" style="margin-bottom: 15px; font-weight: 700; text-align: center; display: none; padding: 10px; border-radius: 8px;"></div>
+
+                    <button type="submit" class="btn-primary" id="btn-save-recurring" style="margin-top: 5px;">
+                        <i class="fa-solid fa-plus"></i> הוסף פעולה
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <div id="category-modal" class="modal">
         <div class="modal-content" style="max-width: 450px;">
@@ -271,6 +329,8 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
 
 </body>
  <script>
+        const allCategories = <?php echo json_encode($categories_array, JSON_UNESCAPED_UNICODE); ?>;
+
         // === פונקציית עדכון פרטי הבית ב-AJAX ===
         function updateHomeDetails() {
             const form = document.getElementById('update-home-form');
@@ -339,7 +399,7 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        window.location.reload();
+                        refreshManageHomeRecurringPanel();
                     } else {
                         tazrimAlert({
                             title: 'שגיאה במחיקה',
@@ -353,6 +413,245 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 });
             });
         }
+
+        const recurringModal = document.getElementById('recurring-modal');
+        const recurringForm = document.getElementById('recurring-form');
+        const fetchManageHomeRecurringUrl = '<?php echo BASE_URL; ?>/app/ajax/fetch_manage_home_recurring.php';
+
+        function buildRecurringCategorySelect(containerId, hiddenInputId, type, selectedId) {
+            const container = document.getElementById(containerId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            if (!container || !hiddenInput) {
+                return;
+            }
+            container.innerHTML = '';
+
+            const filteredCats = allCategories.filter(function (cat) { return cat.type === type; });
+
+            if (filteredCats.length === 0) {
+                container.innerHTML = '<div style="color:var(--error); font-size:0.9rem; padding: 10px;">לא נמצאו קטגוריות</div>';
+                hiddenInput.value = '';
+                return;
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'custom-select-wrapper';
+
+            var selectedCat = filteredCats.find(function (cat) { return String(cat.id) === String(selectedId); });
+            var triggerHTML = '';
+
+            if (!selectedCat) {
+                hiddenInput.value = '';
+                triggerHTML =
+                    '<div class="selected-cat-info" style="color: #888;">' +
+                    '<i class="fa-solid fa-list-ul" style="color: #ccc;"></i> <span>בחירת קטגוריה...</span>' +
+                    '</div>' +
+                    '<i class="fa-solid fa-chevron-down" style="color: #ccc; font-size: 0.9rem;"></i>';
+            } else {
+                hiddenInput.value = selectedCat.id;
+                var iconClassInit = selectedCat.icon ? selectedCat.icon : 'fa-tag';
+                triggerHTML =
+                    '<div class="selected-cat-info">' +
+                    '<i class="fa-solid ' + iconClassInit + '" style="color: var(--main);"></i> <span>' + selectedCat.name + '</span>' +
+                    '</div>' +
+                    '<i class="fa-solid fa-chevron-down" style="color: #ccc; font-size: 0.9rem;"></i>';
+            }
+
+            var optionsHTML = '';
+            filteredCats.forEach(function (cat) {
+                var iconClass = cat.icon ? cat.icon : 'fa-tag';
+                optionsHTML +=
+                    '<div class="custom-option" data-value="' + cat.id + '" data-name="' +
+                    String(cat.name).replace(/&/g, '&amp;').replace(/"/g, '&quot;') +
+                    '" data-icon="' + iconClass + '">' +
+                    '<i class="fa-solid ' + iconClass + '"></i> <span>' + cat.name + '</span></div>';
+            });
+
+            wrapper.innerHTML =
+                '<div class="custom-select-trigger">' + triggerHTML + '</div>' +
+                '<div class="custom-select-options">' + optionsHTML + '</div>';
+
+            container.appendChild(wrapper);
+
+            var trigger = wrapper.querySelector('.custom-select-trigger');
+            var options = wrapper.querySelectorAll('.custom-option');
+
+            trigger.addEventListener('click', function (e) {
+                e.stopPropagation();
+                document.querySelectorAll('.custom-select-wrapper').forEach(function (w) {
+                    if (w !== wrapper) {
+                        w.classList.remove('open');
+                    }
+                });
+                wrapper.classList.toggle('open');
+            });
+
+            options.forEach(function (option) {
+                option.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var val = option.getAttribute('data-value');
+                    var name = option.getAttribute('data-name');
+                    var icon = option.getAttribute('data-icon');
+                    hiddenInput.value = val;
+                    wrapper.querySelector('.selected-cat-info').innerHTML =
+                        '<i class="fa-solid ' + icon + '" style="color: var(--main);"></i> <span style="color: var(--text);">' + name + '</span>';
+                    wrapper.classList.remove('open');
+                });
+            });
+        }
+
+        function filterRecurringCategories() {
+            var selectedType = document.querySelector('#recurring-form input[name="rec_type"]:checked').value;
+            buildRecurringCategorySelect('rec-category-grid-container', 'rec-selected-category-id', selectedType);
+        }
+
+        function resetRecurringForm() {
+            recurringForm.reset();
+            document.getElementById('recurring-id').value = '';
+            document.getElementById('type-expense').checked = true;
+            document.getElementById('rec-trans-date').value = '<?php echo date('Y-m-d'); ?>';
+            document.getElementById('rec-selected-category-id').value = '';
+            document.getElementById('rec-msg').style.display = 'none';
+            var submitBtn = document.getElementById('btn-save-recurring');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> הוסף פעולה';
+            filterRecurringCategories();
+        }
+
+        function refreshManageHomeRecurringPanel() {
+            const panel = document.getElementById('manage-home-recurring-panel');
+            if (!panel) {
+                return Promise.resolve();
+            }
+            panel.style.opacity = '0.55';
+            panel.style.pointerEvents = 'none';
+            return fetch(fetchManageHomeRecurringUrl, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.ok && typeof data.html === 'string') {
+                        panel.innerHTML = data.html;
+                    } else {
+                        tazrimAlert({
+                            title: 'שגיאה',
+                            message: 'לא ניתן לרענן את רשימת הפעולות הקבועות.'
+                        });
+                    }
+                })
+                .catch(function () {
+                    tazrimAlert({
+                        title: 'שגיאה',
+                        message: 'שגיאת תקשורת בעת רענון הפעולות הקבועות.'
+                    });
+                })
+                .finally(function () {
+                    panel.style.opacity = '';
+                    panel.style.pointerEvents = '';
+                });
+        }
+
+        function openAddRecurringModal() {
+            resetRecurringForm();
+            document.getElementById('rec-modal-title').innerText = 'הוספת פעולה חדשה';
+            document.getElementById('rec-type-toggle').style.display = 'flex';
+            recurringModal.style.display = 'block';
+        }
+
+        function openEditRecurringModal(id, description, amount, type, categoryId, dayOfMonth) {
+            recurringForm.reset();
+            document.getElementById('recurring-id').value = id;
+            document.getElementById('rec-modal-title').innerText = 'עריכת פעולה';
+            document.getElementById('rec-type-toggle').style.display = 'none';
+            if (type === 'expense') {
+                document.getElementById('type-expense').checked = true;
+            } else {
+                document.getElementById('type-income').checked = true;
+            }
+            buildRecurringCategorySelect('rec-category-grid-container', 'rec-selected-category-id', type, categoryId);
+            document.getElementById('rec-amount').value = amount;
+            document.getElementById('rec-description').value = description;
+            var now = new Date();
+            var y = now.getFullYear();
+            var m = now.getMonth();
+            var lastDay = new Date(y, m + 1, 0).getDate();
+            var d = Math.min(parseInt(dayOfMonth, 10) || 1, lastDay);
+            document.getElementById('rec-trans-date').value =
+                y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+            document.getElementById('rec-msg').style.display = 'none';
+            var submitBtn = document.getElementById('btn-save-recurring');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> שמור שינויים';
+            recurringModal.style.display = 'block';
+        }
+
+        function closeRecurringModal() {
+            recurringModal.style.display = 'none';
+            resetRecurringForm();
+        }
+
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.custom-select-wrapper').forEach(function (w) {
+                w.classList.remove('open');
+            });
+        });
+
+        window.addEventListener('click', function (event) {
+            if (event.target === recurringModal) {
+                closeRecurringModal();
+            }
+        });
+
+        recurringForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var btn = document.getElementById('btn-save-recurring');
+            var msgBox = document.getElementById('rec-msg');
+
+            var selectedCatId = document.getElementById('rec-selected-category-id').value;
+            if (!selectedCatId) {
+                msgBox.style.display = 'block';
+                msgBox.style.backgroundColor = '#fee2e2';
+                msgBox.style.color = 'var(--error)';
+                msgBox.innerText = 'נא לבחור קטגוריה מהרשימה.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> שומר נתונים...';
+            msgBox.style.display = 'none';
+
+            fetch('<?php echo BASE_URL; ?>/app/ajax/save_recurring.php', {
+                method: 'POST',
+                body: new FormData(recurringForm)
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.status === 'success') {
+                        closeRecurringModal();
+                        refreshManageHomeRecurringPanel();
+                    } else {
+                        msgBox.style.display = 'block';
+                        msgBox.style.backgroundColor = '#fee2e2';
+                        msgBox.style.color = 'var(--error)';
+                        msgBox.innerText = data.message || 'שגיאה בשמירה.';
+                        btn.disabled = false;
+                        var isEdit = document.getElementById('recurring-id').value !== '';
+                        btn.innerHTML = isEdit
+                            ? '<i class="fa-solid fa-save"></i> שמור שינויים'
+                            : '<i class="fa-solid fa-plus"></i> הוסף פעולה';
+                    }
+                })
+                .catch(function () {
+                    msgBox.style.display = 'block';
+                    msgBox.style.backgroundColor = '#fee2e2';
+                    msgBox.style.color = 'var(--error)';
+                    msgBox.innerText = 'שגיאת תקשורת. אנא נסה שוב.';
+                    btn.disabled = false;
+                    var isEdit = document.getElementById('recurring-id').value !== '';
+                    btn.innerHTML = isEdit
+                        ? '<i class="fa-solid fa-save"></i> שמור שינויים'
+                        : '<i class="fa-solid fa-plus"></i> הוסף פעולה';
+                });
+        });
+
         // === ניהול פופאפ קטגוריות ===
         const catModal = document.getElementById('category-modal');
         const catForm = document.getElementById('category-form');

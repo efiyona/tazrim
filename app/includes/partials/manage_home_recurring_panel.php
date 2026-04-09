@@ -1,0 +1,104 @@
+<?php
+/**
+ * תוכן פנימי של #manage-home-recurring-panel — פעולות קבועות בעמוד ניהול הבית.
+ * דורש: $recurring_expenses, $recurring_income (מערכים של שורות recurring_transactions עם cat_name, cat_icon).
+ */
+$recurring_expenses = $recurring_expenses ?? [];
+$recurring_income = $recurring_income ?? [];
+?>
+<div class="manage-categories-toolbar">
+    <h2 class="section-subtitle" style="font-weight: 800; font-size: 1.4rem; margin: 0; color: var(--text);">פעולות קבועות</h2>
+    <button type="button" class="btn-primary" style="width: max-content; margin: 0; padding: 8px 20px; font-size: 0.95rem; border-radius: 10px; box-shadow: 0 4px 10px rgba(35, 114, 39, 0.2);" onclick="openAddRecurringModal()">
+        הוספה <i class="fa-solid fa-plus"></i>
+    </button>
+</div>
+
+<div class="card-header" style="margin-bottom: 12px;">
+    <h3>הוצאות קבועות</h3>
+</div>
+<div id="manage-recurring-expense-list">
+    <?php if (count($recurring_expenses) === 0): ?>
+        <div class="empty-state text-center" style="padding: 40px; background: var(--white); border-radius: 15px;">
+            <i class="fa-solid fa-rotate" style="font-size: 3rem; color: var(--gray); margin-bottom: 15px; display: block;"></i>
+            <p style="color: var(--text-light); margin: 0;">אין הוצאות קבועות. הוסיפו פעולה או סמנו פעולה חדשה כקבועה מהמסך הראשי.</p>
+        </div>
+    <?php else: ?>
+        <?php foreach ($recurring_expenses as $rec):
+            $cat_icon = !empty($rec['cat_icon']) ? $rec['cat_icon'] : 'fa-tag';
+            $desc = $rec['description'];
+            $cat_name = $rec['cat_name'] ?? '';
+        ?>
+            <div class="transaction-item expense"
+                onclick='openEditRecurringModal(<?php echo (int) $rec['id']; ?>, <?php echo json_encode($desc, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $rec['amount']); ?>, <?php echo json_encode($rec['type']); ?>, <?php echo (int) $rec['category']; ?>, <?php echo (int) $rec['day_of_month']; ?>)'
+                style="cursor: pointer;">
+                <div class="transaction-info">
+                    <div class="cat-icon-wrapper">
+                        <i class="fa-solid <?php echo htmlspecialchars($cat_icon, ENT_QUOTES, 'UTF-8'); ?>"></i>
+                    </div>
+                    <div class="details">
+                        <span class="desc"><?php echo htmlspecialchars($desc, ENT_QUOTES, 'UTF-8'); ?></span>
+                        <span class="date"><?php echo 'כל ' . (int) $rec['day_of_month'] . ' בחודש'; ?><?php echo $cat_name !== '' ? ' · ' . htmlspecialchars($cat_name, ENT_QUOTES, 'UTF-8') : ''; ?></span>
+                    </div>
+                </div>
+                <div class="transaction-actions">
+                    <div class="transaction-amount" style="color: var(--error); font-weight: 700;">
+                        <?php echo number_format((float) $rec['amount'], 0); ?> ₪
+                    </div>
+                    <div style="display:flex; gap: 5px;">
+                        <div style="background: var(--gray); color: var(--text); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;" title="ערוך">
+                            <i class="fa-solid fa-pen" style="font-size: 0.9rem;"></i>
+                        </div>
+                        <button type="button" onclick="event.stopPropagation(); deleteRecurring(<?php echo (int) $rec['id']; ?>)" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק">
+                            <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</div>
+
+<div class="card-header" style="margin-top: 24px; margin-bottom: 12px;">
+    <h3>הכנסות קבועות</h3>
+</div>
+<div id="manage-recurring-income-list">
+    <?php if (count($recurring_income) === 0): ?>
+        <div class="empty-state text-center" style="padding: 40px; background: var(--white); border-radius: 15px;">
+            <i class="fa-solid fa-rotate" style="font-size: 3rem; color: var(--gray); margin-bottom: 15px; display: block;"></i>
+            <p style="color: var(--text-light); margin: 0;">אין הכנסות קבועות.</p>
+        </div>
+    <?php else: ?>
+        <?php foreach ($recurring_income as $rec):
+            $cat_icon = !empty($rec['cat_icon']) ? $rec['cat_icon'] : 'fa-tag';
+            $desc = $rec['description'];
+            $cat_name = $rec['cat_name'] ?? '';
+        ?>
+            <div class="transaction-item income"
+                onclick='openEditRecurringModal(<?php echo (int) $rec['id']; ?>, <?php echo json_encode($desc, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $rec['amount']); ?>, <?php echo json_encode($rec['type']); ?>, <?php echo (int) $rec['category']; ?>, <?php echo (int) $rec['day_of_month']; ?>)'
+                style="cursor: pointer;">
+                <div class="transaction-info" style="flex: 1; min-width: 0;">
+                    <div class="cat-icon-wrapper">
+                        <i class="fa-solid <?php echo htmlspecialchars($cat_icon, ENT_QUOTES, 'UTF-8'); ?>"></i>
+                    </div>
+                    <div class="details">
+                        <span class="desc"><?php echo htmlspecialchars($desc, ENT_QUOTES, 'UTF-8'); ?></span>
+                        <span class="date"><?php echo 'כל ' . (int) $rec['day_of_month'] . ' בחודש'; ?><?php echo $cat_name !== '' ? ' · ' . htmlspecialchars($cat_name, ENT_QUOTES, 'UTF-8') : ''; ?></span>
+                    </div>
+                </div>
+                <div class="transaction-actions">
+                    <div class="transaction-amount" style="color: var(--success); font-weight: 700;">
+                        <?php echo number_format((float) $rec['amount'], 0); ?> ₪
+                    </div>
+                    <div style="display:flex; gap: 5px;">
+                        <div style="background: var(--gray); color: var(--text); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;" title="ערוך">
+                            <i class="fa-solid fa-pen" style="font-size: 0.9rem;"></i>
+                        </div>
+                        <button type="button" onclick="event.stopPropagation(); deleteRecurring(<?php echo (int) $rec['id']; ?>)" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק">
+                            <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</div>

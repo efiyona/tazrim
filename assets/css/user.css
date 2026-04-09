@@ -310,6 +310,551 @@ body {
 }
 
 /* =========================================
+   דפי התחברות / הרשמה — תזרים (auth-cp)
+========================================= */
+body.auth-cp {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--gray-light) !important;
+    padding: 20px;
+    overflow-x: hidden;
+    font-family: "Assistant", "Segoe UI", system-ui, sans-serif;
+}
+
+body.auth-cp .gradient-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: linear-gradient(
+        155deg,
+        #d9dedc 0%,
+        #e4ebe6 38%,
+        #eef1f0 72%,
+        #dfe3e1 100%
+    );
+}
+
+body.auth-cp .form-container {
+    width: 100%;
+    max-width: 680px;
+    background: var(--white);
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: 0 16px 48px rgba(15, 23, 42, 0.08);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(45, 55, 72, 0.06);
+}
+
+@media (min-width: 601px) {
+    body.auth-cp .form-container {
+        padding: 44px 48px;
+    }
+}
+
+body.auth-cp .form-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--main), var(--sub_main));
+}
+
+body.auth-cp .logo {
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+body.auth-cp .cp-login-logo-mark {
+    margin-bottom: 14px;
+}
+
+body.auth-cp .cp-login-logo-mark svg {
+    display: block;
+    margin: 0 auto;
+}
+
+body.auth-cp .cp-login-brand {
+    color: var(--text);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    margin: 0;
+}
+
+body.auth-cp .cp-login-tagline {
+    color: var(--text-light);
+    font-size: 15px;
+    margin-top: 8px;
+    font-weight: 400;
+    margin-bottom: 0;
+    line-height: 1.45;
+}
+
+body.auth-cp .cp-login-alert {
+    margin-bottom: 24px;
+    border-radius: 12px;
+}
+
+body.auth-cp .form-group {
+    margin-bottom: 24px;
+    position: relative;
+}
+
+body.auth-cp .form-group label {
+    display: block;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+}
+
+body.auth-cp .input-with-icon {
+    position: relative;
+}
+
+body.auth-cp .cp-login-input-icon {
+    position: absolute;
+    inset-inline-start: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+body.auth-cp .form-control {
+    width: 100%;
+    padding: 16px;
+    padding-inline-start: 48px;
+    background: var(--input-bg);
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 16px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+body.auth-cp .form-control:focus {
+    outline: none;
+    border-color: var(--main);
+    background: var(--white);
+    box-shadow: 0 0 0 3px var(--main-light);
+}
+
+body.auth-cp .form-control::placeholder {
+    color: #94a3b8;
+}
+
+body.auth-cp .checkbox-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+}
+
+body.auth-cp .checkbox-group-start {
+    display: flex;
+    align-items: center;
+}
+
+body.auth-cp .checkbox-group input {
+    margin-inline-end: 10px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--main);
+}
+
+body.auth-cp .checkbox-group label {
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+    margin: 0;
+    font-weight: 500;
+}
+
+body.auth-cp .checkbox-group .forgot-link {
+    color: var(--main);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+@media (hover: hover) {
+    body.auth-cp .checkbox-group .forgot-link:hover {
+        text-decoration: underline;
+    }
+}
+
+body.auth-cp .submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--main);
+    color: var(--white);
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    letter-spacing: 0.02em;
+}
+
+@media (hover: hover) {
+    body.auth-cp .submit-btn:hover {
+        background: var(--main-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(41, 182, 105, 0.28);
+    }
+}
+
+body.auth-cp .submit-btn:active {
+    transform: translateY(0);
+}
+
+body.auth-login .divider {
+    display: flex;
+    align-items: center;
+    margin: 30px 0;
+    color: var(--text-light);
+    font-size: 14px;
+}
+
+body.auth-login .divider::before,
+body.auth-login .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+body.auth-login .divider span {
+    padding: 0 15px;
+}
+
+body.auth-login .social-login {
+    display: block;
+    margin-bottom: 24px;
+}
+
+body.auth-login .social-btn.google-btn {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: var(--white);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+@media (hover: hover) {
+    body.auth-login .social-btn.google-btn:hover {
+        background: var(--gray-light);
+        border-color: #cbd5e1;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+}
+
+body.auth-login .google-icon {
+    flex-shrink: 0;
+}
+
+body.auth-login .signup-link {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 15px;
+    margin-top: 28px;
+    margin-bottom: 0;
+}
+
+body.auth-login .signup-link a {
+    color: var(--main);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+@media (hover: hover) {
+    body.auth-login .signup-link a:hover {
+        text-decoration: underline;
+    }
+}
+
+@media (max-width: 600px) {
+    body.auth-cp .form-container {
+        padding: 30px 24px;
+        border-radius: 20px;
+    }
+}
+
+/* הרשמה — שורות זוגיות, רדיו, תקנון */
+body.auth-cp .cp-reg-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 16px;
+    margin-bottom: 24px;
+}
+
+body.auth-cp .cp-reg-row .form-group {
+    margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+    body.auth-cp .cp-reg-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+        margin-bottom: 24px;
+    }
+
+    body.auth-cp .cp-reg-row .form-group {
+        margin-bottom: 24px;
+    }
+
+    body.auth-cp .cp-reg-row .form-group:last-child {
+        margin-bottom: 0;
+    }
+}
+
+body.auth-cp .cp-reg-section-label {
+    display: block;
+    margin: 8px 0 12px 0;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+    text-align: right;
+}
+
+body.auth-cp .cp-reg-radio-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 480px) {
+    body.auth-cp .cp-reg-radio-group {
+        grid-template-columns: 1fr;
+    }
+}
+
+body.auth-cp .cp-reg-radio-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 12px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    background: var(--input-bg);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    margin: 0;
+}
+
+body.auth-cp .cp-reg-radio-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+}
+
+body.auth-cp .cp-reg-radio-card .cp-reg-radio-icon {
+    display: flex;
+    color: var(--main);
+}
+
+body.auth-cp .cp-reg-radio-card.active {
+    border-color: var(--main);
+    background: var(--main-light);
+    box-shadow: 0 0 0 1px rgba(41, 182, 105, 0.2);
+}
+
+body.auth-cp .cp-reg-tos {
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    background: var(--gray-light);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+body.auth-cp .cp-reg-tos label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.45;
+    text-align: right;
+}
+
+body.auth-cp .cp-reg-tos input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    accent-color: var(--main);
+    margin-top: 2px;
+}
+
+body.auth-cp .cp-reg-tos a {
+    color: var(--main);
+    text-decoration: underline;
+}
+
+body.auth-cp .submit-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+@media (hover: hover) {
+    body.auth-cp .submit-btn:disabled:hover {
+        background: var(--main);
+        transform: none !important;
+        box-shadow: none !important;
+    }
+}
+
+body.auth-register .auth-switch {
+    margin-top: 1.75rem;
+    text-align: center;
+    font-size: 15px;
+    color: var(--text-light);
+}
+
+body.auth-register .auth-switch a {
+    color: var(--main);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+@media (hover: hover) {
+    body.auth-register .auth-switch a:hover {
+        text-decoration: underline;
+    }
+}
+
+body.auth-register .cp-tos-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+body.auth-register .cp-tos-modal-box {
+    background: var(--white);
+    width: 100%;
+    max-width: 600px;
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+}
+
+body.auth-register .cp-tos-modal-box h2 {
+    margin: 0 0 12px 0;
+    font-weight: 800;
+    color: var(--main);
+    text-align: center;
+}
+
+body.auth-register .cp-tos-modal-close {
+    position: absolute;
+    top: 12px;
+    inset-inline-start: 12px;
+}
+
+body.auth-register .cp-tos-modal-body {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    margin-bottom: 16px;
+}
+
+body.auth-register .cp-tos-modal-done {
+    margin-top: auto;
+}
+
+/* איפוס סיסמה — אותו שפה ויזואלית של auth-cp */
+/* בלי !important — כדי ש־jQuery (fadeIn) יוכל להציג שלבים */
+body.auth-forgot .step-hidden {
+    display: none;
+}
+
+body.auth-forgot .cp-forgot-alert {
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.4;
+    border: 1px solid transparent;
+}
+
+body.auth-forgot .cp-forgot-code-input {
+    letter-spacing: 0.35em;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+body.auth-forgot .auth-switch {
+    margin-top: 1.75rem;
+    text-align: center;
+    font-size: 15px;
+    color: var(--text-light);
+}
+
+body.auth-forgot .auth-switch a {
+    color: var(--main);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+@media (hover: hover) {
+    body.auth-forgot .auth-switch a:hover {
+        text-decoration: underline;
+    }
+}
+
+/* =========================================
    6. Dashboard Layout (פריסת דשבורד)
 ========================================= */
 
@@ -1846,6 +2391,35 @@ body {
             box-sizing: border-box;
         }
         #manage-home-categories-panel .details .date {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #manage-home-recurring-panel {
+            min-width: 0;
+            max-width: 100%;
+        }
+        #manage-home-recurring-panel .manage-categories-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 24px;
+            min-width: 0;
+        }
+        #manage-home-recurring-panel .manage-categories-toolbar .section-subtitle {
+            flex: 1 1 12rem;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        #manage-home-recurring-panel .transaction-item {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        #manage-home-recurring-panel .details .date {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
