@@ -56,7 +56,7 @@ if (mysqli_num_rows($result) > 0) {
         // מדפיסים את העיצוב בדיוק כמו ב-index.php
         echo "
         <div class='transaction-item {$row['type']} {$pending_class}' 
-        onclick=\"openEditTransModal({$row['id']}, {$row['amount']}, {$row['category']}, '{$safe_desc}', '{$row['type']}')\"
+        onclick=\"openEditTransModal({$row['id']}, {$row['amount']}, {$row['category']}, '{$safe_desc}', '{$row['type']}', 'main')\"
         style='cursor: pointer;'>
             <div class='transaction-info'>
                 <div class='cat-icon-wrapper'>
@@ -78,7 +78,7 @@ if (mysqli_num_rows($result) > 0) {
                     <div style='background: var(--gray); color: var(--text); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;' title='ערוך פעולה'>
                         <i class='fa-solid fa-pen' style='font-size: 0.9rem;'></i>
                     </div>
-                    <button onclick=\"event.stopPropagation(); deleteTransaction({$row['id']})\" style='background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;' title='מחק פעולה'>
+                    <button type=\"button\" onclick=\"event.stopPropagation(); deleteTransaction({$row['id']}, 'main')\" style='background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;' title='מחק פעולה'>
                         <i class='fa-solid fa-trash-can' style='font-size: 1rem;'></i>
                     </button>
                 </div>

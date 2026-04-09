@@ -1,7 +1,7 @@
 <div id="global-info-modal" class="modal">
     <div class="modal-content" style="max-width: 400px; text-align: center; border-radius: 20px;">
         <div class="modal-header" style="justify-content: center; position: relative; border-bottom: none; padding-bottom: 0;">
-            <button type="button" onclick="closeInfoModal()" class="close-modal-btn" style="position: absolute; left: 20px; top: 20px;">סגור</button>
+            <button type="button" onclick="closeInfoModal()" class="close-modal-btn" style="position: absolute; left: 20px; top: 20px;" aria-label="סגור" title="סגור"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             <div style="font-size: 2.5rem; color: var(--main); margin-bottom: 10px;">
                 <i class="fa-solid fa-circle-info"></i>
             </div>

@@ -1091,14 +1091,25 @@ body {
 }
 
 .close-modal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0;
     font-size: 0.9rem;
     font-weight: 700;
     background: none;
     border: none;
+    border-radius: 10px;
     cursor: pointer;
     color: var(--text-light);
     line-height: 1;
-    padding: 4px 2px;
+}
+
+.close-modal-btn i {
+    font-size: 1.1rem;
+    line-height: 1;
 }
 
 @media (hover: hover) {
@@ -1108,6 +1119,11 @@ body {
 }
 .close-modal-btn:active {
     color: var(--error);
+}
+
+.close-modal-btn:focus-visible {
+    outline: 2px solid var(--main);
+    outline-offset: 2px;
 }
 
 /* התאמה לטבלה בתוך המודאל */
