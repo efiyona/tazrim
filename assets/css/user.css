@@ -524,60 +524,6 @@ body.auth-cp .submit-btn:active {
     transform: translateY(0);
 }
 
-body.auth-login .divider {
-    display: flex;
-    align-items: center;
-    margin: 30px 0;
-    color: var(--text-light);
-    font-size: 14px;
-}
-
-body.auth-login .divider::before,
-body.auth-login .divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: #e2e8f0;
-}
-
-body.auth-login .divider span {
-    padding: 0 15px;
-}
-
-body.auth-login .social-login {
-    display: block;
-    margin-bottom: 24px;
-}
-
-body.auth-login .social-btn.google-btn {
-    width: 100%;
-    padding: 14px 16px;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    background: var(--white);
-    color: var(--text);
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-}
-
-@media (hover: hover) {
-    body.auth-login .social-btn.google-btn:hover {
-        background: var(--gray-light);
-        border-color: #cbd5e1;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-    }
-}
-
-body.auth-login .google-icon {
-    flex-shrink: 0;
-}
-
 body.auth-login .signup-link {
     text-align: center;
     color: var(--text-light);
