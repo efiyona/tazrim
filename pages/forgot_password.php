@@ -8,7 +8,7 @@
         .loading-spinner { display: none; margin-right: 10px; }
     </style>
 </head>
-<body class="bg-gray">
+<body class="bg-gray page-auth">
     <div class="split-screen-container">
         <div class="form-side flex-center">
             <div class="form-wrapper">
@@ -62,7 +62,7 @@
                     </div>
                 </form>
 
-                <p class="auth-switch">נזכרת בסיסמה? <a href="login.php">חזרה להתחברות</a></p>
+                <p class="auth-switch">נזכרת בסיסמה? <a href="login.php">להתחברות</a></p>
             </div>
         </div>
 

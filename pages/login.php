@@ -35,7 +35,7 @@ if (isset($_SESSION['id'])) {
 <head>
     <?php include(ROOT_PATH . '/assets/includes/setup_meta_data.php'); ?>
 </head>
-<body class="bg-gray">
+<body class="bg-gray page-auth">
 
     <div class="split-screen-container">
         
@@ -83,11 +83,11 @@ if (isset($_SESSION['id'])) {
                         <a href="<?php echo BASE_URL; ?>pages/forgot_password.php" class="forgot-password">שכחת סיסמה?</a>
                     </div>
 
-                    <button type="submit" name="login_btn" class="btn-primary">התחברות למערכת</button>
+                    <button type="submit" name="login_btn" class="btn-primary">התחברות</button>
                 </form>
 
                 <p class="auth-switch">
-                    עדיין אין לך חשבון? <a href="<?php echo BASE_URL; ?>pages/register.php">הרשמה למערכת</a>
+                    עדיין אין לך חשבון? <a href="<?php echo BASE_URL; ?>pages/register.php">הרשמה</a>
                 </p>
             </div>
         </div>

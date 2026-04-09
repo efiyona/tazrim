@@ -10,7 +10,7 @@ $prefilled_code = isset($_GET['join_code']) ? htmlspecialchars($_GET['join_code'
 <head>
     <?php include(ROOT_PATH . '/assets/includes/setup_meta_data.php'); ?>
 </head>
-<body class="bg-gray">
+<body class="bg-gray page-auth">
 
     <div class="split-screen-container">
         <div class="form-side flex-center">
@@ -133,7 +133,7 @@ $prefilled_code = isset($_GET['join_code']) ? htmlspecialchars($_GET['join_code'
 
     <div id="tosModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
         <div style="background: white; width: 100%; max-width: 600px; border-radius: 16px; padding: 25px; position: relative; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
-            <button type="button" onclick="closeTosModal()" style="position: absolute; top: 15px; left: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8;">&times;</button>
+            <button type="button" onclick="closeTosModal()" class="close-modal-btn" style="position: absolute; top: 15px; left: 15px;">סגור</button>
             <h2 style="margin-top: 0; margin-bottom: 15px; font-weight: 800; color: var(--main-dark); text-align: center;">תקנון המערכת</h2>
             
             <div>

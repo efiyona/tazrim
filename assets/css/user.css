@@ -1022,12 +1022,14 @@ body {
 }
 
 .close-modal-btn {
-    font-size: 2rem;
+    font-size: 0.9rem;
+    font-weight: 700;
     background: none;
     border: none;
     cursor: pointer;
     color: var(--text-light);
     line-height: 1;
+    padding: 4px 2px;
 }
 
 .close-modal-btn:hover {
@@ -2431,6 +2433,10 @@ body.no-scroll {
 .sidebar, .mobile-menu-btn, .sidebar-overlay { display: none !important; }
 body {
     padding-bottom: 120px !important;
+}
+/* דפי התחברות/הרשמה/איפוס סיסמה — אין תפריט תחתון, בלי ריפוד תחתון מיותר */
+body.page-auth {
+    padding-bottom: 0 !important;
 }
 .main-content { margin-right: 0 !important; width: 100% !important; }
 
