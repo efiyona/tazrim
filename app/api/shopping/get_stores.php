@@ -64,19 +64,20 @@ $cat_query = "SELECT id, name, icon FROM shopping_categories WHERE home_id = $ho
 $cat_result = mysqli_query($conn, $cat_query);
 
 $stores = [];
-$stores_list = [];
+$store_names = [];
 while ($row = mysqli_fetch_assoc($cat_result)) {
     $emoji = getEmoji($row['icon'] ?? '');
     $display_name = $emoji . ' ' . $row['name'];
     $id = (int)$row['id'];
     $stores[$display_name] = $id;
-    // מערך נוח לקיצור בדרך (בחירה מרשימה → Get Dictionary Value: id)
-    $stores_list[] = ['id' => $id, 'name' => $display_name];
+    // מחרוזות בלבד — בקיצור בדרך "בחר מהרשימה" על מערך של {id,name} מציג id/name במקום השמות
+    $store_names[] = $display_name;
 }
 
 echo json_encode([
     'status' => 'success',
     'stores' => $stores,
-    'stores_list' => $stores_list,
+    // לרשימת בחירה בקיצור: קח את המערך הזה → בחר מהרשימה → אז קבל ערך מילון מ-stores לפי הפריט שנבחר
+    'store_names' => $store_names,
 ], JSON_UNESCAPED_UNICODE);
 exit();
