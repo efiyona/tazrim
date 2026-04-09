@@ -60,6 +60,7 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_user_css_href(), ENT_QUOTES, 'UTF-8'); ?>">
+    <script src="<?php echo BASE_URL; ?>assets/js/tazrim_dialogs.js" defer></script>
 
 </head>
 <body class="bg-gray">
@@ -205,72 +206,10 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                     </div>
 
                     <div class="card full-width-card">
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--gray); padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                            <h3 style="margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--text);">קטגוריות ותקציב חודשי</h3>
-                            <button class="btn-primary" style="width: max-content; margin: 0; padding: 8px 20px; font-size: 0.95rem; border-radius: 10px; box-shadow: 0 4px 10px rgba(35, 114, 39, 0.2);" onclick="openAddCategoryModal()">
-                                <i class="fa-solid fa-plus"></i> קטגוריה חדשה
-                            </button>
-                        </div>
-                        
-                        <h4 style="margin: 20px 0 12px; color: var(--error); font-weight: 800; display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-arrow-trend-down"></i> הוצאות
-                        </h4>
-                        <div class="categories-grid-container">
-                            <?php foreach ($expenses_cats as $cat): ?>
-                                <div class="category-setting-card expense-cat">
-                                    <div class="cat-info-wrapper">
-                                        <div class="cat-icon-circle-small">
-                                            <i class="fa-solid <?php echo $cat['icon'] ?: 'fa-tag'; ?>"></i>
-                                        </div>
-                                        <span style="font-weight: 700; color: var(--text); font-size: 1.05rem;"><?php echo $cat['name']; ?></span>
-                                    </div>
-                                    <div style="display: flex; align-items: center; gap: 15px;">
-                                        
-                                        <?php if($cat['budget_limit'] > 0): ?>
-                                            <div class="cat-budget-pill">
-                                                <i class="fa-solid fa-bullseye"></i> <?php echo number_format($cat['budget_limit']); ?> ₪
-                                            </div>
-                                        <?php else: ?>
-                                            <div class="cat-budget-pill no-budget">
-                                                ללא תקציב
-                                            </div>
-                                        <?php endif; ?>
-                                        <div class="action-btns" style="display: flex; gap: 8px;">
-                                            <button class="btn-delete" style="background: #fee2e2; color: var(--error); border: none; padding: 8px; border-radius: 8px; cursor: pointer;" onclick="deleteCategory(<?php echo $cat['id']; ?>)">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                            <button class="btn-edit" style="background: var(--gray); border: none; padding: 8px; border-radius: 8px; cursor: pointer;" onclick="openEditCategoryModal(<?php echo $cat['id']; ?>, '<?php echo addslashes($cat['name']); ?>', <?php echo $cat['budget_limit']; ?>, '<?php echo $cat['type']; ?>', '<?php echo $cat['icon']; ?>')">
-                                                <i class="fa-solid fa-pen"></i>
-                                            </button>                                        
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-
-                        <h4 style="margin: 35px 0 12px; color: var(--success); font-weight: 800; display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-arrow-trend-up"></i> הכנסות
-                        </h4>
-                        <div class="categories-grid-container">
-                            <?php foreach ($income_cats as $cat): ?>
-                                <div class="category-setting-card income-cat">
-                                    <div class="cat-info-wrapper">
-                                        <div class="cat-icon-circle-small" style="color: var(--success); background-color: #f0fdf4;">
-                                            <i class="fa-solid <?php echo $cat['icon'] ?: 'fa-tag'; ?>"></i>
-                                        </div>
-                                        <span style="font-weight: 700; color: var(--text); font-size: 1.05rem;"><?php echo $cat['name']; ?></span>
-                                    </div>
-                                    <div class="action-btns" style="display: flex; gap: 8px;">
-                                        <button class="btn-delete" style="background: #fee2e2; color: var(--error); border: none; padding: 8px; border-radius: 8px; cursor: pointer;" onclick="deleteCategory(<?php echo $cat['id']; ?>)">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                        <button class="btn-edit" style="background: var(--gray); border: none; padding: 8px; border-radius: 8px; cursor: pointer;" onclick="openEditCategoryModal(<?php echo $cat['id']; ?>, '<?php echo addslashes($cat['name']); ?>', <?php echo $cat['budget_limit']; ?>, '<?php echo $cat['type']; ?>', '<?php echo $cat['icon']; ?>')">
-                                            <i class="fa-solid fa-pen"></i>
-                                        </button>                                        
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
+                        <div class="card-body-padding">
+                            <div id="manage-home-categories-panel">
+                                <?php include ROOT_PATH . '/app/includes/partials/manage_home_categories_panel.php'; ?>
+                            </div>
                         </div>
                     </div>
 
@@ -381,8 +320,15 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
         // הכנה לפונקציות שייכתבו בשלבים הבאים
         // === פונקציית מחיקת פעולה קבועה ===
         function deleteRecurring(id) {
-            if(confirm('האם אתה בטוח שברצונך למחוק פעולה קבועה זו לצמיתות?')) {
-                
+            tazrimConfirm({
+                title: 'מחיקת פעולה קבועה',
+                message: 'האם אתה בטוח שברצונך למחוק פעולה קבועה זו לצמיתות?',
+                confirmText: 'מחק',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function(ok) {
+                if (!ok) return;
+
                 const formData = new FormData();
                 formData.append('id', id);
 
@@ -393,21 +339,55 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        // מחיקה הצליחה - נרענן את הדף כדי שהשורה תיעלם מהרשימה
                         window.location.reload();
                     } else {
-                        alert('שגיאה במחיקה: ' + (data.message || 'אירעה שגיאה לא ידועה.'));
+                        tazrimAlert({
+                            title: 'שגיאה במחיקה',
+                            message: data.message || 'אירעה שגיאה לא ידועה.'
+                        });
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('שגיאת תקשורת עם השרת. אנא נסה שוב.');
+                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת. אנא נסה שוב.' });
                 });
-            }
+            });
         }
         // === ניהול פופאפ קטגוריות ===
         const catModal = document.getElementById('category-modal');
         const catForm = document.getElementById('category-form');
+        const fetchManageHomeCategoriesUrl = '<?php echo BASE_URL; ?>/app/ajax/fetch_manage_home_categories.php';
+
+        function refreshManageHomeCategoriesPanel() {
+            const panel = document.getElementById('manage-home-categories-panel');
+            if (!panel) {
+                return Promise.resolve();
+            }
+            panel.style.opacity = '0.55';
+            panel.style.pointerEvents = 'none';
+            return fetch(fetchManageHomeCategoriesUrl, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.ok && typeof data.html === 'string') {
+                        panel.innerHTML = data.html;
+                    } else {
+                        tazrimAlert({
+                            title: 'שגיאה',
+                            message: 'לא ניתן לרענן את רשימת הקטגוריות.'
+                        });
+                    }
+                })
+                .catch(function () {
+                    tazrimAlert({
+                        title: 'שגיאה',
+                        message: 'שגיאת תקשורת בעת רענון הקטגוריות.'
+                    });
+                })
+                .finally(function () {
+                    panel.style.opacity = '';
+                    panel.style.pointerEvents = '';
+                });
+        }
         
         // יצירת גריד האייקונים
         const iconsList = ['fa-tag', 'fa-cart-shopping', 'fa-car', 'fa-house', 'fa-bolt', 'fa-heart-pulse', 'fa-graduation-cap', 'fa-plane', 'fa-shirt', 'fa-utensils', 'fa-paw', 'fa-gift', 'fa-money-bill-wave', 'fa-mobile-screen', 'fa-baby', 'fa-hammer', 'fa-couch', 'fa-truck'];
@@ -501,11 +481,11 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    msgBox.style.display = 'block';
-                    msgBox.style.backgroundColor = 'var(--sub_main-light)';
-                    msgBox.style.color = 'var(--main)';
-                    msgBox.innerText = 'הקטגוריה נשמרה בהצלחה!';
-                    setTimeout(() => window.location.reload(), 800);
+                    closeCategoryModal();
+                    msgBox.style.display = 'none';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-save"></i> שמור קטגוריה';
+                    refreshManageHomeCategoriesPanel();
                 } else {
                     msgBox.style.display = 'block';
                     msgBox.style.backgroundColor = '#fee2e2';
@@ -529,7 +509,15 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
     <script>
         // === פונקציית מחיקת קטגוריה (מחיקה רכה) ===
         function deleteCategory(id) {
-            if(confirm('האם אתה בטוח שברצונך למחוק קטגוריה זו? (פעולות עבר מקטגוריה זו ישמרו בדוחות)')) {
+            tazrimConfirm({
+                title: 'מחיקת קטגוריה',
+                message: 'האם אתה בטוח שברצונך למחוק קטגוריה זו? (פעולות עבר מקטגוריה זו ישמרו בדוחות)',
+                confirmText: 'מחק',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function(ok) {
+                if (!ok) return;
+
                 const formData = new FormData();
                 formData.append('id', id);
 
@@ -540,16 +528,19 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        window.location.reload();
+                        refreshManageHomeCategoriesPanel();
                     } else {
-                        alert('שגיאה במחיקה: ' + (data.message || 'אירעה שגיאה.'));
+                        tazrimAlert({
+                            title: 'שגיאה במחיקה',
+                            message: data.message || 'אירעה שגיאה.'
+                        });
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('שגיאת תקשורת עם השרת.');
+                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
                 });
-            }
+            });
         }
     </script>
 
@@ -566,36 +557,46 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
         }
 
         function deleteApiToken() {
-            if (!confirm('למחוק את מפתח החיבור? האפליקציה באייפון לא תוכל להתחבר עד שתיצור מפתח חדש.')) {
-                return;
-            }
-            const btn = document.getElementById('btn-delete-api-token');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מוחק...';
-            }
+            tazrimConfirm({
+                title: 'מחיקת מפתח חיבור',
+                message: 'למחוק את מפתח החיבור? האפליקציה באייפון לא תוכל להתחבר עד שתיצור מפתח חדש.',
+                confirmText: 'מחק מפתח',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function(ok) {
+                if (!ok) return;
 
-            fetch('<?php echo BASE_URL; ?>/app/ajax/delete_api_token.php', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    window.location.reload();
-                } else {
-                    alert(data.message || 'שגיאה במחיקת המפתח.');
+                const btn = document.getElementById('btn-delete-api-token');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מוחק...';
+                }
+
+                fetch('<?php echo BASE_URL; ?>/app/ajax/delete_api_token.php', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.reload();
+                    } else {
+                        tazrimAlert({
+                            title: 'שגיאה',
+                            message: data.message || 'שגיאה במחיקת המפתח.'
+                        });
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
+                        }
+                    }
+                })
+                .catch(() => {
+                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
                     if (btn) {
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
                     }
-                }
-            })
-            .catch(() => {
-                alert('שגיאת תקשורת עם השרת.');
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
-                }
+                });
             });
         }
 
@@ -621,13 +622,13 @@ $existing_token = mysqli_fetch_assoc($token_check_result);
                 if (data.status === 'success') {
                     window.location.reload();
                 } else {
-                    alert('שגיאה: ' + data.message);
+                    tazrimAlert({ title: 'שגיאה', message: data.message || 'אירעה שגיאה.' });
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fa-solid fa-key"></i> ניסיון חוזר';
                 }
             })
             .catch(err => {
-                alert(err.message);
+                tazrimAlert({ title: 'שגיאה', message: err.message || 'אירעה שגיאה.' });
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-key"></i> ניסיון חוזר';
             });

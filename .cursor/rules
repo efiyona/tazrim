@@ -95,3 +95,38 @@ Before writing any PHP or SQL code that depends on database structure:
 5. Never assume schema structure.
 6. Never silently invent columns or tables.
 7. Prefer minimal, backward-compatible migrations.
+
+
+=== USER DIALOGS (TAZRIM) ===
+
+- Do not use browser `alert()` or `confirm()` for user-facing messages or action confirmation in this app’s front-end code.
+- Use **`tazrimConfirm({ title, message, confirmText?, cancelText?, danger? })`** — returns **`Promise<boolean>`** — for destructive or important confirmations.
+- Use **`tazrimAlert({ title, message, okText? })`** for single-button info or error messages.
+- Implementation lives in the shared dialogs script (`assets/js/tazrim_dialogs.js`). Ensure the page loads it: typically via the main layout/meta include used on most pages, or the same explicit script tag pattern as other settings pages that do not use that layout.
+- **Exception:** Do not replace native `alert` / `confirm` inside the **web push / PWA notification subscription** flow (permission, subscribe, unsubscribe, errors there) unless the user explicitly asks to change that flow.
+
+
+=== AI IMAGE GENERATOR WITH APPROVAL ===
+
+When I start a prompt with the exact word "/make-image", treat the rest of my prompt as a request for a new image. You must follow this interactive 2-phase workflow:
+
+PHASE 1: GENERATION & PREVIEW
+1. TRANSLATE: Create a highly detailed English prompt based on my request.
+2. TEMP PATH: Run the generation script and save the output to a temporary file: 
+   `php scripts/generate-image.php "<your_english_prompt>" "assets/temp_preview.jpg"`
+3. DISPLAY: Once the script finishes, display the generated image right here in the chat using Markdown syntax: `![Preview Preview](assets/temp_preview.jpg)`
+4. PROMPT FOR APPROVAL: Ask me explicitly in Hebrew: "האם התמונה הזו מתאימה? (הקלד: כן / לא / ביטול)".
+5. HALT: **STOP HERE.** Do not write any HTML/CSS/PHP code and do not move the file until I explicitly approve.
+
+PHASE 2: HANDLING FEEDBACK
+When I reply to your preview:
+- If I say "כן" (Yes): 
+  1. Determine the final logical path (e.g., `assets/images/hero.jpg`).
+  2. Use terminal commands to move/rename the file from `assets/temp_preview.jpg` to the final path.
+  3. Write the necessary code (HTML/CSS/PHP) to integrate the new image where requested.
+- If I say "לא" (No) or give notes: 
+  1. Adjust the English prompt based on my new instructions.
+  2. Overwrite the temp file by running the generation script again.
+  3. Display the new image and ask for approval again (Repeat Phase 1).
+- If I say "ביטול" (Cancel): 
+  1. Run a terminal command to delete `assets/temp_preview.jpg` and say "הפעולה בוטלה".

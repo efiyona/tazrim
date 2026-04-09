@@ -174,7 +174,8 @@ $prefilled_code = isset($_GET['join_code']) ? htmlspecialchars($_GET['join_code'
 
         document.getElementById('registerForm').onsubmit = (e) => {
             if(document.getElementById('reg_pass').value.length < 4) {
-                e.preventDefault(); alert('הסיסמה חייבת להיות לפחות 4 תווים');
+                e.preventDefault();
+                tazrimAlert({ title: 'בדיקת סיסמה', message: 'הסיסמה חייבת להיות לפחות 4 תווים' });
             }
         };
 

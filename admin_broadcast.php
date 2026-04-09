@@ -145,47 +145,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <script>
         document.getElementById('broadcast-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            
+
+            const form = this;
             const btn = document.getElementById('submit-btn');
             const msgBox = document.getElementById('msg-box');
-            
-            if(!confirm('האם אתה בטוח שברצונך לשלוח הודעת פוש לכל המשתמשים? לא ניתן לבטל פעולה זו.')) {
-                return;
-            }
-            
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> שולח הודעות...';
-            msgBox.style.display = 'none';
-            
-            const formData = new FormData(this);
-            
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                msgBox.style.display = 'block';
-                msgBox.className = ''; // איפוס עיצוב קודם
-                
-                if(data.status === 'success') {
-                    msgBox.classList.add('success-msg');
-                    msgBox.innerText = data.message;
-                    this.reset(); // מנקה את הטופס אחרי הצלחה
-                } else {
-                    msgBox.classList.add('error-msg');
-                    msgBox.innerText = data.message;
-                }
-            })
-            .catch(err => {
-                msgBox.style.display = 'block';
-                msgBox.className = 'error-msg';
-                msgBox.innerText = 'שגיאת תקשורת עם השרת.';
-                console.error(err);
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> שידור הודעה לכל המשתמשים';
+
+            tazrimConfirm({
+                title: 'שידור פוש לכל המשתמשים',
+                message: 'האם אתה בטוח שברצונך לשלוח הודעת פוש לכל המשתמשים? לא ניתן לבטל פעולה זו.',
+                confirmText: 'שלח',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function(confirmed) {
+                if (!confirmed) return;
+
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> שולח הודעות...';
+                msgBox.style.display = 'none';
+
+                const formData = new FormData(form);
+
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    msgBox.style.display = 'block';
+                    msgBox.className = '';
+
+                    if(data.status === 'success') {
+                        msgBox.classList.add('success-msg');
+                        msgBox.innerText = data.message;
+                        form.reset();
+                    } else {
+                        msgBox.classList.add('error-msg');
+                        msgBox.innerText = data.message;
+                    }
+                })
+                .catch(err => {
+                    msgBox.style.display = 'block';
+                    msgBox.className = 'error-msg';
+                    msgBox.innerText = 'שגיאת תקשורת עם השרת.';
+                    console.error(err);
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> שידור הודעה לכל המשתמשים';
+                });
             });
         });
     </script>

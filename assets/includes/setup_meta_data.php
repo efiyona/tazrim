@@ -25,4 +25,5 @@ require_once __DIR__ . '/user_css_href.php';
 <meta name="apple-mobile-web-app-title" content="התזרים">
 
 <link rel="apple-touch-icon" href="<?php echo BASE_URL; ?>assets/images/apple-touch-icon.png">
+<script src="<?php echo BASE_URL; ?>assets/js/tazrim_dialogs.js" defer></script>
 <script src="<?php echo BASE_URL; ?>assets/js/global_modals.js" defer></script>

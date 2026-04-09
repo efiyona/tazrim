@@ -217,17 +217,23 @@ $is_setup_needed = ($cats_count == 0);
     <?php else: ?>
     <script>
         function clearEntireList() {
-            if(confirm('האם למחוק את כל המוצרים ברשימה?')) {
-                // קודם כל סוגרים את בועת הפלוס שפתוחה
+            tazrimConfirm({
+                title: 'ניקוי הרשימה',
+                message: 'האם למחוק את כל המוצרים ברשימה?',
+                confirmText: 'מחק הכל',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function(ok) {
+                if (!ok) return;
                 const plusWrapper = document.querySelector('.detached-plus-wrapper');
                 if (plusWrapper) plusWrapper.classList.remove('open');
-                
+
                 $.post('../app/ajax/clear_shopping_list.php', function(response) {
                     $('.category-block').fadeOut(400, function() {
-                        loadShoppingLists(); 
+                        loadShoppingLists();
                     });
                 });
-            }
+            });
         }
 
 function updatePlusMenuUI() {
@@ -630,12 +636,14 @@ function handleEmptyCategoryClick(id, name, icon, element) {
                             loadShoppingLists(categoryId); 
                         }, 1000);
                     } else {
-                        // אם נכשל, נציג למשתמש מה ה-AI ענה כדי שנבין למה
-                        alert('שגיאת AI: ' + res.message + '\n\nתשובת המודל:\n' + res.debug_raw);
+                        tazrimAlert({
+                            title: 'שגיאת AI',
+                            message: 'שגיאת AI: ' + (res.message || '') + (res.debug_raw ? '\n\nתשובת המודל:\n' + res.debug_raw : '')
+                        });
                         $(`#ai-overlay-${categoryId}`).fadeOut(300, function() { $(this).remove(); });
                     }
                 } catch (e) {
-                    alert('שגיאת פענוח בשרת. בדוק את ה-Console.');
+                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת פענוח בשרת. בדוק את ה-Console.' });
                     console.error("Parse Error:", e, response);
                     $(`#ai-overlay-${categoryId}`).fadeOut(300, function() { $(this).remove(); });
                 }

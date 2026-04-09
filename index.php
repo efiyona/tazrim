@@ -627,34 +627,45 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
 
     function deleteTransaction(id, source) {
         const src = source || window.transactionActionSource || 'main';
-        if (!confirm('האם אתה בטוח שברצונך למחוק פעולה זו? התקציב ויתרת הבנק יעודכנו בהתאם.')) return;
+        tazrimConfirm({
+            title: 'מחיקת פעולה',
+            message: 'האם אתה בטוח שברצונך למחוק פעולה זו? התקציב ויתרת הבנק יעודכנו בהתאם.',
+            confirmText: 'מחק',
+            cancelText: 'ביטול',
+            danger: true
+        }).then(function(ok) {
+            if (!ok) return;
 
-        const formData = new FormData();
-        formData.append('id', id);
+            const formData = new FormData();
+            formData.append('id', id);
 
-        fetch('app/ajax/delete_transaction.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status !== 'success') {
-                alert('שגיאה במחיקה: ' + (data.message || 'אירעה שגיאה.'));
-                return;
-            }
-            closeEditTransModal();
-            if (src === 'category-details') {
-                refreshHomeDashboardCore()
-                    .then(() => refreshOpenCategoryDetailsIfAny())
-                    .then(() => resetAiInsightCard());
-            } else {
-                closeCatDetails();
-                refreshHomeDashboardCore().then(() => resetAiInsightCard());
-            }
-        })
-        .catch(err => {
-            console.error('Error:', err);
-            alert('שגיאת תקשורת.');
+            fetch('app/ajax/delete_transaction.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status !== 'success') {
+                    tazrimAlert({
+                        title: 'שגיאה במחיקה',
+                        message: data.message || 'אירעה שגיאה.'
+                    });
+                    return;
+                }
+                closeEditTransModal();
+                if (src === 'category-details') {
+                    refreshHomeDashboardCore()
+                        .then(() => refreshOpenCategoryDetailsIfAny())
+                        .then(() => resetAiInsightCard());
+                } else {
+                    closeCatDetails();
+                    refreshHomeDashboardCore().then(() => resetAiInsightCard());
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת.' });
+            });
         });
     }
 

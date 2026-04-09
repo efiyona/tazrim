@@ -30,6 +30,7 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_user_css_href(), ENT_QUOTES, 'UTF-8'); ?>">
+    <script src="<?php echo BASE_URL; ?>assets/js/tazrim_dialogs.js" defer></script>
 
     <style>
         /* עיצובים ספציפיים לעמוד הפרופיל שמשתלבים עם העיצוב הקיים */
@@ -371,18 +372,31 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
 
         // פעולות אזור סכנה
         function leaveHome() {
-            if(confirm('האם אתה בטוח שברצונך לעזוב את הבית? פעולה זו תנתק אותך מנתוני התזרים.')) {
+            tazrimConfirm({
+                title: 'עזיבת הבית',
+                message: 'האם אתה בטוח שברצונך לעזוב את הבית? פעולה זו תנתק אותך מנתוני התזרים.',
+                confirmText: 'עזוב',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function(ok) {
+                if (!ok) return;
                 // TODO: AJAX call to app/ajax/leave_home.php
-                alert('פונקציית עזיבת הבית תופעל כאן');
-            }
+                tazrimAlert({ title: 'בקרוב', message: 'פונקציית עזיבת הבית תופעל כאן' });
+            });
         }
 
         function deleteAccount() {
-            if(confirm('אזהרה: האם אתה בטוח לחלוטין שברצונך למחוק את חשבונך לצמיתות?\n\nאם אתה המשתמש היחיד בבית - כל נתוני הבית (הוצאות, קטגוריות ודוחות) ימחקו גם הם ללא אפשרות שחזור!')) {
-                
-                // משנים את הכפתור כדי שהמשתמש יראה שמשהו קורה
+            tazrimConfirm({
+                title: 'מחיקת חשבון לצמיתות',
+                message: 'אזהרה: האם אתה בטוח לחלוטין שברצונך למחוק את חשבונך לצמיתות?\n\nאם אתה המשתמש היחיד בבית - כל נתוני הבית (הוצאות, קטגוריות ודוחות) ימחקו גם הם ללא אפשרות שחזור!',
+                confirmText: 'מחק חשבון',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function(ok) {
+                if (!ok) return;
+
                 const btns = document.querySelectorAll('.btn-danger-outline');
-                const deleteBtn = btns[btns.length - 1]; // הכפתור האחרון הוא המחיקה
+                const deleteBtn = btns[btns.length - 1];
                 const originalHtml = deleteBtn.innerHTML;
                 deleteBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מוחק חשבון ונתונים...';
                 deleteBtn.disabled = true;
@@ -393,21 +407,19 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        // מחיקה הצליחה - מעבירים לעמוד ההרשמה/התחברות עם פרמטר שמציין מחיקה
                         window.location.href = '<?php echo BASE_URL; ?>pages/login.php?deleted=1';
                     } else {
-                        // אם יש שגיאה (למשל, הוא אדמין עם שותפים)
-                        alert(data.message);
+                        tazrimAlert({ title: 'לא ניתן למחוק', message: data.message || 'אירעה שגיאה.' });
                         deleteBtn.innerHTML = originalHtml;
                         deleteBtn.disabled = false;
                     }
                 })
-                .catch(err => {
-                    alert('שגיאת תקשורת עם השרת בעת ניסיון המחיקה.');
+                .catch(function() {
+                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת בעת ניסיון המחיקה.' });
                     deleteBtn.innerHTML = originalHtml;
                     deleteBtn.disabled = false;
                 });
-            }
+            });
         }
     </script>
 
