@@ -14,7 +14,7 @@ $has_token = !empty($existing_token['token']);
 ?>
 <div class="ios-tazrim-panel">
     <p class="ios-tazrim-lead">
-        <strong>קיצורי דרך</strong> באייפון/אייפד מוסיפים הוצאות ופעולות לתזרים בלי להיכנס לדפדפן בכל פעם. צריך <strong>מפתח חיבור</strong> אחד — אותו מדביקים פעם אחת בכל קיצור חדש.
+        ב־<strong>iOS</strong> (אפליקציית <strong>קיצורי הדרך</strong>) אפשר לרשום הוצאות ופעולות לתזרים בלי לפתוח את האתר בכל פעם. נדרש <strong>מפתח חיבור</strong> אחד — מדביקים אותו פעם אחת בכל קיצור חדש.
     </p>
 
     <?php if (!$has_token): ?>
@@ -38,7 +38,7 @@ $has_token = !empty($existing_token['token']);
                     <i class="fa-solid fa-check"></i> המפתח הועתק!
                 </div>
                 <button type="button" id="btn-ios-delete-api-token" class="btn-api-token-delete" onclick="iosPanelDeleteToken()">
-                    <i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת
+                    מחיקת מפתח
                 </button>
             </div>
         </div>

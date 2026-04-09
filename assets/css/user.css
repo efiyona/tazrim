@@ -3079,12 +3079,16 @@ body.auth-forgot .auth-switch a {
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: var(--sub_main-light, #e8f4f8);
-    color: var(--main);
+    background: #f1f5f9;
+    color: var(--text-dark);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.95rem;
+}
+
+.ios-shortcut-add-icon i {
+    color: inherit;
 }
 
 .ios-shortcut-add-text {
@@ -3127,6 +3131,21 @@ body.auth-forgot .auth-switch a {
     font-weight: 600;
     text-align: center;
     font-size: 0.9rem;
+}
+
+/* מובייל: תיבת מפתח + כפתור מחיקה ברוחב מלא */
+@media (max-width: 767px) {
+    .ios-tazrim-panel .api-token-block-v2,
+    .ios-tazrim-panel .api-wrapper-v2 {
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .ios-tazrim-panel .btn-api-token-delete {
+        width: 100%;
+        box-sizing: border-box;
+    }
 }
 
 .ios-tazrim-loading {

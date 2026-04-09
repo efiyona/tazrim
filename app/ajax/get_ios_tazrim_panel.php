@@ -19,6 +19,16 @@ if ($user_id <= 0) {
     exit;
 }
 
+require_once ROOT_PATH . '/app/includes/ios_tazrim_panel_visibility.php';
+$user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+if (!tazrim_show_ios_tazrim_panel($user_agent)) {
+    echo json_encode([
+        'status' => 'forbidden',
+        'message' => 'האזור מיועד לאייפון, אייפד או מק. באנדרואיד אין תמיכה בקיצורי דרך אלה.',
+    ]);
+    exit;
+}
+
 require_once ROOT_PATH . '/app/includes/ensure_ios_shortcut_links_table.php';
 ensure_ios_shortcut_links_table($conn);
 

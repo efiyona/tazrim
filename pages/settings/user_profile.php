@@ -15,8 +15,14 @@ $home_data = selectOne('homes', ['id' => $home_id]);
 // שליפת נתוני המשתמש הנוכחי
 $user_data = selectOne('users', ['id' => $user_id]);
 
-// זיהוי אם המשתמש גולש ממכשיר אפל (אייפון/אייפד)
-$is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
+// זיהוי אם המשתמש גולש ממכשיר אפל (אייפון/אייפד, כולל iPadOS עם UA של מק) — להתראות / PWA
+$user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$is_ios = (bool) preg_match('/iPhone|iPad|iPod/i', $user_agent)
+    || (stripos($user_agent, 'Macintosh') !== false && stripos($user_agent, 'Mobile') !== false);
+
+require_once ROOT_PATH . '/app/includes/ios_tazrim_panel_visibility.php';
+// אזור קיצורי דרך + API: אייפון, אייפד או מק — לא באנדרואיד
+$show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
 ?>
 
 <!DOCTYPE html>
@@ -252,9 +258,10 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
                         </div>
                     </div>
 
+                    <?php if ($show_ios_tazrim_panel): ?>
                     <div class="card full-width-card" id="ios-tazrim-card">
                         <div class="card-header ios-tazrim-card-header">
-                            <h3><i class="fa-brands fa-apple" aria-hidden="true"></i> התזרים באייפון</h3>
+                            <h3><i class="fa-brands fa-apple" aria-hidden="true"></i> קיצורי דרך ל־iOS</h3>
                         </div>
                         <div class="card-body-padding" id="ios-tazrim-panel-mount">
                             <div class="ios-tazrim-loading">
@@ -263,6 +270,7 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <div class="card danger-card full-width-card">
                         <div class="card-body-padding">
@@ -510,7 +518,7 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
                         });
                         if (btn) {
                             btn.disabled = false;
-                            btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
+                            btn.innerHTML = 'מחיקת מפתח';
                         }
                     }
                 })
@@ -518,7 +526,7 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
                     tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
                     if (btn) {
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="fa-solid fa-trash"></i> מחיקת המפתח מהמערכת';
+                        btn.innerHTML = 'מחיקת מפתח';
                     }
                 });
             });
