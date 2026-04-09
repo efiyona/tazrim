@@ -25,6 +25,11 @@
     --gray-light: #F8F9FA;
     --white: #fff;
     --input-bg: #F7F9FA;
+
+    /* מחשב: תוכן רחב מאוד; השוליים מיושרים ל-top-bar */
+    --app-content-max-width: 1200px;
+    /* רווח אחיד מקצה עליון / תחתון (כמו bottom של .floating-nav-wrapper) */
+    --app-edge-inset: 25px;
 }
 
 /* מניעת זום נוסף בשדות הקלדה (גיבוי לאייפון) */
@@ -465,6 +470,18 @@ body {
     box-sizing: border-box;
 }
 
+/* מחשב בלבד: רוחב אחיד — width מפורש (לא 100% בתוך flex) כדי למנוע stretch לא עקבי */
+@media (min-width: 901px) {
+    .main-content > .content-wrapper {
+        flex: 1 1 auto;
+        width: min(var(--app-content-max-width), calc(100% - 2 * var(--app-edge-inset)));
+        max-width: 100%;
+        margin-inline: auto;
+        box-sizing: border-box;
+        min-width: 0;
+    }
+}
+
 .section-title {
     font-size: 1.8rem;
     font-weight: 800;
@@ -813,10 +830,15 @@ body {
     background-color: var(--gray-light);
 }
 
-/* עיצוב ה-Top Bar הצף */
+/* עיצוב ה-Top Bar הצף — sticky עם top = margin כדי שהרווח מראש המסך לא נעלם בגלילה */
 .top-bar {
+    position: -webkit-sticky;
+    position: sticky;
+    top: var(--app-edge-inset);
+    z-index: 50;
+    flex-shrink: 0;
     background-color: var(--white);
-    margin: 20px 25px 0 25px; /* רווח מהקצוות ליצירת אפקט צף */
+    margin: var(--app-edge-inset) var(--app-edge-inset) 0 var(--app-edge-inset);
     padding: 12px 25px;
     border-radius: 20px;
     display: flex;
@@ -895,9 +917,10 @@ body {
     color: var(--error);
 }
 
-/* התאמה לרזולוציות שונות */
+/* התאמה לרזולוציות שונות — אותו עיקרון: top (sticky) = מרווח מהקצה */
 @media (max-width: 900px) {
     .top-bar {
+        top: 10px;
         margin: 10px;
         padding: 10px 15px;
     }
@@ -2819,7 +2842,7 @@ body.page-auth {
 
 .floating-nav-wrapper {
     position: fixed;
-    bottom: 25px;
+    bottom: var(--app-edge-inset);
     left: 50%;
     transform: translateX(-50%);
     display: flex;

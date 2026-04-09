@@ -61,7 +61,7 @@ $is_setup_needed = ($cats_count == 0);
         
         <?php include(ROOT_PATH . '/assets/includes/sidebar_bavbar.php'); ?>
 
-        <main class="content-wrapper">
+            <div class="content-wrapper">
 
             <?php if ($is_setup_needed): ?>
                 <div class="welcome-card">
@@ -138,6 +138,7 @@ $is_setup_needed = ($cats_count == 0);
                 </div>
             <?php endif; ?>
 
+            </div>
         </main>
     </div>
 

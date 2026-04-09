@@ -116,7 +116,7 @@ while($row = mysqli_fetch_assoc($budget_result)) {
         
         <?php include(ROOT_PATH . '/assets/includes/sidebar_bavbar.php'); ?>
 
-        <main class="content-wrapper">
+            <div class="content-wrapper">
             
             <?php 
                 $is_current_month = ($current_month == date('m') && $current_year == date('Y')); 
@@ -219,6 +219,7 @@ while($row = mysqli_fetch_assoc($budget_result)) {
                 </div>
             </div>
 
+            </div>
         </main>
     </div>
 
