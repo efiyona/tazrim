@@ -163,7 +163,7 @@ if (isset($_POST['register_btn'])) {
             $_SESSION['id'] = $user_id;
             $_SESSION['first_name'] = $first_name;
             $_SESSION['last_name'] = $last_name;
-            $_SESSION['nickname'] = $user['nickname'];
+            $_SESSION['nickname'] = $nickname;
             $_SESSION['home_id'] = $target_home_id;
             $_SESSION['role'] = $userData['role'];
 
