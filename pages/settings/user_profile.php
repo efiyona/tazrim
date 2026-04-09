@@ -1,7 +1,10 @@
 <?php
 require_once('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
-include(ROOT_PATH . '/assets/includes/auth_check.php'); 
+include(ROOT_PATH . '/assets/includes/auth_check.php');
+
+require_once ROOT_PATH . '/assets/includes/user_css_href.php';
+require_once ROOT_PATH . '/assets/includes/pwa_no_cache_headers.php';
 
 $user_id = $_SESSION['id'];
 $home_id = $_SESSION['home_id'];
@@ -26,7 +29,7 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/user.css">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_user_css_href(), ENT_QUOTES, 'UTF-8'); ?>">
 
     <style>
         /* עיצובים ספציפיים לעמוד הפרופיל שמשתלבים עם העיצוב הקיים */
@@ -248,7 +251,7 @@ $is_ios = preg_match('/iPhone|iPad|iPod/i', $_SERVER['HTTP_USER_AGENT']);
                             <div class="management-block" style="margin-bottom: 0;">
                                 <h4 style="margin: 0 0 5px 0; color: var(--text-dark); font-weight: 700;">עזיבת הבית</h4>
                                 <p class="block-help" style="margin-bottom: 15px;">פעולה זו תמחק את החשבון שלך ואת כל המידע האישי שלך מהמערכת. פעולה זו בלתי הפיכה.</p>
-                                <button type="button" style="background-color: #fee2e2; border-color: #fca5a5; id="btn-update-profile" class="btn-primary btn-danger-outline" onclick="deleteAccount()">מחיקת חשבון לצמיתות</button>
+                                <button type="button" id="btn-delete-account" class="btn-primary btn-danger-outline" style="background-color: #fee2e2; border-color: #fca5a5;" onclick="deleteAccount()">מחיקת חשבון לצמיתות</button>
 
                             </div>
 

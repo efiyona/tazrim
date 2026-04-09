@@ -1,3 +1,6 @@
+<?php
+require_once __DIR__ . '/user_css_href.php';
+?>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>התזרים | ניהול כלכלת בית חכם</title>
@@ -11,7 +14,7 @@
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
 
-<link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/user.css?v=<?php echo time(); ?>">
+<link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_user_css_href(), ENT_QUOTES, 'UTF-8'); ?>">
 
 <link rel="manifest" href="<?php echo BASE_URL; ?>manifest.json">
 <link rel="icon" type="image/x-icon" href="<?php echo BASE_URL; ?>favicon.ico">
