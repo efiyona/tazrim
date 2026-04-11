@@ -1,6 +1,7 @@
 <?php
 // טעינת הספרייה שקומפוזר התקין
 require_once(ROOT_PATH . '/vendor/autoload.php');
+require_once __DIR__ . '/expo_push_functions.php';
 
 use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
@@ -30,9 +31,11 @@ function getWebPushAuth() {
 // ========================================================
 function sendPushNotification($user_id, $title, $body, $url = '/', $preference = null) {
     global $conn;
-    
+
+    $expoOk = sendExpoPushToUser($user_id, $title, $body, $url, $preference);
+
     $auth = getWebPushAuth();
-    if (!$auth) return false;
+    if (!$auth) return $expoOk;
 
     $prefSql = '';
     if ($preference === 'home_transactions') {
@@ -49,7 +52,7 @@ function sendPushNotification($user_id, $title, $body, $url = '/', $preference =
               WHERE us.user_id = $user_id" . $prefSql;
     $result = mysqli_query($conn, $query);
 
-    if (mysqli_num_rows($result) === 0) return false;
+    if (mysqli_num_rows($result) === 0) return $expoOk;
 
     try {
         $webPush = new WebPush($auth);
@@ -69,7 +72,7 @@ function sendPushNotification($user_id, $title, $body, $url = '/', $preference =
     } catch (\Exception $e) {
         // בולע את השגיאה כדי לא לשבור את המערכת, אך אפשר לרשום ללוג אם נרצה
         error_log("WebPush Error: " . $e->getMessage());
-        return false;
+        return $expoOk;
     }
 }
 
@@ -78,9 +81,11 @@ function sendPushNotification($user_id, $title, $body, $url = '/', $preference =
 // ========================================================
 function sendPushToHome($home_id, $exclude_user_id, $title, $body, $url = '/') {
     global $conn;
-    
+
+    $expoOk = sendExpoPushToHome($home_id, $exclude_user_id, $title, $body, $url);
+
     $auth = getWebPushAuth();
-    if (!$auth) return false;
+    if (!$auth) return $expoOk;
 
     $query = "SELECT us.* FROM user_subscriptions us
               JOIN users u ON us.user_id = u.id
@@ -90,7 +95,7 @@ function sendPushToHome($home_id, $exclude_user_id, $title, $body, $url = '/') {
     
     $result = mysqli_query($conn, $query);
 
-    if (mysqli_num_rows($result) === 0) return false;
+    if (mysqli_num_rows($result) === 0) return $expoOk;
 
     try {
         $webPush = new WebPush($auth);
@@ -109,7 +114,7 @@ function sendPushToHome($home_id, $exclude_user_id, $title, $body, $url = '/') {
         return true;
     } catch (\Exception $e) {
         error_log("WebPush Error: " . $e->getMessage());
-        return false;
+        return $expoOk;
     }
 }
 
@@ -119,9 +124,11 @@ function sendPushToHome($home_id, $exclude_user_id, $title, $body, $url = '/') {
 // ========================================================
 function sendPushToEntireHome($home_id, $title, $body, $url = '/', $preference = 'budget') {
     global $conn;
-    
+
+    $expoOk = sendExpoPushToEntireHome($home_id, $title, $body, $url, $preference);
+
     $auth = getWebPushAuth();
-    if (!$auth) return false;
+    if (!$auth) return $expoOk;
 
     $prefCol = 'notify_budget';
     if ($preference === 'system') {
@@ -137,7 +144,7 @@ function sendPushToEntireHome($home_id, $title, $body, $url = '/', $preference =
     
     $result = mysqli_query($conn, $query);
 
-    if (mysqli_num_rows($result) === 0) return false;
+    if (mysqli_num_rows($result) === 0) return $expoOk;
 
     try {
         $webPush = new WebPush($auth);
@@ -156,6 +163,6 @@ function sendPushToEntireHome($home_id, $title, $body, $url = '/', $preference =
         return true;
     } catch (\Exception $e) {
         error_log("WebPush Error: " . $e->getMessage());
-        return false;
+        return $expoOk;
     }
 }

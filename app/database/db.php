@@ -35,6 +35,38 @@ function tazrim_ensure_user_notification_table() {
 
 tazrim_ensure_user_notification_table();
 
+/**
+ * מבטיח שטבלת אסימוני Expo Push (אפליקציה) קיימת — מקביל ל־add_user_expo_push_tokens.sql
+ */
+function tazrim_ensure_user_expo_push_tokens_table() {
+    global $conn;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    if (!$conn) {
+        return;
+    }
+    @mysqli_query(
+        $conn,
+        "CREATE TABLE IF NOT EXISTS `user_expo_push_tokens` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `user_id` int NOT NULL,
+            `expo_push_token` varchar(400) NOT NULL,
+            `platform` varchar(16) NOT NULL DEFAULT '',
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uq_user_expo_token` (`user_id`, `expo_push_token`(191)),
+            KEY `idx_uept_user` (`user_id`),
+            CONSTRAINT `fk_uept_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+}
+
+tazrim_ensure_user_expo_push_tokens_table();
+
 function dd($value)
 {
     echo "<pre>", print_r($value, true), "</pre>";
