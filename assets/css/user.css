@@ -3192,6 +3192,423 @@ body.auth-forgot .auth-switch a {
     margin-bottom: 10px;
 }
 
+.shopping-category-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    margin-inline-start: 10px;
+}
+
+.btn-clear-category {
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--error);
+    font-size: 0.95rem;
+    padding: 0;
+    transition: background 0.2s, transform 0.15s;
+}
+
+@media (hover: hover) {
+    .btn-clear-category:hover {
+        background: rgba(245, 101, 101, 0.12);
+    }
+}
+
+.btn-clear-category:active {
+    transform: scale(0.94);
+}
+
+/* —— דף קניות: טאבי חנויות + פאנל בודד (שוויון לאפליקציה) —— */
+.shopping-tabs-bar {
+    margin-bottom: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+.shopping-store-tabs {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    direction: rtl;
+    padding: 4px 2px 12px;
+}
+.shopping-tab-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    white-space: nowrap;
+    max-width: 200px;
+    font-family: inherit;
+}
+.shopping-tab-chip i {
+    color: var(--main);
+    font-size: 0.95rem;
+}
+.shopping-tab-chip.active {
+    background: var(--main);
+    border-color: var(--main);
+    color: #fff;
+}
+.shopping-tab-chip span {
+    color: inherit;
+}
+.shopping-tab-chip.active span {
+    color: #fff !important;
+}
+.shopping-tab-chip.active i {
+    color: #fff;
+}
+.shopping-tab-add {
+    border-style: dashed;
+    border-color: var(--main);
+    color: var(--main);
+    background: #fff;
+}
+.shopping-tab-add i {
+    color: var(--main) !important;
+}
+.shopping-panel {
+    display: none;
+}
+.shopping-panel--active {
+    display: block;
+}
+.shopping-panel .category-block {
+    margin-bottom: 0;
+}
+.category-header--tabs {
+    cursor: default;
+}
+.category-title-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
+    flex-direction: row;
+}
+.category-title-label {
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+}
+.btn-store-kebab {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 10px;
+    background: #f3f4f6;
+    color: var(--text-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+@media (hover: hover) {
+    .btn-store-kebab:hover {
+        background: #e5e7eb;
+    }
+}
+#shopping-store-kebab {
+    position: fixed;
+    z-index: 3100;
+    min-width: 188px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16);
+    padding: 6px;
+    display: none;
+    direction: rtl;
+}
+#shopping-store-kebab.open {
+    display: block;
+}
+#shopping-store-kebab button {
+    display: block;
+    width: 100%;
+    text-align: right;
+    padding: 10px 12px;
+    border: none;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    color: var(--text);
+}
+@media (hover: hover) {
+    #shopping-store-kebab button:hover {
+        background: #f3f4f6;
+    }
+}
+#shopping-store-kebab button.danger {
+    color: var(--error);
+}
+.shopping-page-store-modal .modal-content {
+    max-width: 440px;
+}
+.shopping-page-store-modal__header {
+    direction: rtl;
+}
+.shopping-page-store-modal__header h3 {
+    margin: 0;
+    flex: 1;
+    text-align: right;
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+.shopping-field-label {
+    display: block;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-align: right;
+    color: var(--text);
+}
+.shopping-modal-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--gray-light);
+    font-size: 1rem;
+    font-family: inherit;
+    text-align: right;
+}
+.shopping-icon-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 8px;
+}
+.shopping-icon-grid button {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: 1.5px solid #e5e7eb;
+    background: #fafafa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    font-size: 1rem;
+}
+.shopping-icon-grid button.selected {
+    border-color: var(--main);
+    background: #f0fdf4;
+    color: var(--main);
+}
+.shopping-modal-submit {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+}
+.shopping-modal-msg {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* אשף רשימת קניות — צ'יפים וכרטיס כמו באפליקציה */
+.shopping-welcome-card {
+    background: white;
+    width: 100%;
+    max-width: 700px;
+    margin: 20px auto;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+.shopping-wizard-step {
+    display: none;
+}
+.shopping-wizard-step.active {
+    display: block;
+    animation: shoppingWizardFade 0.4s;
+}
+@keyframes shoppingWizardFade {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.shopping-stepper-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 30px;
+}
+.shopping-stepper-dots .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ddd;
+}
+.shopping-stepper-dots .dot.active {
+    background: var(--main);
+    width: 25px;
+    border-radius: 10px;
+    transition: 0.3s;
+}
+.shopping-wizard-icon {
+    font-size: 4rem;
+    color: var(--main);
+    margin-bottom: 20px;
+}
+.shopping-wizard-chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    direction: rtl;
+    margin-top: 20px;
+    margin-bottom: 8px;
+}
+.shopping-wizard-chip-grid .store-option {
+    flex: 1 1 calc(33.333% - 8px);
+    min-width: 108px;
+    max-width: 200px;
+    border-radius: 999px;
+    padding: 10px 12px;
+    border-width: 1.5px;
+}
+@media (max-width: 520px) {
+    .shopping-wizard-chip-grid .store-option {
+        flex: 1 1 calc(50% - 8px);
+    }
+}
+.shopping-wizard-custom-row {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    width: 100%;
+    max-width: 100%;
+}
+.shopping-welcome-card .custom-store-input {
+    flex: 1;
+    padding: 12px;
+    border: 2px dashed #ccc;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 1rem;
+    text-align: right;
+}
+.shopping-welcome-card .custom-store-input:focus {
+    border-color: var(--main);
+    outline: none;
+    border-style: solid;
+}
+.shopping-welcome-card .btn-add-custom {
+    background: var(--gray);
+    color: var(--text);
+    border: none;
+    padding: 0 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+@media (hover: hover) {
+    .shopping-welcome-card .btn-add-custom:hover {
+        background: var(--main);
+        color: white;
+    }
+}
+.shopping-welcome-card .btn-welcome {
+    background: var(--main);
+    color: white;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 25px;
+    transition: 0.3s;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    font-family: inherit;
+}
+@media (hover: hover) {
+    .shopping-welcome-card .btn-welcome:hover {
+        background: var(--main-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(35, 114, 39, 0.3);
+    }
+}
+.shopping-welcome-card .btn-welcome:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+.shopping-welcome-card .store-option {
+    border: 2px solid #eee;
+    background: #fafafa;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-light);
+}
+.shopping-welcome-card .store-option i {
+    font-size: 1.5rem;
+}
+.shopping-welcome-card .store-option span {
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+.shopping-welcome-card .store-option.selected {
+    border-color: var(--main);
+    background: #f0fdf4;
+    color: var(--main);
+    box-shadow: 0 4px 10px rgba(35, 114, 39, 0.1);
+    transform: translateY(-2px);
+}
+
 /* שורות הפריטים ושורת הרפאים */
 .item-row {
     display: flex;
@@ -3279,7 +3696,7 @@ body.auth-forgot .auth-switch a {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    margin-left: 15px;
+    margin: 0;
     box-shadow: 0 3px 8px #6feb8c;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     font-size: 0.9rem;

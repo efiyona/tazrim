@@ -38,7 +38,12 @@ if ($store_id) {
 }
 
 if (mysqli_query($conn, $query)) {
-    echo json_encode(['status' => 'success']);
+    if ($store_id) {
+        echo json_encode(['status' => 'success']);
+    } else {
+        $new_id = (int) mysqli_insert_id($conn);
+        echo json_encode(['status' => 'success', 'new_store_id' => $new_id]);
+    }
 } else {
     echo json_encode(['status' => 'error', 'message' => 'שגיאה בשמירת הנתונים.']);
 }
