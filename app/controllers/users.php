@@ -1,5 +1,6 @@
 <?php
 include(ROOT_PATH . "/app/database/db.php");
+require_once ROOT_PATH . '/app/helpers/phone_uniqueness.php';
 
 $errors = array();
 // משתנים לשמירת הנתונים בטופס במקרה של שגיאה
@@ -77,6 +78,17 @@ if (isset($_POST['register_btn'])) {
     // בדיקה אם המשתמש קיים
     $existingUser = selectOne('users', ['email' => $email]);
     if ($existingUser) array_push($errors, "כתובת האימייל הזו כבר רשומה במערכת");
+
+    if (trim((string) $phone) === '') {
+        array_push($errors, "חובה להזין מספר טלפון");
+    } else {
+        $phoneNorm = tazrim_normalize_phone_key($phone);
+        if ($phoneNorm === '') {
+            array_push($errors, "מספר הטלפון אינו תקין");
+        } elseif (tazrim_user_id_with_normalized_phone($phoneNorm, null)) {
+            array_push($errors, "מספר הטלפון כבר רשום במערכת");
+        }
+    }
 
     // --- בדיקת קוד הבית לפני הכל ---
     $target_home_id = null;

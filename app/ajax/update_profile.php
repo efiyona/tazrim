@@ -1,6 +1,7 @@
 <?php
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
+require_once ROOT_PATH . '/app/helpers/phone_uniqueness.php';
 
 header('Content-Type: application/json');
 
@@ -22,6 +23,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ולידציה בסיסית בצד שרת
     if (empty($first_name) || empty($last_name) || empty($phone)) {
         echo json_encode(['status' => 'error', 'message' => 'אנא מלא את כל שדות החובה (שם פרטי, שם משפחה וטלפון).']);
+        exit();
+    }
+
+    $phoneNorm = tazrim_normalize_phone_key($phone);
+    if ($phoneNorm === '') {
+        echo json_encode(['status' => 'error', 'message' => 'מספר הטלפון אינו תקין.']);
+        exit();
+    }
+    if (tazrim_user_id_with_normalized_phone($phoneNorm, (int) $user_id)) {
+        echo json_encode(['status' => 'error', 'message' => 'מספר הטלפון כבר רשום אצל משתמש אחר במערכת.']);
         exit();
     }
 

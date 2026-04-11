@@ -19,6 +19,7 @@ header('Content-Type: application/json; charset=utf-8');
 try {
     require('../../../../path.php');
     include(ROOT_PATH . '/app/database/db.php');
+    require_once ROOT_PATH . '/app/helpers/phone_uniqueness.php';
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
     $token = isset($_GET['token']) ? trim($_GET['token']) : '';
@@ -76,6 +77,16 @@ try {
 
         if ($first_name === '' || $last_name === '' || $phone === '') {
             echo json_encode(['status' => 'error', 'message' => 'אנא מלא את כל שדות החובה (שם פרטי, שם משפחה וטלפון).']);
+            exit();
+        }
+
+        $phoneNorm = tazrim_normalize_phone_key($phone);
+        if ($phoneNorm === '') {
+            echo json_encode(['status' => 'error', 'message' => 'מספר הטלפון אינו תקין.']);
+            exit();
+        }
+        if (tazrim_user_id_with_normalized_phone($phoneNorm, $user_id)) {
+            echo json_encode(['status' => 'error', 'message' => 'מספר הטלפון כבר רשום אצל משתמש אחר במערכת.']);
             exit();
         }
 
