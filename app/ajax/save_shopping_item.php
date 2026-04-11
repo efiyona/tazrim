@@ -26,10 +26,14 @@ if (empty($item_name) || empty($cat_id)) {
 }
 
 if ($item_id === 'new') {
-    // 1. הוספת מוצר חדש
-    $query = "INSERT INTO shopping_items (home_id, category_id, item_name, quantity) VALUES (?, ?, ?, ?)";
+    // 1. הוספת מוצר חדש — sort_order נמוך מהמינימום הקיים כדי שיופיע מתחת לשורת ההוספה (למעלה ברשימה)
+    $sr = mysqli_query($conn, "SELECT COALESCE(MIN(sort_order), 1000) AS m FROM shopping_items WHERE home_id = $home_id AND category_id = $cat_id");
+    $rmin = mysqli_fetch_assoc($sr);
+    $new_sort = (int) ($rmin['m'] ?? 1000) - 1;
+
+    $query = "INSERT INTO shopping_items (home_id, category_id, item_name, quantity, sort_order) VALUES (?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("iiss", $home_id, $cat_id, $item_name, $quantity);
+    $stmt->bind_param("iissi", $home_id, $cat_id, $item_name, $quantity, $new_sort);
     
     if ($stmt->execute()) {
         // מחזיר ל-JS את ה-ID החדש שנוצר במסד הנתונים!

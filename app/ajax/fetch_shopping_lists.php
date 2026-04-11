@@ -15,7 +15,7 @@ $cats_query = "SELECT * FROM shopping_categories WHERE home_id = $home_id ORDER 
 $cats_result = mysqli_query($conn, $cats_query);
 
 // 2. שליפת כל הפריטים שעדיין לא בארכיון
-$items_query = "SELECT * FROM shopping_items WHERE home_id = $home_id ORDER BY sort_order ASC, created_at ASC";
+$items_query = "SELECT * FROM shopping_items WHERE home_id = $home_id ORDER BY sort_order ASC, id ASC";
 $items_result = mysqli_query($conn, $items_query);
 
 // נסדר את הפריטים לפי מזהה קטגוריה כדי שיהיה קל לשלוף אותם

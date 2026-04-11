@@ -298,29 +298,55 @@ function updatePlusMenuUI() {
 
             $(document).on('keydown', '.item-row input', function(e) {
                 const $currentRow = $(this).closest('.item-row');
-                if (e.key === 'Enter') {
-                    e.preventDefault(); 
-                    if ($(this).hasClass('item-input')) $currentRow.find('.item-qty-input').focus().select();
-                    else if ($(this).hasClass('item-qty-input')) {
-                        const $nextRow = $currentRow.next('.item-row');
-                        if ($nextRow.length) $nextRow.find('.item-input').focus();
+                if (e.key !== 'Enter') return;
+                if ($currentRow.hasClass('ghost-row')) return;
+
+                e.preventDefault();
+                if ($(this).hasClass('item-input')) {
+                    const $nextRow = $currentRow.next('.item-row');
+                    if ($nextRow.length && !$nextRow.hasClass('ghost-row')) {
+                        $nextRow.find('.item-input').focus();
+                    } else {
+                        const $ghost = $currentRow.closest('.category-items-list').find('.ghost-row').first().find('.item-input');
+                        if ($ghost.length) $ghost.focus();
+                    }
+                } else if ($(this).hasClass('item-qty-input')) {
+                    const $nextRow = $currentRow.next('.item-row');
+                    if ($nextRow.length && !$nextRow.hasClass('ghost-row')) {
+                        $nextRow.find('.item-input').focus();
+                    } else {
+                        const $ghost = $currentRow.closest('.category-items-list').find('.ghost-row').first().find('.item-input');
+                        if ($ghost.length) $ghost.focus();
                     }
                 }
             });
 
-            $(document).on('input', '.ghost-row input', function() {
-                const $ghostRow = $(this).closest('.ghost-row');
-                const catId = $ghostRow.data('cat-id');
+            // שורת רפאים: אנטר מוסיף מוצר מתחת לשורה הריקה (לא יוצא מהשדה בכל תו)
+            $(document).on('keydown', '.ghost-row input', function(e) {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                const $ghost = $(this).closest('.ghost-row');
+                const catId = $ghost.data('cat-id');
+                const name = $ghost.find('.item-input').val().trim();
+                if (!name) return;
 
-                $ghostRow.removeClass('ghost-row').addClass('active-row');
-                $ghostRow.find('.item-checkbox i').removeClass('fa-plus fa-regular').addClass('fa-solid fa-circle').css('color', 'var(--main)');
-                $ghostRow.find('.item-input').removeAttr('placeholder');
-                
-                const newGhost = buildItemRowHtml({ id: 'new', item_name: '', quantity: '1' }, catId, true);
-                $ghostRow.parent().append(newGhost);
-                
+                const newRowHtml = buildItemRowHtml({ id: 'new', item_name: name, quantity: '1' }, catId, false);
+                $(newRowHtml).insertAfter($ghost).hide().css('opacity', 0).slideDown(220, function() {
+                    $(this).animate({ opacity: 1 }, 180);
+                });
+
+                $ghost.find('.item-input').val('');
+                $ghost.find('.item-qty-input').val('1');
+
+                const $newRow = $ghost.next('.item-row');
+                saveItemToDB($newRow);
+
+                setTimeout(function() {
+                    $ghost.find('.item-input').focus();
+                }, 50);
+
                 updateAiButtonVisibility(catId);
-                updatePlusMenuUI(); // <--- הוספנו את הפקודה שמעדכנת את הפלוס מיד!
+                updatePlusMenuUI();
             });
 
             $(document).on('focus', '.active-row input', function() {
@@ -363,9 +389,11 @@ function updatePlusMenuUI() {
                     $icon.removeClass('fa-circle fa-regular').addClass('fa-solid fa-rotate-left').css('color', ''); 
                     
                     const timer = setTimeout(function() {
-                        $row.slideUp(300, function() {
-                            $(this).remove();
-                            updatePlusMenuUI();
+                        $row.animate({ opacity: 0, marginRight: -12 }, 280, function() {
+                            $(this).slideUp(220, function() {
+                                $(this).remove();
+                                updatePlusMenuUI();
+                            });
                         });
                         if (itemId !== 'new') deleteItemFromDB(itemId);
                     }, 800);
@@ -382,19 +410,19 @@ function updatePlusMenuUI() {
                     silentSyncLists();
                 }
             });
-            // 2. סנכרון שקט כל 15 שניות אם העמוד פתוח (לא יפריע להקלדה)
+            // 2. סנכרון שקט כל כמה שניות אם העמוד פתוח (לא יפריע להקלדה)
             setInterval(function() {
                 if (document.visibilityState === 'visible') {
                     silentSyncLists();
                 }
-            }, 15000);
+            }, 4000);
         });
 
         // סנכרון שקט - מושך נתונים מהשרת ומשלים מה שחסר בלי להרוס את המסך
         function silentSyncLists() {
             $.get('../app/ajax/fetch_shopping_lists.php', function(response) {
                 try {
-                    const data = JSON.parse(response);
+                    const data = (typeof response === 'object' && response !== null) ? response : JSON.parse(response);
                     if(data.status !== 'success') return;
 
                     if (data.active_categories.length > 0) {
@@ -414,15 +442,33 @@ function updatePlusMenuUI() {
                             $(`.fab-menu-item[onclick*="${cat.id}"]`).remove();
                         }
 
-                        // עוברים על המוצרים ובודקים אם יש משהו חדש שצריך להזריק
+                        // עוברים על המוצרים — הוספה/עדכון + הסרת שורות שנמחקו במקום אחר (אפליקציה/מכשיר אחר)
                         if (cat.items) {
+                            const serverIds = new Set(cat.items.map(it => String(it.id)));
+                            $catBlock.find('.item-row').each(function() {
+                                const $row = $(this);
+                                if ($row.hasClass('ghost-row')) return;
+                                const rawId = $row.data('item-id');
+                                if (!rawId || rawId === 'new') return;
+                                if (!serverIds.has(String(rawId))) {
+                                    $row.slideUp(220, function() {
+                                        $(this).remove();
+                                        updatePlusMenuUI();
+                                        if (typeof updateAiButtonVisibility === 'function') updateAiButtonVisibility(cat.id);
+                                    });
+                                }
+                            });
                             cat.items.forEach(item => {
                                 let $existingItem = $catBlock.find(`.item-row[data-item-id="${item.id}"]`);
                                 
                                 if ($existingItem.length === 0) {
-                                    // מוצר חדש לגמרי! נוסיף אותו רגע לפני השורת רפאים של אותה חנות
                                     const newItemHtml = buildItemRowHtml(item, cat.id, false);
-                                    $(newItemHtml).insertBefore($catBlock.find('.ghost-row')).hide().slideDown(300);
+                                    const $g = $catBlock.find('.ghost-row').first();
+                                    if ($g.length) {
+                                        $(newItemHtml).insertAfter($g).hide().slideDown(280);
+                                    } else {
+                                        $catBlock.find('.category-items-list').prepend($(newItemHtml).hide().slideDown(280));
+                                    }
                                 } else {
                                     // המוצר קיים. נעקן כמות/שם רק אם המשתמש לא מצוין עליו כרגע עם העכבר/מקלדת
                                     if ($existingItem.find('input:focus').length === 0 && !$existingItem.hasClass('pending-delete')) {
@@ -431,6 +477,7 @@ function updatePlusMenuUI() {
                                     }
                                 }
                             });
+                            if (typeof updateAiButtonVisibility === 'function') updateAiButtonVisibility(cat.id);
                         }
                     });
                 } catch (e) {}
@@ -552,15 +599,16 @@ function handleEmptyCategoryClick(id, name, icon, element) {
         function buildCategoryBlock(category, hasItems, isOpen = false) {
             let itemsHtml = '';
             let activeItemsCount = 0; // סופר כמה פריטים פעילים יש לנו
-            
+
+            // שורת ההוספה הריקה תמיד למעלה; מתחתיה המוצרים (אנטר בשורה הריקה מוסיף מוצר מתחתיה)
+            itemsHtml += buildItemRowHtml({ id: 'new', item_name: '', quantity: '1' }, category.id, true);
+
             if (hasItems && category.items) {
                 category.items.forEach(item => { 
                     itemsHtml += buildItemRowHtml(item, category.id, false); 
                     activeItemsCount++;
                 });
             }
-            
-            itemsHtml += buildItemRowHtml({ id: 'new', item_name: '', quantity: '1' }, category.id, true);
 
             const displayStyle = isOpen ? '' : 'style="display: none;"';
             const arrowClass = isOpen ? 'fa-chevron-up' : 'fa-chevron-down';

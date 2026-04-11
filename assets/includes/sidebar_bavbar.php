@@ -381,9 +381,12 @@ document.addEventListener('DOMContentLoaded', () => {
     listItems.forEach(item => {
         const link = item.querySelector('.nav-main-link');
         link.addEventListener('click', (e) => {
+            // לחיצה על הטאב של העמוד הנוכחי — גלילה לראש + רענון (כמו באפליקציה)
+            if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+
             if (item.classList.contains('has-submenu')) {
                 e.preventDefault();
-                
+
                 const plusWrapper = document.querySelector('.detached-plus-wrapper');
                 if (plusWrapper) plusWrapper.classList.remove('open');
 
@@ -396,13 +399,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 listItems.forEach(li => { if(li !== item) li.classList.remove('show-submenu') });
                 item.classList.toggle('show-submenu');
             } else {
-                if (!item.classList.contains('active')) {
-                    const iconEl = link.querySelector('.icon i');
-                    if (iconEl) {
-                        iconEl.className = 'fa-solid fa-spinner fa-spin';
-                    }
+                if (item.classList.contains('active')) {
+                    e.preventDefault();
+                    window.scrollTo(0, 0);
+                    window.location.reload();
+                    return;
+                }
+                const iconEl = link.querySelector('.icon i');
+                if (iconEl) {
+                    iconEl.className = 'fa-solid fa-spinner fa-spin';
                 }
             }
+        });
+    });
+
+    // רענון רק כשלוחצים שוב על אותו עמוד מתוך תת-התפריט (active-page) — לא על כפתור ההילוך
+    document.querySelectorAll('.bottom-nav-bar .submenu-action-btn.nav-page-link').forEach((subLink) => {
+        subLink.addEventListener('click', (e) => {
+            if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+            if (!subLink.classList.contains('active-page')) return;
+            e.preventDefault();
+            e.stopPropagation();
+            window.scrollTo(0, 0);
+            window.location.reload();
         });
     });
 
