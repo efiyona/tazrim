@@ -44,15 +44,9 @@ try {
         $categories[] = $cat;
     }
 
-    $active_categories = [];
+    // כל החנויות ב-active_categories (גם ללא פריטים) — תאימות ללקוחות שמשתמשים בשדה; empty_categories נשאר ריק
+    $active_categories = $categories;
     $empty_categories = [];
-    foreach ($categories as $c) {
-        if (!empty($c['items'])) {
-            $active_categories[] = $c;
-        } else {
-            $empty_categories[] = ['id' => $c['id'], 'name' => $c['name'], 'icon' => $c['icon'], 'sort_order' => $c['sort_order']];
-        }
-    }
 
     echo json_encode([
         'status' => 'success',

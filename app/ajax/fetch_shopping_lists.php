@@ -27,14 +27,15 @@ while($item = mysqli_fetch_assoc($items_result)) {
 $active_categories = [];
 $empty_categories = [];
 
-// 3. חלוקה חכמה: למי יש פריטים ולמי אין?
-while($cat = mysqli_fetch_assoc($cats_result)) {
-    if (isset($items_by_cat[$cat['id']]) && count($items_by_cat[$cat['id']]) > 0) {
-        $cat['items'] = $items_by_cat[$cat['id']];
-        $active_categories[] = $cat;
+// כל החנויות מוצגות (גם בלי מוצרים) — items ריק כשאין פריטים
+while ($cat = mysqli_fetch_assoc($cats_result)) {
+    $cid = (int) $cat['id'];
+    if (isset($items_by_cat[$cid]) && count($items_by_cat[$cid]) > 0) {
+        $cat['items'] = $items_by_cat[$cid];
     } else {
-        $empty_categories[] = $cat;
+        $cat['items'] = [];
     }
+    $active_categories[] = $cat;
 }
 
 // החזרת התשובה כ-JSON טהור

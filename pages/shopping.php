@@ -108,8 +108,6 @@ $is_setup_needed = ($cats_count == 0);
                     </div>
                 </div>
 
-                <div id="shopping-store-kebab" role="menu" aria-hidden="true"></div>
-
                 <div id="shopping-page-store-modal" class="modal shopping-page-store-modal" style="display: none;" aria-hidden="true">
                     <div class="modal-content shopping-page-store-modal__content">
                         <div class="modal-header shopping-page-store-modal__header">
@@ -126,7 +124,10 @@ $is_setup_needed = ($cats_count == 0);
                                 <input type="hidden" id="shopping-page-store-icon" value="fa-cart-shopping">
                             </div>
                             <div id="shopping-page-store-msg" class="shopping-modal-msg" style="display: none;"></div>
-                            <button type="button" class="btn-primary shopping-modal-submit" id="shopping-page-store-save" onclick="submitShoppingPageStoreForm()">שמור</button>
+                            <div id="shopping-page-store-actions-row" class="shopping-page-store-actions-row">
+                                <button type="button" class="btn-primary shopping-modal-submit" id="shopping-page-store-save" onclick="submitShoppingPageStoreForm()">שמור</button>
+                                <button type="button" class="shopping-modal-delete-btn" id="shopping-page-store-delete-btn" onclick="shoppingPageStoreDeleteFromModal()" aria-label="מחיקת חנות">מחיקה <i class="fa-solid fa-trash-alt" aria-hidden="true"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -221,7 +222,6 @@ $is_setup_needed = ($cats_count == 0);
     <?php else: ?>
     <script>
         window.shoppingSelectedStoreId = window.shoppingSelectedStoreId || null;
-        window.shoppingKebabStoreId = null;
 
         const SHOPPING_STORE_ICONS = [
             'fa-cart-shopping', 'fa-store', 'fa-leaf', 'fa-basket-shopping', 'fa-shop', 'fa-bag-shopping',
@@ -236,45 +236,59 @@ $is_setup_needed = ($cats_count == 0);
                 .replace(/'/g, '&#39;');
         }
 
-        function shoppingCloseKebab() {
-            const el = document.getElementById('shopping-store-kebab');
-            if (!el) return;
-            el.classList.remove('open');
-            el.innerHTML = '';
-            window.shoppingKebabStoreId = null;
+        function shoppingReadStorePanelMeta(storeId) {
+            const $lbl = $('#shopping-panel-' + storeId + ' .category-title-label');
+            const raw = $lbl.clone();
+            raw.find('i').remove();
+            const name = (raw.text() || '').trim();
+            const parts = (($lbl.find('i').attr('class') || '') + '').split(/\s+/);
+            let icon = 'fa-cart-shopping';
+            for (let p = 0; p < parts.length; p += 1) {
+                if (
+                    parts[p].indexOf('fa-') === 0 &&
+                    parts[p] !== 'fa-solid' &&
+                    parts[p] !== 'fa-regular' &&
+                    parts[p] !== 'fa-light' &&
+                    parts[p] !== 'fa-brands'
+                ) {
+                    icon = parts[p];
+                    break;
+                }
+            }
+            return { name: name, icon: icon };
         }
 
-        function shoppingStoreKebabToggle(ev, storeId) {
-            if (ev) {
-                ev.preventDefault();
-                ev.stopPropagation();
-            }
-            const menu = document.getElementById('shopping-store-kebab');
-            if (!menu) return;
-            if (window.shoppingKebabStoreId === storeId && menu.classList.contains('open')) {
-                shoppingCloseKebab();
-                return;
-            }
-            window.shoppingKebabStoreId = storeId;
-            menu.innerHTML =
-                '<button type="button" class="shopping-kebab-rename">עריכת שם</button>' +
-                '<button type="button" class="shopping-kebab-delete danger">מחיקת החנות</button>';
-            menu.classList.add('open');
-            menu.style.position = 'fixed';
-            const btn = ev && ev.currentTarget ? ev.currentTarget : null;
-            if (btn && typeof btn.getBoundingClientRect === 'function') {
-                const r = btn.getBoundingClientRect();
-                const pad = 6;
-                const estH = 96;
-                let top = r.bottom + pad;
-                if (top + estH > window.innerHeight - 8) top = Math.max(8, r.top - estH - pad);
-                let left = r.left;
-                const maxW = 220;
-                left = Math.max(8, Math.min(left, window.innerWidth - maxW - 8));
-                menu.style.top = top + 'px';
-                menu.style.left = left + 'px';
-                menu.style.right = 'auto';
-            }
+        function openShoppingStoreEditFromHeader(storeId, ev) {
+            if (ev) ev.stopPropagation();
+            const meta = shoppingReadStorePanelMeta(storeId);
+            openShoppingPageRenameStoreModal(storeId, meta.name, meta.icon);
+        }
+
+        function shoppingPageStoreDeleteFromModal() {
+            const sid = $('#shopping-page-store-id').val();
+            if (!sid) return;
+            tazrimConfirm({
+                title: 'מחיקת חנות',
+                message:
+                    'האם למחוק את החנות ואת כל המוצרים המשויכים אליה? (ניתן לנהל חנויות גם בניהול הבית.)',
+                confirmText: 'מחק',
+                cancelText: 'ביטול',
+                danger: true,
+            }).then(function (ok) {
+                if (!ok) return;
+                $.post('../app/ajax/delete_shopping_store.php', { id: sid }, function (raw) {
+                    const res = typeof raw === 'object' && raw !== null ? raw : JSON.parse(raw);
+                    if (res.status === 'success') {
+                        closeShoppingPageStoreModal();
+                        loadShoppingLists();
+                        if (typeof updatePlusMenuUI === 'function') updatePlusMenuUI();
+                    } else {
+                        tazrimAlert({ title: 'שגיאה', message: res.message || 'מחיקה נכשלה' });
+                    }
+                }).fail(function () {
+                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
+                });
+            });
         }
 
         function selectShoppingStoreTab(storeId) {
@@ -362,16 +376,17 @@ $is_setup_needed = ($cats_count == 0);
         function closeShoppingPageStoreModal() {
             $('#shopping-page-store-modal').hide();
             $('#shopping-page-store-msg').hide().text('');
+            $('#shopping-page-store-actions-row').removeClass('shopping-page-store-actions-row--edit');
             shoppingTryBodyScrollLock();
         }
 
         function openShoppingPageAddStoreModal() {
-            shoppingCloseKebab();
             $('#shopping-page-store-modal-title').text('חנות חדשה');
             $('#shopping-page-store-id').val('');
             $('#shopping-page-store-name').val('');
             $('#shopping-page-store-icon').val('fa-cart-shopping');
             $('#shopping-page-store-icon-block').show();
+            $('#shopping-page-store-actions-row').removeClass('shopping-page-store-actions-row--edit');
             initShoppingPageIconGrid();
             $('#shopping-page-store-modal').show();
             shoppingTryBodyScrollLock();
@@ -381,12 +396,12 @@ $is_setup_needed = ($cats_count == 0);
         }
 
         function openShoppingPageRenameStoreModal(storeId, name, icon) {
-            shoppingCloseKebab();
-            $('#shopping-page-store-modal-title').text('עריכת שם חנות');
+            $('#shopping-page-store-modal-title').text('עריכת חנות');
             $('#shopping-page-store-id').val(String(storeId));
             $('#shopping-page-store-name').val(name || '');
             $('#shopping-page-store-icon').val(icon || 'fa-cart-shopping');
             $('#shopping-page-store-icon-block').hide();
+            $('#shopping-page-store-actions-row').addClass('shopping-page-store-actions-row--edit');
             $('#shopping-page-store-modal').show();
             shoppingTryBodyScrollLock();
             setTimeout(function () {
@@ -547,62 +562,6 @@ function updatePlusMenuUI() {
                 e.preventDefault();
                 const sid = $(this).data('store-id');
                 if (sid) selectShoppingStoreTab(sid);
-            });
-
-            $(document).on('click', '#shopping-store-kebab .shopping-kebab-rename', function () {
-                const sid = window.shoppingKebabStoreId;
-                shoppingCloseKebab();
-                if (!sid) return;
-                const $lbl = $('#shopping-panel-' + sid + ' .category-title-label');
-                const raw = $lbl.clone();
-                raw.find('i').remove();
-                const name = (raw.text() || '').trim();
-                const parts = (($lbl.find('i').attr('class') || '') + '').split(/\s+/);
-                let icon = 'fa-cart-shopping';
-                for (let p = 0; p < parts.length; p += 1) {
-                    if (
-                        parts[p].indexOf('fa-') === 0 &&
-                        parts[p] !== 'fa-solid' &&
-                        parts[p] !== 'fa-regular' &&
-                        parts[p] !== 'fa-light' &&
-                        parts[p] !== 'fa-brands'
-                    ) {
-                        icon = parts[p];
-                        break;
-                    }
-                }
-                openShoppingPageRenameStoreModal(sid, name, icon);
-            });
-
-            $(document).on('click', '#shopping-store-kebab .shopping-kebab-delete', function () {
-                const sid = window.shoppingKebabStoreId;
-                shoppingCloseKebab();
-                if (!sid) return;
-                tazrimConfirm({
-                    title: 'מחיקת חנות',
-                    message:
-                        'האם למחוק את החנות ואת כל המוצרים המשויכים אליה? (ניתן לנהל חנויות גם בניהול הבית.)',
-                    confirmText: 'מחק',
-                    cancelText: 'ביטול',
-                    danger: true,
-                }).then(function (ok) {
-                    if (!ok) return;
-                    $.post('../app/ajax/delete_shopping_store.php', { id: sid }, function (raw) {
-                        const res = typeof raw === 'object' && raw !== null ? raw : JSON.parse(raw);
-                        if (res.status === 'success') {
-                            loadShoppingLists();
-                            if (typeof updatePlusMenuUI === 'function') updatePlusMenuUI();
-                        } else {
-                            tazrimAlert({ title: 'שגיאה', message: res.message || 'מחיקה נכשלה' });
-                        }
-                    }).fail(function () {
-                        tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
-                    });
-                });
-            });
-
-            $(document).on('click', function (e) {
-                if (!$(e.target).closest('#shopping-store-kebab,.btn-store-kebab').length) shoppingCloseKebab();
             });
 
             $(document).on('click', '#shopping-page-store-modal', function (e) {
@@ -988,6 +947,14 @@ function handleEmptyCategoryClick(id, name, icon, element) {
                     '<i class="fa-solid fa-trash-alt"></i></button>';
             }
 
+            let editStoreHtml = '';
+            if (tabView) {
+                editStoreHtml =
+                    '<button type="button" class="btn-edit-store" title="עריכת חנות" aria-label="עריכת חנות" onclick="openShoppingStoreEditFromHeader(' +
+                    category.id +
+                    ', event)"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>';
+            }
+
             const ic = shoppingEscapeHtml(String(category.icon || 'fa-cart-shopping').replace(/[^a-z0-9\-]/gi, ''));
             const nm = shoppingEscapeHtml(category.name || '');
             const headCls = 'category-header' + (tabView ? ' category-header--tabs' : '');
@@ -998,9 +965,6 @@ function handleEmptyCategoryClick(id, name, icon, element) {
                 '"></i> ' +
                 nm +
                 '</span>' +
-                '<button type="button" class="btn-store-kebab" aria-label="תפריט חנות" onclick="shoppingStoreKebabToggle(event, ' +
-                category.id +
-                ')"><i class="fa-solid fa-ellipsis-vertical"></i></button>' +
                 '</div>';
 
             return (
@@ -1012,6 +976,7 @@ function handleEmptyCategoryClick(id, name, icon, element) {
                 '">' +
                 titleHtml +
                 '<div class="shopping-category-header-actions" dir="ltr">' +
+                editStoreHtml +
                 clearCatHtml +
                 aiButtonHtml +
                 arrowHtml +
