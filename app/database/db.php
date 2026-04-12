@@ -67,6 +67,42 @@ function tazrim_ensure_user_expo_push_tokens_table() {
 
 tazrim_ensure_user_expo_push_tokens_table();
 
+/**
+ * מבטיח שטבלת דיווחי משתמשים מהאפליקציה קיימת.
+ */
+function tazrim_ensure_feedback_reports_table() {
+    global $conn;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    if (!$conn) {
+        return;
+    }
+    @mysqli_query(
+        $conn,
+        "CREATE TABLE IF NOT EXISTS `feedback_reports` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `user_id` int NOT NULL,
+            `home_id` int NOT NULL DEFAULT 0,
+            `kind` enum('bug','idea') NOT NULL DEFAULT 'bug',
+            `title` varchar(190) DEFAULT NULL,
+            `message` text NOT NULL,
+            `context_screen` varchar(120) DEFAULT NULL,
+            `status` enum('new','in_review','done') NOT NULL DEFAULT 'new',
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`id`),
+            KEY `idx_feedback_created` (`created_at`),
+            KEY `idx_feedback_kind` (`kind`),
+            KEY `idx_feedback_status` (`status`),
+            CONSTRAINT `fk_feedback_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+}
+
+tazrim_ensure_feedback_reports_table();
+
 function dd($value)
 {
     echo "<pre>", print_r($value, true), "</pre>";

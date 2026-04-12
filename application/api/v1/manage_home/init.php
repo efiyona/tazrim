@@ -97,7 +97,7 @@ try {
     }
 
     $members = [];
-    $mq = "SELECT first_name, nickname, role, email FROM users WHERE home_id = $home_id ORDER BY (role = 'admin') DESC, first_name ASC";
+    $mq = "SELECT first_name, nickname, role, email FROM users WHERE home_id = $home_id ORDER BY (role IN ('admin','home_admin','program_admin')) DESC, first_name ASC";
     $mr = mysqli_query($conn, $mq);
     if ($mr) {
         while ($row = mysqli_fetch_assoc($mr)) {

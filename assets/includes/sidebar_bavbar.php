@@ -150,6 +150,48 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
         </div>
     </header>
 
+    <button type="button" id="quickFeedbackBtn" class="quick-feedback-btn" aria-label="דיווח מהיר">
+        דיווח מהיר
+    </button>
+
+    <div id="quickFeedbackModal" class="quick-feedback-modal" aria-hidden="true">
+        <div class="quick-feedback-backdrop" data-close="1"></div>
+        <div class="quick-feedback-card" role="dialog" aria-modal="true" aria-labelledby="quickFeedbackTitle">
+            <div class="quick-feedback-header">
+                <button type="button" class="quick-feedback-close" id="quickFeedbackClose" aria-label="סגור">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <h3 id="quickFeedbackTitle">דיווח באג / רעיון חדש</h3>
+            </div>
+
+            <div class="quick-feedback-body">
+                <div class="quick-feedback-kinds">
+                    <button type="button" class="qf-kind active" data-kind="bug">
+                        <i class="fa-solid fa-bug"></i> באג
+                    </button>
+                    <button type="button" class="qf-kind" data-kind="idea">
+                        <i class="fa-regular fa-lightbulb"></i> רעיון לפיצ'ר
+                    </button>
+                </div>
+
+                <label class="qf-label" for="qfTitle">כותרת קצרה (אופציונלי)</label>
+                <input id="qfTitle" type="text" class="qf-input" placeholder="לדוגמה: תקלה בשמירת פעולה">
+
+                <label class="qf-label" for="qfScreen">באיזה מסך זה קרה? (אופציונלי)</label>
+                <input id="qfScreen" type="text" class="qf-input" placeholder="לדוגמה: ראשי / דוחות / קניות">
+
+                <label class="qf-label" for="qfMessage">פירוט</label>
+                <textarea id="qfMessage" class="qf-textarea" placeholder="כתבו כאן מה קרה או מה תרצו שנוסיף..."></textarea>
+                <div class="qf-helper">מינימום 8 תווים כדי שנוכל לטפל מהר.</div>
+                <div id="qfMsg" class="qf-msg" style="display:none;"></div>
+            </div>
+
+            <div class="quick-feedback-footer">
+                <button type="button" id="qfSubmit" class="qf-submit">שליחה</button>
+            </div>
+        </div>
+    </div>
+
 <style>
 /* --- עיצוב התראות משלים --- */
 .notification-wrapper { position: relative; }
@@ -214,6 +256,160 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
         left: 50% !important; transform: translateX(-50%) !important;
         width: 92vw !important; max-width: none !important;
         right: auto !important; margin: 0 !important;
+    }
+}
+
+/* --- דיווח מהיר גלובלי --- */
+.quick-feedback-btn {
+    position: fixed;
+    left: -52px;
+    top: 66%;
+    width: 132px;
+    height: 28px;
+    border: 0;
+    border-radius: 12px 12px 0 0;
+    background: var(--main);
+    color: #fff;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    transform: rotate(90deg);
+    cursor: pointer;
+    z-index: 1400;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+.quick-feedback-btn:hover { opacity: 0.92; }
+
+.quick-feedback-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+}
+.quick-feedback-modal.open { display: block; }
+.quick-feedback-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+}
+.quick-feedback-card {
+    position: relative;
+    width: min(430px, 94vw);
+    max-height: 86vh;
+    margin: 7vh auto;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 22px 60px rgba(0,0,0,0.24);
+}
+.quick-feedback-header {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 14px 16px 8px;
+}
+.quick-feedback-header h3 {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 800;
+}
+.quick-feedback-close {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-light);
+    cursor: pointer;
+}
+.quick-feedback-body {
+    padding: 0 16px 12px;
+    max-height: 56vh;
+    overflow: auto;
+}
+.quick-feedback-kinds {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.qf-kind {
+    flex: 1;
+    min-height: 42px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+}
+.qf-kind.active {
+    background: var(--main);
+    border-color: var(--main);
+    color: #fff;
+}
+.qf-label {
+    display: block;
+    margin: 9px 0 5px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+.qf-input,
+.qf-textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 0.93rem;
+    text-align: right;
+}
+.qf-textarea {
+    min-height: 112px;
+    resize: vertical;
+}
+.qf-helper {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+.qf-msg {
+    margin-top: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: right;
+}
+.quick-feedback-footer {
+    padding: 12px 16px 16px;
+}
+.qf-submit {
+    width: 100%;
+    min-height: 46px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--main);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+.qf-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .quick-feedback-btn {
+        left: -56px;
+        top: 72%;
+        width: 138px;
+    }
+    .quick-feedback-card {
+        width: 94vw;
+        margin-top: 8vh;
+        max-height: 84vh;
     }
 }
 </style>
@@ -321,6 +517,136 @@ function updateBadge(count) {
         badge.style.display = 'none';
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const feedbackBtn = document.getElementById('quickFeedbackBtn');
+    const feedbackModal = document.getElementById('quickFeedbackModal');
+    const feedbackClose = document.getElementById('quickFeedbackClose');
+    const qfSubmit = document.getElementById('qfSubmit');
+    const qfTitle = document.getElementById('qfTitle');
+    const qfScreen = document.getElementById('qfScreen');
+    const qfMessage = document.getElementById('qfMessage');
+    const qfMsg = document.getElementById('qfMsg');
+    const kindBtns = Array.from(document.querySelectorAll('.qf-kind'));
+
+    if (!feedbackBtn || !feedbackModal || !qfSubmit) return;
+
+    let selectedKind = 'bug';
+    const MIN_LEN = 8;
+    let busy = false;
+
+    function openFeedbackModal() {
+        feedbackModal.classList.add('open');
+        feedbackModal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('no-scroll');
+    }
+
+    function closeFeedbackModal() {
+        if (busy) return;
+        feedbackModal.classList.remove('open');
+        feedbackModal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('no-scroll');
+    }
+
+    function setMsg(text, ok) {
+        qfMsg.style.display = 'block';
+        qfMsg.style.color = ok ? 'var(--main)' : 'var(--error)';
+        qfMsg.textContent = text;
+    }
+
+    function clearMsg() {
+        qfMsg.style.display = 'none';
+        qfMsg.textContent = '';
+    }
+
+    function resetForm() {
+        selectedKind = 'bug';
+        kindBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.kind === 'bug'));
+        qfTitle.value = '';
+        qfScreen.value = '';
+        qfMessage.value = '';
+        clearMsg();
+    }
+
+    function refreshSubmitState() {
+        const valid = (qfMessage.value || '').trim().length >= MIN_LEN;
+        qfSubmit.disabled = busy || !valid;
+    }
+
+    feedbackBtn.addEventListener('click', openFeedbackModal);
+    feedbackClose.addEventListener('click', closeFeedbackModal);
+    feedbackModal.addEventListener('click', function(e) {
+        if (e.target && e.target.getAttribute('data-close') === '1') {
+            closeFeedbackModal();
+        }
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && feedbackModal.classList.contains('open')) {
+            closeFeedbackModal();
+        }
+    });
+
+    kindBtns.forEach((btn) => {
+        btn.addEventListener('click', function() {
+            selectedKind = btn.dataset.kind === 'idea' ? 'idea' : 'bug';
+            kindBtns.forEach((k) => k.classList.toggle('active', k === btn));
+        });
+    });
+
+    qfMessage.addEventListener('input', refreshSubmitState);
+    qfTitle.addEventListener('input', clearMsg);
+    qfScreen.addEventListener('input', clearMsg);
+
+    qfSubmit.addEventListener('click', function() {
+        if (busy) return;
+        const msg = (qfMessage.value || '').trim();
+        if (msg.length < MIN_LEN) {
+            setMsg('נא לפרט לפחות 8 תווים.', false);
+            refreshSubmitState();
+            return;
+        }
+
+        busy = true;
+        refreshSubmitState();
+        qfSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> שולח...';
+        clearMsg();
+
+        fetch('<?php echo BASE_URL; ?>app/ajax/submit_feedback.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                kind: selectedKind,
+                title: (qfTitle.value || '').trim(),
+                screen: (qfScreen.value || '').trim(),
+                message: msg
+            })
+        })
+        .then((res) => res.json())
+        .then((data) => {
+            if (data.status === 'success') {
+                setMsg('הדיווח נשלח בהצלחה. תודה!', true);
+                setTimeout(() => {
+                    resetForm();
+                    closeFeedbackModal();
+                    loadNotifications();
+                }, 650);
+            } else {
+                setMsg(data.message || 'שליחת הדיווח נכשלה.', false);
+            }
+        })
+        .catch(() => {
+            setMsg('שגיאת תקשורת עם השרת.', false);
+        })
+        .finally(() => {
+            busy = false;
+            qfSubmit.textContent = 'שליחה';
+            refreshSubmitState();
+        });
+    });
+
+    resetForm();
+    refreshSubmitState();
+});
 </script>
 
 <script>

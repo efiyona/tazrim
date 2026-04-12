@@ -62,7 +62,7 @@ if ($shopping_stores_result) {
 }
 
 // 5. שליפת כל המשתמשים השייכים לבית זה
-$members_query = "SELECT first_name, nickname, role, email FROM users WHERE home_id = $home_id ORDER BY (role = 'admin') DESC, first_name ASC";
+$members_query = "SELECT first_name, nickname, role, email FROM users WHERE home_id = $home_id ORDER BY (role IN ('admin','home_admin','program_admin')) DESC, first_name ASC";
 $members_result = mysqli_query($conn, $members_query);
 ?>
 
@@ -144,7 +144,7 @@ $members_result = mysqli_query($conn, $members_query);
                         </div>
                         <div class="members-list" style="margin-top: 10px;">
                             <?php while ($member = mysqli_fetch_assoc($members_result)): 
-                                $is_admin = ($member['role'] === 'admin');
+                                $is_admin = in_array($member['role'], ['admin', 'home_admin', 'program_admin'], true);
                                 $displayName = $member['first_name'];
                                 $initial = mb_substr($displayName, 0, 1, 'utf-8');
                             ?>

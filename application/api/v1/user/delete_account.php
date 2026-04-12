@@ -80,7 +80,7 @@ try {
             mysqli_query($conn, "DELETE FROM ai_api_logs WHERE home_id = $home_id");
             mysqli_query($conn, "DELETE FROM homes WHERE id = $home_id");
         } else {
-            $heir_query = "SELECT id, role FROM users WHERE home_id = $home_id AND id != $user_id ORDER BY (role = 'home_admin') DESC LIMIT 1";
+            $heir_query = "SELECT id, role FROM users WHERE home_id = $home_id AND id != $user_id ORDER BY (role IN ('home_admin','program_admin','admin')) DESC LIMIT 1";
             $heir_res = mysqli_query($conn, $heir_query);
 
             if ($heir_row = mysqli_fetch_assoc($heir_res)) {
@@ -92,8 +92,8 @@ try {
                 mysqli_query($conn, "UPDATE notifications SET creator_id = $heir_id WHERE creator_id = $user_id AND home_id = $home_id");
                 mysqli_query($conn, "UPDATE homes SET primary_user_id = $heir_id WHERE primary_user_id = $user_id AND id = $home_id");
 
-                if ($user_role === 'home_admin') {
-                    $other_admins_query = "SELECT id FROM users WHERE home_id = $home_id AND id != $user_id AND role = 'home_admin'";
+                if (in_array($user_role, ['home_admin', 'program_admin', 'admin'], true)) {
+                    $other_admins_query = "SELECT id FROM users WHERE home_id = $home_id AND id != $user_id AND role IN ('home_admin','program_admin','admin')";
                     $other_admins_res = mysqli_query($conn, $other_admins_query);
 
                     if (mysqli_num_rows($other_admins_res) == 0) {
