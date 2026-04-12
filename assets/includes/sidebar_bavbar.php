@@ -102,9 +102,13 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
             <div class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></div>
             
             <div class="user-profile-section">
-                <div class="user-avatar">
-                    <img src="https://ui-avatars.com/api/?name=<?php echo $_SESSION['first_name'] . ' ' . $_SESSION['last_name']; ?>&background=29b669&color=fff" alt="פרופיל">
-                </div>
+                <div class="user-avatar" role="img" aria-label="פרופיל"><?php
+                    $fn = isset($_SESSION['first_name']) ? trim((string) $_SESSION['first_name']) : '';
+                    $ln = isset($_SESSION['last_name']) ? trim((string) $_SESSION['last_name']) : '';
+                    $a1 = $fn !== '' ? mb_substr($fn, 0, 1, 'UTF-8') : 'מ';
+                    $a2 = $ln !== '' ? mb_substr($ln, 0, 1, 'UTF-8') : 'ש';
+                    echo htmlspecialchars($a1 . $a2, ENT_QUOTES, 'UTF-8');
+                ?></div>
                 <div class="user-details-text">
                     <span class="welcome-text">ברוכים הבאים!</span>
                     <h3 class="user-name">
