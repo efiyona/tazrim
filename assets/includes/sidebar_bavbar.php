@@ -276,12 +276,19 @@ require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
     font-size: 0.74rem;
     font-weight: 800;
     letter-spacing: 0.2px;
-    transform: rotate(90deg);
+    transform: rotate(90deg) translateZ(0);
     cursor: pointer;
     z-index: 1400;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    box-shadow: none;
+    -webkit-appearance: none;
+    appearance: none;
 }
 .quick-feedback-btn:hover { opacity: 0.92; }
+.quick-feedback-btn:focus { outline: none; }
+.quick-feedback-btn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.95);
+    outline-offset: 2px;
+}
 
 .quick-feedback-modal {
     display: none;

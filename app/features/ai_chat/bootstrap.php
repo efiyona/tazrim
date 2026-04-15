@@ -10,7 +10,7 @@ if (!function_exists('selectOne')) {
 }
 
 if (!defined('AI_CHAT_ASSISTANT_NAME')) {
-    define('AI_CHAT_ASSISTANT_NAME', 'תזרי');
+    define('AI_CHAT_ASSISTANT_NAME', 'עוזר התזרים');
 }
 
 if (!function_exists('ai_chat_get_context')) {
@@ -40,7 +40,7 @@ if (!function_exists('ai_chat_render_launcher_button')) {
     {
         $an = AI_CHAT_ASSISTANT_NAME;
         echo '<button type="button" id="aiChatLauncher" class="icon-btn ai-chat-launcher" title="צ\'אט עם ' . htmlspecialchars($an, ENT_QUOTES, 'UTF-8') . '" aria-label="פתיחת צ\'אט עם ' . htmlspecialchars($an, ENT_QUOTES, 'UTF-8') . '">';
-        echo '<i class="fa-solid fa-comments"></i>';
+        echo '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>';
         echo '</button>';
     }
 }
@@ -57,7 +57,7 @@ if (!function_exists('ai_chat_render_modal')) {
         echo '        <div class="ai-chat-avatar" aria-hidden="true"><i class="fa-solid fa-robot"></i></div>';
         echo '        <div class="ai-chat-header-text">';
         echo '          <div id="aiChatTitle" class="ai-chat-agent-name">' . htmlspecialchars($an, ENT_QUOTES, 'UTF-8') . '</div>';
-        echo '          <div class="ai-chat-agent-status"><span class="ai-chat-status-dot" aria-hidden="true"></span><span>מחובר · עוזר מערכת התזרים</span></div>';
+        echo '          <div class="ai-chat-agent-status"><span class="ai-chat-status-dot" aria-hidden="true"></span><span>מחובר · מקוון</span></div>';
         echo '        </div>';
         echo '      </div>';
         echo '      <div class="ai-chat-header-actions">';

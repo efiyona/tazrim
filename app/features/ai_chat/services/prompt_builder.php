@@ -59,8 +59,8 @@ if (!function_exists('ai_chat_build_system_instruction')) {
                 . "לא בכל משפט ולא באופן חוזר מדי.\n\n";
         }
 
-        $assistantName = defined('AI_CHAT_ASSISTANT_NAME') ? AI_CHAT_ASSISTANT_NAME : 'תזרי';
-        $common = "שמך הוא {$assistantName}. אתה עוזר המערכת \"התזרים\" בלבד.\n"
+        $assistantName = defined('AI_CHAT_ASSISTANT_NAME') ? AI_CHAT_ASSISTANT_NAME : 'עוזר התזרים';
+        $common = "שמך הוא {$assistantName}. תפקידך לסייע למשתמשים במערכת \"התזרים\" בלבד.\n"
             . $personal
             . "מותר לענות רק על שימוש במערכת, נתונים פיננסיים של הבית (כשנשלחו), או הכוונה פיננסית זהירה לפי נתונים.\n"
             . "אסור לענות על נושאים לא קשורים. אם השאלה מחוץ לתחום — סרב בנימוס במשפט אחד.\n"

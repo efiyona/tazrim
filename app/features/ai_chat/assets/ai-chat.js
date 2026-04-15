@@ -30,7 +30,7 @@
     if (fromDom && fromDom.trim() !== "") {
       return fromDom.trim();
     }
-    return "תזרי";
+    return "עוזר התזרים";
   }
 
   function isMobileLayout() {
