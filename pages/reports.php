@@ -105,7 +105,6 @@ while($row = mysqli_fetch_assoc($budget_result)) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <?php include(ROOT_PATH . '/assets/includes/theme_bootstrap.php'); ?>
     <link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_user_css_href(), ENT_QUOTES, 'UTF-8'); ?>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>

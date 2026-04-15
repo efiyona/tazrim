@@ -103,35 +103,6 @@ function tazrim_ensure_feedback_reports_table() {
 
 tazrim_ensure_feedback_reports_table();
 
-/**
- * מבטיח שעמודת העדפת תצוגה קיימת בטבלת המשתמשים.
- */
-function tazrim_ensure_users_theme_preference_column() {
-    global $conn;
-    static $done = false;
-    if ($done) {
-        return;
-    }
-    $done = true;
-    if (!$conn) {
-        return;
-    }
-
-    $result = @mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE 'theme_preference'");
-    if ($result && mysqli_num_rows($result) > 0) {
-        return;
-    }
-
-    @mysqli_query(
-        $conn,
-        "ALTER TABLE `users`
-         ADD COLUMN `theme_preference` ENUM('light','dark','system') NOT NULL DEFAULT 'light'
-         AFTER `api_token`"
-    );
-}
-
-tazrim_ensure_users_theme_preference_column();
-
 function dd($value)
 {
     echo "<pre>", print_r($value, true), "</pre>";

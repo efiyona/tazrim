@@ -122,24 +122,6 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
 
         <div class="header-left">
             <div class="action-icons">
-                <div class="icon-btn theme-switcher-wrapper" id="themeSwitcherWrapper" title="מצב תצוגה">
-                    <i class="fa-solid fa-circle-half-stroke" id="themeSwitcherIcon"></i>
-                    <div class="theme-switcher-dropdown" id="themeSwitcherDropdown">
-                        <button type="button" class="theme-option-btn" data-theme-value="light">
-                            <i class="fa-regular fa-sun"></i>
-                            בהיר
-                        </button>
-                        <button type="button" class="theme-option-btn" data-theme-value="dark">
-                            <i class="fa-regular fa-moon"></i>
-                            כהה
-                        </button>
-                        <button type="button" class="theme-option-btn" data-theme-value="system">
-                            <i class="fa-solid fa-display"></i>
-                            אוטומטי (מערכת)
-                        </button>
-                    </div>
-                </div>
-
                 <div class="icon-btn notification-wrapper" id="notifWrapper" title="התראות">
                     <i class="fa-solid fa-bell"></i>
                     <span class="notification-badge" id="notifBadge" style="display: none;"></span> 
@@ -213,84 +195,6 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
 <style>
 /* --- עיצוב התראות משלים --- */
 .notification-wrapper { position: relative; }
-
-.theme-switcher-wrapper {
-    position: relative;
-    z-index: 2;
-    border: 0;
-    cursor: pointer;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.theme-switcher-dropdown {
-    display: none;
-    position: absolute;
-    top: 55px;
-    left: 0;
-    min-width: 180px;
-    background: var(--white);
-    border-radius: 12px;
-    border: 1px solid var(--gray);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-    z-index: 1100;
-    padding: 8px;
-}
-
-.theme-switcher-dropdown.show { display: block; }
-
-.theme-option-btn {
-    width: 100%;
-    border: 0;
-    background: transparent;
-    border-radius: 10px;
-    padding: 9px 10px;
-    font-size: 0.86rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    cursor: pointer;
-    color: var(--text);
-}
-
-.theme-option-btn i {
-    width: 18px;
-    text-align: center;
-    color: var(--text-light);
-}
-
-.theme-option-btn.active {
-    background: var(--main-light);
-    color: var(--main);
-}
-
-.theme-option-btn.active i { color: var(--main); }
-
-@media (hover: hover) {
-    .theme-option-btn:hover {
-        background: var(--gray-light);
-    }
-}
-
-.theme-option-btn:active {
-    background: var(--gray-light);
-}
-
-/* מובייל: רק כשהתפריט פתוח — fixed+transform על אלמנט מוסתר יצרו ב-WebKit שכבה שחסמה לחיצות על האייקון */
-@media (max-width: 600px) {
-    .theme-switcher-dropdown.show {
-        position: fixed !important;
-        top: calc(env(safe-area-inset-top, 0px) + 72px) !important;
-        left: 50% !important;
-        right: auto !important;
-        transform: translateX(-50%) !important;
-        width: min(92vw, 280px);
-        min-width: 0;
-        z-index: 1300;
-    }
-}
 
 /* ביטול אנימציית קפיצה לכפתור ההתראות כדי לשמור על יציבות הפופאפ */
 .notification-wrapper:hover { transform: none !important; background-color: var(--gray-light); }
@@ -515,65 +419,6 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
 document.addEventListener('DOMContentLoaded', function() {
     const notifWrapper = document.getElementById('notifWrapper');
     const notifDropdown = document.getElementById('notifDropdown');
-    const themeWrapper = document.getElementById('themeSwitcherWrapper');
-    const themeDropdown = document.getElementById('themeSwitcherDropdown');
-    const themeIcon = document.getElementById('themeSwitcherIcon');
-    const themeOptions = Array.from(document.querySelectorAll('.theme-option-btn'));
-
-    function updateThemeSwitcherUi(preference) {
-        themeOptions.forEach((btn) => {
-            btn.classList.toggle('active', btn.dataset.themeValue === preference);
-        });
-        if (!themeIcon) return;
-        if (preference === 'dark') {
-            themeIcon.className = 'fa-regular fa-moon';
-            return;
-        }
-        if (preference === 'light') {
-            themeIcon.className = 'fa-regular fa-sun';
-            return;
-        }
-        themeIcon.className = 'fa-solid fa-circle-half-stroke';
-    }
-
-    if (themeWrapper && themeDropdown && window.tazrimTheme) {
-        updateThemeSwitcherUi(window.tazrimTheme.getPreference());
-        document.addEventListener('tazrim:theme-changed', function(ev) {
-            const nextPreference = ev && ev.detail ? ev.detail.preference : window.tazrimTheme.getPreference();
-            updateThemeSwitcherUi(nextPreference);
-        });
-
-        themeWrapper.addEventListener('click', function(e) {
-            e.stopPropagation();
-            themeDropdown.classList.toggle('show');
-            if (notifDropdown) {
-                notifDropdown.classList.remove('show');
-            }
-        });
-
-        themeDropdown.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-
-        themeOptions.forEach((btn) => {
-            btn.addEventListener('click', function() {
-                const nextTheme = btn.dataset.themeValue;
-                if (!nextTheme || !window.tazrimTheme) return;
-                window.tazrimTheme.setPreference(nextTheme, { persist: true })
-                    .catch(() => {
-                        if (typeof tazrimAlert === 'function') {
-                            tazrimAlert({
-                                title: 'לא נשמר',
-                                message: 'לא ניתן לשמור כרגע את מצב התצוגה בשרת.'
-                            });
-                        }
-                    })
-                    .finally(() => {
-                        themeDropdown.classList.remove('show');
-                    });
-            });
-        });
-    }
 
     if (!notifWrapper || !notifDropdown) {
         return;
@@ -584,9 +429,6 @@ document.addEventListener('DOMContentLoaded', function() {
         e.stopPropagation();
         const isOpening = !notifDropdown.classList.contains('show');
         notifDropdown.classList.toggle('show');
-        if (themeDropdown) {
-            themeDropdown.classList.remove('show');
-        }
 
         if (isOpening) {
             // הסרה ויזואלית מיידית של הבאג'
@@ -610,9 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(event) {
         if (!notifWrapper.contains(event.target)) {
             notifDropdown.classList.remove('show');
-        }
-        if (themeWrapper && !themeWrapper.contains(event.target)) {
-            themeDropdown.classList.remove('show');
         }
     });
 

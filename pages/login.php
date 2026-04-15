@@ -17,9 +17,6 @@ if (isset($_SESSION['id'])) {
         $_SESSION['nickname'] = $user['nickname'];
         $_SESSION['home_id'] = $user['home_id'];
         $_SESSION['role'] = $user['role'];
-        $_SESSION['theme_preference'] = in_array(($user['theme_preference'] ?? 'light'), ['light', 'dark', 'system'], true)
-            ? $user['theme_preference']
-            : 'light';
         
         header('location: ' . BASE_URL . 'index.php');
         exit();
