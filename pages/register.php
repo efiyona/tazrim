@@ -166,7 +166,7 @@ $prefilled_code = isset($_GET['join_code']) ? htmlspecialchars($_GET['join_code'
             </button>
             <h2>תקנון המערכת</h2>
             <div class="cp-tos-modal-body">
-                <?php include(ROOT_PATH . '/assets/includes/tos_content.php'); ?>
+                <?php echo tazrim_tos_content_html(); ?>
             </div>
             <button type="button" class="submit-btn cp-tos-modal-done" onclick="closeTosModal()">קראתי את התקנון</button>
         </div>

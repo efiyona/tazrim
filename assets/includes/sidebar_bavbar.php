@@ -1,10 +1,34 @@
 <?php
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 
+/** סנכרון תפקיד מהמסד לסשן (קישור פאנל אדמין עקבי עם אימות בשרת) */
+if (function_exists('selectOne') && isset($_SESSION['id'])) {
+    $urow = selectOne('users', ['id' => (int) $_SESSION['id']]);
+    if ($urow && isset($urow['role'])) {
+        $_SESSION['role'] = $urow['role'];
+    }
+}
+
 /**
  * הגדרת הניווט המרכזית
  * 'plus_modal' => אם קיים, יוצג כפתור פלוס משמאל לתפריט שיפתח את המודאל המבוקש.
  */
+$settings_submenu = [
+    ['name' => 'ניהול הבית', 'icon' => 'fa-house-user', 'url' => BASE_URL . 'pages/settings/manage_home.php', 'file' => 'manage_home.php'],
+    ['name' => 'החשבון שלי', 'icon' => 'fa-user-gear', 'url' => BASE_URL . 'pages/settings/user_profile.php', 'file' => 'user_profile.php'],
+];
+$settings_nav_files = ['manage_home.php', 'user_profile.php'];
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'program_admin') {
+    $settings_submenu[] = [
+        'name' => 'פאנל ניהול מערכת',
+        'icon' => 'fa-shield-halved',
+        'url' => BASE_URL . 'admin/dashboard.php',
+        'file' => ['dashboard.php', 'table.php'],
+    ];
+    $settings_nav_files[] = 'dashboard.php';
+    $settings_nav_files[] = 'table.php';
+}
+
 $navigation = [
     [
         'name' => 'ראשי',
@@ -31,12 +55,9 @@ $navigation = [
         'name' => 'הגדרות',
         'icon' => 'fa-gear',
         'url' => 'javascript:void(0);',
-        'file' => ['manage_home.php', 'user_profile.php'],
+        'file' => $settings_nav_files,
         'plus_modal' => null,
-        'submenu' => [
-            ['name' => 'ניהול הבית', 'icon' => 'fa-house-user', 'url' => BASE_URL . 'pages/settings/manage_home.php', 'file' => 'manage_home.php'],
-            ['name' => 'החשבון שלי', 'icon' => 'fa-user-gear', 'url' => BASE_URL . 'pages/settings/user_profile.php', 'file' => 'user_profile.php']
-        ]
+        'submenu' => $settings_submenu
     ]
 ];
 
@@ -46,6 +67,14 @@ function isNavActive($nav_item, $current_page) {
         return $nav_item['file'] === $current_page;
     }
     return false;
+}
+
+function tazrim_submenu_page_active(array $sub, $current_page) {
+    $f = $sub['file'] ?? '';
+    if (is_array($f)) {
+        return in_array($current_page, $f, true);
+    }
+    return $f === $current_page;
 }
 
 // מציאת הגדרות הדף הנוכחי
@@ -76,7 +105,7 @@ require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
                     <?php if ($hasSub): ?>
                         <div class="submenu-popup-container">
                             <?php foreach ($item['submenu'] as $sub): ?>
-                                <a href="<?php echo $sub['url']; ?>" class="submenu-action-btn nav-page-link <?php echo ($current_page == $sub['file']) ? 'active-page' : ''; ?>">
+                                <a href="<?php echo $sub['url']; ?>" class="submenu-action-btn nav-page-link <?php echo tazrim_submenu_page_active($sub, $current_page) ? 'active-page' : ''; ?>">
                                     <i class="fa-solid <?php echo $sub['icon']; ?>"></i> <?php echo $sub['name']; ?>
                                 </a>
                             <?php endforeach; ?>

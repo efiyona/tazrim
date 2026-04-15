@@ -8,7 +8,5 @@
     date_default_timezone_set('Asia/Jerusalem');
     $today_il = date('Y-m-d');
 
-    // הגדרות תקנון ומדיניות פרטיות (TOS)
-    define('CURRENT_TOS_VERSION', '2.0');
-    define('TOS_LAST_UPDATED', 'אפריל 2026');
+    // תקנון: ראו app/functions/tos_runtime.php + טבלת tos_terms (ניהול באדמין)
 ?>

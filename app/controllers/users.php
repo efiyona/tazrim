@@ -162,13 +162,13 @@ if (isset($_POST['register_btn'])) {
             // ==========================================
             create('tos_agreements', [
                 'user_id' => $user_id,
-                'tos_version' => CURRENT_TOS_VERSION,
+                'tos_version' => tazrim_tos_version(),
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'Unknown',
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown'
             ]);
             
             // הגדרת הסשן כדי שה-auth_check.php לא יזרוק אותו חזרה לדף אישור מיד כשיתחבר
-            $_SESSION['tos_version'] = CURRENT_TOS_VERSION;
+            $_SESSION['tos_version'] = tazrim_tos_version();
             // ==========================================
 
             // 5. התחברות אוטומטית והפניה

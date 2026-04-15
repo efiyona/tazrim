@@ -12,7 +12,7 @@ if (!isset($_SESSION['id'])) {
 $user_id_for_tos = $_SESSION['id'];
 
 // קודם נבדוק בסשן (הכי מהיר)
-if (isset($_SESSION['tos_version']) && $_SESSION['tos_version'] === CURRENT_TOS_VERSION) {
+if (isset($_SESSION['tos_version']) && $_SESSION['tos_version'] === tazrim_tos_version()) {
     header("Location: " . BASE_URL . "index.php");
     exit();
 }
@@ -22,9 +22,9 @@ $tos_query = "SELECT tos_version FROM tos_agreements WHERE user_id = $user_id_fo
 $tos_result = mysqli_query($conn, $tos_query);
 $tos_data = mysqli_fetch_assoc($tos_result);
 
-if ($tos_data && $tos_data['tos_version'] === CURRENT_TOS_VERSION) {
+if ($tos_data && $tos_data['tos_version'] === tazrim_tos_version()) {
     // נעדכן את הסשן כדי לחסוך קריאות בהמשך
-    $_SESSION['tos_version'] = CURRENT_TOS_VERSION;
+    $_SESSION['tos_version'] = tazrim_tos_version();
     header("Location: " . BASE_URL . "index.php");
     exit();
 }
@@ -120,7 +120,7 @@ if ($tos_data && $tos_data['tos_version'] === CURRENT_TOS_VERSION) {
                 <h1 style="font-weight: 800; margin-bottom: 10px;">עדכנו את תנאי השימוש!</h1>
                 <p style="color: #666; line-height: 1.6; margin-bottom: 10px;">כדי להמשיך להשתמש במערכת בבטחה, אנא קראו ואשרו את התקנון המעודכן שלנו.</p>
                 <p style="color: var(--main); font-weight: 600; background: #f0fdf4; padding: 10px; border-radius: 8px; display: inline-block;">
-                    עודכן לאחרונה: <?php echo TOS_LAST_UPDATED; ?>
+                    עודכן לאחרונה: <?php echo htmlspecialchars(tazrim_tos_last_updated(), ENT_QUOTES, 'UTF-8'); ?>
                 </p>
                 <button type="button" class="btn-welcome" onclick="nextStep(2)">מעבר לתקנון <i class="fa-solid fa-arrow-left"></i></button>
             </div>
@@ -128,7 +128,7 @@ if ($tos_data && $tos_data['tos_version'] === CURRENT_TOS_VERSION) {
             <div class="step" id="step-2">
                 <h2 style="font-weight: 800; margin-bottom: 15px;">תקנון ומדיניות פרטיות</h2>
                 
-                <?php include(ROOT_PATH . '/assets/includes/tos_content.php'); ?>
+                <?php echo tazrim_tos_content_html(); ?>
 
                 <label class="accept-checkbox-wrapper">
                     <input type="checkbox" id="tos-checkbox" onchange="toggleSubmitBtn()">

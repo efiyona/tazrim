@@ -4,29 +4,6 @@
 /** @var mysqli_result|false $result_categories */
 ?>
                 <div class="kpi-grid kpi-grid--home">
-                    <div class="kpi-card kpi-card--home kpi-card--expense">
-                        <div class="kpi-card__info-corner">
-                            <?php
-                                $info_label = "הוצאות החודש";
-                                $info_key = "month_expenses";
-                                include ROOT_PATH . '/assets/includes/info_label.php';
-                            ?>
-                        </div>
-                        <div class="kpi-card__body">
-                            <div class="kpi-card__head">
-                                <span class="kpi-card__icon-wrap" aria-hidden="true">
-                                    <i class="fa-solid fa-arrow-trend-down"></i>
-                                </span>
-                                <span class="kpi-card__label">הוצאות</span>
-                            </div>
-                            <div class="kpi-amount kpi-card__value error-text"><?php echo number_format($total_expense) . '₪'; ?>-</div>
-                            <div class="cat-card-footer kpi-card__footer">
-                                <button type="button" class="btn-cat-details" onclick="loadTypeDetails('expense')">
-                                    פירוט <i class="fa-solid fa-chevron-left"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                     <div class="kpi-card kpi-card--home kpi-card--income">
                         <div class="kpi-card__info-corner">
                             <?php
@@ -45,6 +22,29 @@
                             <div class="kpi-amount kpi-card__value success-text"><?php echo number_format($total_income) . '₪'; ?>+</div>
                             <div class="cat-card-footer kpi-card__footer">
                                 <button type="button" class="btn-cat-details" onclick="loadTypeDetails('income')">
+                                    פירוט <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-card--home kpi-card--expense">
+                        <div class="kpi-card__info-corner">
+                            <?php
+                                $info_label = "הוצאות החודש";
+                                $info_key = "month_expenses";
+                                include ROOT_PATH . '/assets/includes/info_label.php';
+                            ?>
+                        </div>
+                        <div class="kpi-card__body">
+                            <div class="kpi-card__head">
+                                <span class="kpi-card__icon-wrap" aria-hidden="true">
+                                    <i class="fa-solid fa-arrow-trend-down"></i>
+                                </span>
+                                <span class="kpi-card__label">הוצאות</span>
+                            </div>
+                            <div class="kpi-amount kpi-card__value error-text"><?php echo number_format($total_expense) . '₪'; ?>-</div>
+                            <div class="cat-card-footer kpi-card__footer">
+                                <button type="button" class="btn-cat-details" onclick="loadTypeDetails('expense')">
                                     פירוט <i class="fa-solid fa-chevron-left"></i>
                                 </button>
                             </div>

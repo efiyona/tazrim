@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $user_id = (int)$_SESSION['id'];
-    $version = mysqli_real_escape_string($conn, CURRENT_TOS_VERSION);
+    $version = mysqli_real_escape_string($conn, tazrim_tos_version());
     $ip_address = mysqli_real_escape_string($conn, $_SERVER['REMOTE_ADDR'] ?? 'Unknown');
     $user_agent = mysqli_real_escape_string($conn, $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown');
 
@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               
     if (mysqli_query($conn, $query)) {
         // חשוב מאוד: עדכון הסשן הנוכחי כדי שהמשתמש יפסיק להיזרק לעמוד הזה
-        $_SESSION['tos_version'] = CURRENT_TOS_VERSION;
+        $_SESSION['tos_version'] = tazrim_tos_version();
         
         echo json_encode(['status' => 'success']);
     } else {

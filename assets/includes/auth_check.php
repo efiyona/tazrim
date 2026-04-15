@@ -35,7 +35,7 @@ $excluded_pages = ['welcome.php', 'logout.php', 'setup_welcome.php', 'accept_tos
 if (!in_array($current_page, $excluded_pages)) {
     
     // === 4. בדיקת אישור תקנון (TOS) מול הגרסה הנוכחית ===
-    if (!isset($_SESSION['tos_version']) || $_SESSION['tos_version'] !== CURRENT_TOS_VERSION) {
+    if (!isset($_SESSION['tos_version']) || $_SESSION['tos_version'] !== tazrim_tos_version()) {
         $user_id_for_tos = $_SESSION['id'];
         
         // שליפת האישור האחרון מהמסד
@@ -45,9 +45,9 @@ if (!in_array($current_page, $excluded_pages)) {
         
         $latest_version = $tos_data ? $tos_data['tos_version'] : null;
         
-        if ($latest_version === CURRENT_TOS_VERSION) {
+        if ($latest_version === tazrim_tos_version()) {
             // המשתמש אישר בעבר, נשמור בסשן כדי לחסוך קריאות למסד
-            $_SESSION['tos_version'] = CURRENT_TOS_VERSION;
+            $_SESSION['tos_version'] = tazrim_tos_version();
         } else {
             // לא אישר את הגרסה העדכנית - מעבירים לדף אישור (בתוך התיקייה pages)
             header("Location: " . BASE_URL . "pages/accept_tos.php");
