@@ -2547,7 +2547,10 @@ body.auth-forgot .auth-switch a {
             .kpi-grid {
                 grid-template-columns: repeat(4, 1fr);
             }
-    
+            /* דף הבית / דוחות: כרטיסי KPI במסך רחב — 2 עמודות מלאות (לא 4 עם חצי שורה ריקה) */
+            .kpi-grid--home {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
         .kpi-card { background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
         .kpi-card__info-corner {
@@ -2588,6 +2591,9 @@ body.auth-forgot .auth-switch a {
             padding-top: 8px;
             text-align: center;
         }
+        .kpi-card--home:not(:has(.kpi-card__info-corner)) .kpi-card__body {
+            padding-top: 0;
+        }
         .kpi-card--home .kpi-card__head {
             display: flex;
             flex-direction: column;
@@ -2620,6 +2626,20 @@ body.auth-forgot .auth-switch a {
         .kpi-card--home.kpi-card--balance {
             min-height: 0;
         }
+        .kpi-card--home.kpi-card--reports-balance .kpi-card__icon-wrap {
+            background: rgba(35, 114, 39, 0.1);
+            color: var(--main);
+        }
+        .kpi-card--home.kpi-card--daily-avg .kpi-card__icon-wrap {
+            background: rgba(245, 158, 11, 0.14);
+            color: #f59e0b;
+        }
+        .kpi-card--home .kpi-card__value--amber {
+            color: #f59e0b;
+        }
+        .kpi-card--home:not(:has(.kpi-card__footer)) {
+            min-height: 0;
+        }
         .kpi-card--home .kpi-card__label {
             font-size: 1.05rem;
             font-weight: 800;
@@ -2650,6 +2670,9 @@ body.auth-forgot .auth-switch a {
             .kpi-card--home .kpi-card__body {
                 gap: 10px;
                 padding-top: 4px;
+            }
+            .kpi-card--home:not(:has(.kpi-card__info-corner)) .kpi-card__body {
+                padding-top: 0;
             }
             .kpi-card--home .kpi-card__head {
                 gap: 6px;
