@@ -93,6 +93,11 @@ h3 {
 ========================================= */
 .flex-center { display: flex; align-items: center; justify-content: center; }
 .flex-between { display: flex; align-items: center; justify-content: space-between; }
+.page-header-actions__title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
 .text-center { text-align: center; }
 .w-full { width: 100%; }
 .bg-gray {
@@ -2059,6 +2064,29 @@ body.auth-forgot .auth-switch a {
         align-items: flex-start;
         gap: 5px;
     }
+
+    /* דף הבית: כותרת + ניווט חודשים ממורכזים */
+    .page-header-actions--home {
+        align-items: center;
+    }
+    .page-header-actions--home > .page-header-actions__title-wrap {
+        align-items: center;
+        width: 100%;
+        justify-content: center;
+    }
+    .page-header-actions--home .section-title {
+        text-align: center;
+        width: 100%;
+    }
+    .page-header-actions--home .home-month-nav {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .page-header-actions--home .shopping-store-tabs {
+        justify-content: center;
+        justify-content: safe center;
+    }
 }
 
 /* =========================================
@@ -3315,6 +3343,45 @@ body.auth-forgot .auth-switch a {
 }
 .shopping-tab-chip.active i {
     color: #fff;
+}
+a.shopping-tab-chip {
+    text-decoration: none;
+}
+a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
+    color: inherit;
+}
+@media (hover: hover) {
+    a.shopping-tab-chip:not(.active):not(.shopping-tab-add):hover {
+        background: var(--gray-light);
+        border-color: #cbd5e1;
+    }
+}
+/* תא מרכזי: גובה השורה = צ'יפ החודש בלבד; "היום" מחוץ לזרימה כדי שלא יזיז את החיצים */
+.home-month-nav__center-cell {
+    position: relative;
+    flex: 0 0 auto;
+}
+.home-month-nav--has-today {
+    padding-bottom: 48px;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+.home-month-nav .shopping-tab-chip.home-month-nav__today {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    z-index: 1;
+}
+.home-month-nav .shopping-tab-chip.home-month-nav__current {
+    cursor: default;
+}
+.home-month-nav .shopping-tab-chip.home-month-nav__current span {
+    font-weight: 800;
 }
 .shopping-tab-add {
     border-style: dashed;

@@ -122,24 +122,34 @@ while($row = mysqli_fetch_assoc($budget_result)) {
                 $is_current_month = ($current_month == date('m') && $current_year == date('Y')); 
             ?>
 
-            <div class="page-header-actions flex-between" style="margin-bottom: 25px;">
-                <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="page-header-actions page-header-actions--home flex-between" style="margin-bottom: 25px;">
+                <div class="page-header-actions__title-wrap">
                     <h1 class="section-title" style="margin-bottom: 0;">דוחות ותובנות</h1>
                 </div>
                 
-                <div class="month-selector">
-                    <?php if (!$is_current_month): ?>
-                        <a href="<?php echo BASE_URL . '/pages/reports.php?m=' . date('m') . '&y=' . date('Y'); ?>" class="btn-return-today">
-                             היום
+                <div class="home-month-nav shopping-tabs-bar<?php echo !$is_current_month ? ' home-month-nav--has-today' : ''; ?>" aria-label="ניווט בין חודשים">
+                    <div class="shopping-store-tabs">
+                        <a href="?m=<?php echo $prev_month; ?>&y=<?php echo $prev_year; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש קודם">
+                            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                            <span><?php echo $month_names[$prev_month]; ?></span>
                         </a>
-                    <?php endif; ?>
-                    <a href="?m=<?php echo $prev_month; ?>&y=<?php echo $prev_year; ?>" class="month-btn"><i class="fa-solid fa-chevron-right"></i></a>
-                    
-                    <div class="current-month-display">
-                        <?php echo $month_names[$current_month] . ' ' . $current_year; ?>
+                        <div class="home-month-nav__center-cell">
+                            <span class="shopping-tab-chip active home-month-nav__current" aria-current="page">
+                                <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
+                                <span><?php echo $month_names[$current_month] . ' ' . $current_year; ?></span>
+                            </span>
+                            <?php if (!$is_current_month): ?>
+                                <a href="<?php echo BASE_URL . '/pages/reports.php?m=' . date('m') . '&y=' . date('Y'); ?>" class="shopping-tab-chip shopping-tab-add home-month-nav__today" title="חזרה לחודש הנוכחי">
+                                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                                    <span>היום</span>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                        <a href="?m=<?php echo $next_month; ?>&y=<?php echo $next_year; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש הבא">
+                            <span><?php echo $month_names[$next_month]; ?></span>
+                            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                        </a>
                     </div>
-                    
-                    <a href="?m=<?php echo $next_month; ?>&y=<?php echo $next_year; ?>" class="month-btn"><i class="fa-solid fa-chevron-left"></i></a>
                 </div>
             </div>
 
