@@ -216,8 +216,11 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
 
 .theme-switcher-wrapper {
     position: relative;
+    z-index: 2;
     border: 0;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .theme-switcher-dropdown {
@@ -275,9 +278,9 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
     background: var(--gray-light);
 }
 
-/* מובייל: מרכז מתחת ל-header (כמו התראות) — מונע פתיחה שמאלה מהאייקון, חיתוך בגלילה וחפיפה עם הסרגל */
+/* מובייל: רק כשהתפריט פתוח — fixed+transform על אלמנט מוסתר יצרו ב-WebKit שכבה שחסמה לחיצות על האייקון */
 @media (max-width: 600px) {
-    .theme-switcher-dropdown {
+    .theme-switcher-dropdown.show {
         position: fixed !important;
         top: calc(env(safe-area-inset-top, 0px) + 72px) !important;
         left: 50% !important;
