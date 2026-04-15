@@ -3,55 +3,71 @@
 /** @var mysqli_result|false $recent_result */
 /** @var mysqli_result|false $result_categories */
 ?>
-                <div class="kpi-grid">
-                    <div class="kpi-card expense">
-                        <div class="kpi-title">
-                            <i class="fa-solid fa-arrow-trend-down" style="color: var(--error);"></i>
-                             הוצאות
+                <div class="kpi-grid kpi-grid--home">
+                    <div class="kpi-card kpi-card--home kpi-card--expense">
+                        <div class="kpi-card__info-corner">
                             <?php
                                 $info_label = "הוצאות החודש";
                                 $info_key = "month_expenses";
                                 include ROOT_PATH . '/assets/includes/info_label.php';
                             ?>
                         </div>
-                        <div class="kpi-amount error-text"><?php echo number_format($total_expense) . '₪'; ?>-</div>
-                        <div class="cat-card-footer">
-                            <button type="button" class="btn-cat-details" onclick="loadTypeDetails('expense')">
-                                פירוט <i class="fa-solid fa-chevron-left" style="font-size: 0.7rem; margin-right: 5px;"></i>
-                            </button>
+                        <div class="kpi-card__body">
+                            <div class="kpi-card__head">
+                                <span class="kpi-card__icon-wrap" aria-hidden="true">
+                                    <i class="fa-solid fa-arrow-trend-down"></i>
+                                </span>
+                                <span class="kpi-card__label">הוצאות</span>
+                            </div>
+                            <div class="kpi-amount kpi-card__value error-text"><?php echo number_format($total_expense) . '₪'; ?>-</div>
+                            <div class="cat-card-footer kpi-card__footer">
+                                <button type="button" class="btn-cat-details" onclick="loadTypeDetails('expense')">
+                                    פירוט <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="kpi-card income">
-                        <div class="kpi-title">
-                            <i class="fa-solid fa-arrow-trend-up" style="color: var(--success);"></i>
-                             הכנסות
+                    <div class="kpi-card kpi-card--home kpi-card--income">
+                        <div class="kpi-card__info-corner">
                             <?php
                                 $info_label = "הכנסות החודש";
                                 $info_key = "month_income";
                                 include ROOT_PATH . '/assets/includes/info_label.php';
                             ?>
                         </div>
-                        <div class="kpi-amount success-text"><?php echo number_format($total_income) . '₪'; ?>+</div>
-                        <div class="cat-card-footer">
-                            <button type="button" class="btn-cat-details" onclick="loadTypeDetails('income')">
-                                פירוט <i class="fa-solid fa-chevron-left" style="font-size: 0.7rem; margin-right: 5px;"></i>
-                            </button>
+                        <div class="kpi-card__body">
+                            <div class="kpi-card__head">
+                                <span class="kpi-card__icon-wrap" aria-hidden="true">
+                                    <i class="fa-solid fa-arrow-trend-up"></i>
+                                </span>
+                                <span class="kpi-card__label">הכנסות</span>
+                            </div>
+                            <div class="kpi-amount kpi-card__value success-text"><?php echo number_format($total_income) . '₪'; ?>+</div>
+                            <div class="cat-card-footer kpi-card__footer">
+                                <button type="button" class="btn-cat-details" onclick="loadTypeDetails('income')">
+                                    פירוט <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="stats-grid">
                     <?php if ($initial_balance != 0): ?>
-                        <div class="stat-card balance">
-                            <label>
-                                יתרה בחשבון
+                        <div class="kpi-card kpi-card--home kpi-card--balance kpi-card--span-full">
+                            <div class="kpi-card__info-corner">
                                 <?php
                                     $info_label = "יתרה בחשבון";
                                     $info_key = "real_balance";
                                     include ROOT_PATH . '/assets/includes/info_label.php';
                                 ?>
-                            </label>
-                            <div class="amount"><?php echo number_format($current_bank_balance, 0) . '₪'; ?></div>
+                            </div>
+                            <div class="kpi-card__body">
+                                <div class="kpi-card__head">
+                                    <span class="kpi-card__icon-wrap" aria-hidden="true">
+                                        <i class="fa-solid fa-wallet"></i>
+                                    </span>
+                                    <span class="kpi-card__label">יתרה בחשבון</span>
+                                </div>
+                                <div class="kpi-amount kpi-card__value <?php echo $current_bank_balance >= 0 ? 'success-text' : 'error-text'; ?>"><?php echo number_format($current_bank_balance, 0) . '₪'; ?></div>
+                            </div>
                         </div>
                     <?php endif; ?>
                 </div>
