@@ -57,6 +57,7 @@ foreach ($navigation as $item) {
     }
 }
 $target_modal_id = $current_config['plus_modal'] ?? null;
+require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
 ?>
 
 <div class="floating-nav-wrapper">
@@ -122,6 +123,7 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
 
         <div class="header-left">
             <div class="action-icons">
+                <?php ai_chat_render_launcher_button(); ?>
                 <div class="icon-btn notification-wrapper" id="notifWrapper" title="התראות">
                     <i class="fa-solid fa-bell"></i>
                     <span class="notification-badge" id="notifBadge" style="display: none;"></span> 
@@ -191,6 +193,7 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
             </div>
         </div>
     </div>
+    <?php ai_chat_render_lazy_loader(); ?>
 
 <style>
 /* --- עיצוב התראות משלים --- */
