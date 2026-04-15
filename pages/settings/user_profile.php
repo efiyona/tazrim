@@ -14,6 +14,17 @@ $home_data = selectOne('homes', ['id' => $home_id]);
 
 // שליפת נתוני המשתמש הנוכחי
 $user_data = selectOne('users', ['id' => $user_id]);
+$user_email = (string)($user_data['email'] ?? '');
+$email_parts = explode('@', $user_email, 2);
+$email_masked = $user_email;
+if (count($email_parts) === 2 && $email_parts[0] !== '') {
+    $name_part = $email_parts[0];
+    $visible = mb_substr($name_part, 0, 2, 'UTF-8');
+    if ($visible === '') {
+        $visible = mb_substr($name_part, 0, 1, 'UTF-8');
+    }
+    $email_masked = $visible . str_repeat('*', max(2, mb_strlen($name_part, 'UTF-8') - mb_strlen($visible, 'UTF-8'))) . '@' . $email_parts[1];
+}
 
 // העדפות התראות Push (ברמת משתמש) - מטבלה ייעודית
 $notify_prefs = selectOne('user_notification_preferences', ['user_id' => $user_id]);
@@ -41,6 +52,7 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <?php include(ROOT_PATH . '/assets/includes/theme_bootstrap.php'); ?>
     <link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_user_css_href(), ENT_QUOTES, 'UTF-8'); ?>">
     <script src="<?php echo BASE_URL; ?>assets/js/tazrim_dialogs.js" defer></script>
 
@@ -153,6 +165,54 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
             border: 1px solid #fde68a;
             color: #b45309;
         }
+
+        .password-reset-steps .step-hidden {
+            display: none;
+        }
+        .password-reset-steps .form-group {
+            margin-bottom: 16px;
+        }
+        .password-reset-steps .helper-text {
+            margin-top: 6px;
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        .password-reset-alert {
+            display: none;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            font-size: 0.86rem;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+        .password-reset-alert.success {
+            background: var(--sub_main-light);
+            color: var(--main);
+            border: 1px solid rgba(56, 193, 114, 0.26);
+        }
+        .password-reset-alert.error {
+            background: #fee2e2;
+            color: var(--error);
+            border: 1px solid rgba(248, 113, 113, 0.34);
+        }
+        .password-reset-code {
+            letter-spacing: 0.35em;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .btn-secondary-light {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            background: #e2e8f0;
+            color: #334155;
+            border-radius: 10px;
+            min-height: 42px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body class="bg-gray">
@@ -223,6 +283,63 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
                                 <div id="profile-msg" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 8px; font-weight: 600; text-align: center;"></div>
                                 <button type="button" id="btn-update-profile" class="btn-primary" onclick="updateProfile()">שמירה</button>
                             </form>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>שינוי סיסמה</h3>
+                        </div>
+                        <div class="card-body-padding password-reset-steps">
+                            <p class="block-help" style="margin-bottom: 12px;">
+                                לאבטחת החשבון, נשלח קוד אימות למייל שלך:
+                                <strong><?php echo htmlspecialchars($email_masked, ENT_QUOTES, 'UTF-8'); ?></strong>
+                            </p>
+
+                            <div id="profile-pass-alert" class="password-reset-alert" role="alert"></div>
+
+                            <div id="profile-pass-step-1">
+                                <button type="button" id="profile-pass-send-btn" class="btn-primary" style="margin-top: 0;">
+                                    <i class="fa-solid fa-paper-plane"></i> שלח קוד אימות למייל
+                                </button>
+                            </div>
+
+                            <div id="profile-pass-step-2" class="step-hidden">
+                                <div class="form-group">
+                                    <label for="profile-pass-code">קוד אימות (6 ספרות)</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                        <input type="text" id="profile-pass-code" class="password-reset-code" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code">
+                                    </div>
+                                    <p class="helper-text">הקוד בתוקף ל-10 דקות.</p>
+                                </div>
+                                <button type="button" id="profile-pass-verify-btn" class="btn-primary" style="margin-top: 0;">
+                                    אמת קוד והמשך
+                                </button>
+                                <button type="button" id="profile-pass-resend-btn" class="btn-secondary-light">
+                                    שלח קוד מחדש
+                                </button>
+                            </div>
+
+                            <div id="profile-pass-step-3" class="step-hidden">
+                                <div class="form-group">
+                                    <label for="profile-pass-new">סיסמה חדשה</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-lock"></i>
+                                        <input type="password" id="profile-pass-new" minlength="4" placeholder="לפחות 4 תווים" autocomplete="new-password">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-pass-confirm">אימות סיסמה חדשה</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-check-double"></i>
+                                        <input type="password" id="profile-pass-confirm" minlength="4" placeholder="הקלדה חוזרת" autocomplete="new-password">
+                                    </div>
+                                </div>
+                                <button type="button" id="profile-pass-reset-btn" class="btn-primary" style="margin-top: 0;">
+                                    עדכן סיסמה
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -389,59 +506,218 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
             });
         }
 
-        // עדכון סיסמה
-        function updatePassword() {
-            const form = document.getElementById('password-form');
-            const newPass = form.elements['new_password'].value;
-            const confirmPass = form.elements['confirm_password'].value;
-            const msgBox = document.getElementById('password-msg');
+        function initProfilePasswordReset() {
+            const endpoint = '<?php echo BASE_URL; ?>app/ajax/profile_password_reset.php';
+            const alertBox = document.getElementById('profile-pass-alert');
+            const step1 = document.getElementById('profile-pass-step-1');
+            const step2 = document.getElementById('profile-pass-step-2');
+            const step3 = document.getElementById('profile-pass-step-3');
+            const codeInput = document.getElementById('profile-pass-code');
+            const newPassInput = document.getElementById('profile-pass-new');
+            const confirmPassInput = document.getElementById('profile-pass-confirm');
+            const sendBtn = document.getElementById('profile-pass-send-btn');
+            const verifyBtn = document.getElementById('profile-pass-verify-btn');
+            const resetBtn = document.getElementById('profile-pass-reset-btn');
+            const resendBtn = document.getElementById('profile-pass-resend-btn');
+            let resendCooldownTimer = null;
+            let resendCooldownRemaining = 0;
 
-            if (newPass !== confirmPass) {
-                msgBox.style.display = 'block';
-                msgBox.style.backgroundColor = '#fee2e2';
-                msgBox.style.color = 'var(--error)';
-                msgBox.innerText = 'הסיסמאות החדשות אינן תואמות.';
+            if (!alertBox || !step1 || !step2 || !step3 || !sendBtn || !verifyBtn || !resetBtn || !resendBtn) {
                 return;
             }
 
-            const formData = new FormData(form);
-            const btn = document.getElementById('btn-update-password');
+            function showAlert(message, isSuccess) {
+                alertBox.style.display = 'block';
+                alertBox.classList.remove('success', 'error');
+                alertBox.classList.add(isSuccess ? 'success' : 'error');
+                alertBox.textContent = message;
+            }
 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מעדכן...';
-            btn.disabled = true;
-            msgBox.style.display = 'none';
+            function clearAlert() {
+                alertBox.style.display = 'none';
+                alertBox.textContent = '';
+                alertBox.classList.remove('success', 'error');
+            }
 
-            // TODO: Create app/ajax/update_password.php
-            fetch('<?php echo BASE_URL; ?>app/ajax/update_password.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                btn.innerHTML = 'עדכן סיסמה';
-                btn.disabled = false;
-                
-                if (data.status === 'success') {
-                    form.reset();
-                    msgBox.style.display = 'block';
-                    msgBox.style.backgroundColor = 'var(--sub_main-light)';
-                    msgBox.style.color = 'var(--main)';
-                    msgBox.innerText = 'הסיסמה שונתה בהצלחה!';
-                } else {
-                    msgBox.style.display = 'block';
-                    msgBox.style.backgroundColor = '#fee2e2';
-                    msgBox.style.color = 'var(--error)';
-                    msgBox.innerText = data.message || 'שגיאה בעדכון הסיסמה.';
+            function setBtnLoading(btn, loadingText, isLoading) {
+                if (!btn) return;
+                if (isLoading) {
+                    btn.disabled = true;
+                    if (!btn.dataset.originalText) {
+                        btn.dataset.originalText = btn.innerHTML;
+                    }
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + loadingText;
+                    return;
                 }
-            })
-            .catch(err => {
-                btn.innerHTML = 'עדכן סיסמה';
                 btn.disabled = false;
-                msgBox.style.display = 'block';
-                msgBox.style.backgroundColor = '#fee2e2';
-                msgBox.style.color = 'var(--error)';
-                msgBox.innerText = 'שגיאת תקשורת עם השרת.';
+                if (btn.dataset.originalText) {
+                    btn.innerHTML = btn.dataset.originalText;
+                }
+            }
+
+            function updateResendButtonState() {
+                if (resendCooldownRemaining > 0) {
+                    resendBtn.disabled = true;
+                    resendBtn.textContent = 'שלח קוד מחדש בעוד ' + resendCooldownRemaining + ' שנ׳';
+                    return;
+                }
+                resendBtn.disabled = false;
+                resendBtn.textContent = 'שלח קוד מחדש';
+            }
+
+            function startResendCooldown(seconds) {
+                resendCooldownRemaining = seconds;
+                updateResendButtonState();
+                if (resendCooldownTimer) {
+                    clearInterval(resendCooldownTimer);
+                }
+                resendCooldownTimer = setInterval(function() {
+                    resendCooldownRemaining -= 1;
+                    if (resendCooldownRemaining <= 0) {
+                        resendCooldownRemaining = 0;
+                        clearInterval(resendCooldownTimer);
+                        resendCooldownTimer = null;
+                    }
+                    updateResendButtonState();
+                }, 1000);
+            }
+
+            function postAction(formData) {
+                return fetch(endpoint, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin'
+                }).then(function(res) {
+                    return res.json();
+                });
+            }
+
+            sendBtn.addEventListener('click', function() {
+                clearAlert();
+                setBtnLoading(sendBtn, 'שולח קוד...', true);
+
+                const fd = new FormData();
+                fd.append('action', 'send_code');
+
+                postAction(fd)
+                    .then(function(data) {
+                        if (data.status !== 'success') {
+                            showAlert(data.message || 'שליחת הקוד נכשלה.', false);
+                            return;
+                        }
+                        showAlert(data.message || 'קוד נשלח בהצלחה.', true);
+                        step1.classList.add('step-hidden');
+                        step2.classList.remove('step-hidden');
+                        startResendCooldown(30);
+                        if (codeInput) codeInput.focus();
+                    })
+                    .catch(function() {
+                        showAlert('שגיאת תקשורת עם השרת.', false);
+                    })
+                    .finally(function() {
+                        setBtnLoading(sendBtn, '', false);
+                    });
             });
+
+            resendBtn.addEventListener('click', function() {
+                if (resendCooldownRemaining > 0) return;
+                clearAlert();
+                setBtnLoading(resendBtn, 'שולח קוד...', true);
+                const fd = new FormData();
+                fd.append('action', 'send_code');
+                postAction(fd)
+                    .then(function(data) {
+                        if (data.status !== 'success') {
+                            showAlert(data.message || 'שליחת הקוד נכשלה.', false);
+                            return;
+                        }
+                        showAlert(data.message || 'קוד חדש נשלח למייל.', true);
+                        startResendCooldown(30);
+                    })
+                    .catch(function() {
+                        showAlert('שגיאת תקשורת עם השרת.', false);
+                    })
+                    .finally(function() {
+                        setBtnLoading(resendBtn, '', false);
+                        updateResendButtonState();
+                    });
+            });
+
+            verifyBtn.addEventListener('click', function() {
+                clearAlert();
+                const code = (codeInput.value || '').trim();
+                if (!/^\d{6}$/.test(code)) {
+                    showAlert('נא להזין קוד בן 6 ספרות.', false);
+                    return;
+                }
+
+                setBtnLoading(verifyBtn, 'מאמת...', true);
+                const fd = new FormData();
+                fd.append('action', 'verify_code');
+                fd.append('code', code);
+
+                postAction(fd)
+                    .then(function(data) {
+                        if (data.status !== 'success') {
+                            showAlert(data.message || 'אימות הקוד נכשל.', false);
+                            return;
+                        }
+                        showAlert(data.message || 'הקוד אומת בהצלחה.', true);
+                        step2.classList.add('step-hidden');
+                        step3.classList.remove('step-hidden');
+                        if (newPassInput) newPassInput.focus();
+                    })
+                    .catch(function() {
+                        showAlert('שגיאת תקשורת עם השרת.', false);
+                    })
+                    .finally(function() {
+                        setBtnLoading(verifyBtn, '', false);
+                    });
+            });
+
+            resetBtn.addEventListener('click', function() {
+                clearAlert();
+                const pass = (newPassInput.value || '').trim();
+                const confirm = (confirmPassInput.value || '').trim();
+                if (pass.length < 4) {
+                    showAlert('הסיסמה חייבת להיות לפחות 4 תווים.', false);
+                    return;
+                }
+                if (pass !== confirm) {
+                    showAlert('הסיסמאות אינן תואמות.', false);
+                    return;
+                }
+
+                setBtnLoading(resetBtn, 'מעדכן...', true);
+                const fd = new FormData();
+                fd.append('action', 'reset_password');
+                fd.append('password', pass);
+                fd.append('confirm_password', confirm);
+
+                postAction(fd)
+                    .then(function(data) {
+                        if (data.status !== 'success') {
+                            showAlert(data.message || 'עדכון הסיסמה נכשל.', false);
+                            return;
+                        }
+                        showAlert(data.message || 'הסיסמה עודכנה בהצלחה.', true);
+                        if (codeInput) codeInput.value = '';
+                        if (newPassInput) newPassInput.value = '';
+                        if (confirmPassInput) confirmPassInput.value = '';
+                        step3.classList.add('step-hidden');
+                        step1.classList.remove('step-hidden');
+                        resendCooldownRemaining = 0;
+                        updateResendButtonState();
+                    })
+                    .catch(function() {
+                        showAlert('שגיאת תקשורת עם השרת.', false);
+                    })
+                    .finally(function() {
+                        setBtnLoading(resetBtn, '', false);
+                    });
+            });
+
+            updateResendButtonState();
         }
 
         // העדפות התראות (ברמת משתמש)
@@ -643,6 +919,7 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            initProfilePasswordReset();
             if (document.getElementById('ios-tazrim-panel-mount')) {
                 refreshIosTazrimPanel();
             }

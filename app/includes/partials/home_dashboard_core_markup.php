@@ -15,6 +15,11 @@
                             ?>
                         </div>
                         <div class="kpi-amount error-text"><?php echo number_format($total_expense) . '₪'; ?>-</div>
+                        <div class="cat-card-footer">
+                            <button type="button" class="btn-cat-details" onclick="loadTypeDetails('expense')">
+                                פירוט <i class="fa-solid fa-chevron-left" style="font-size: 0.7rem; margin-right: 5px;"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="kpi-card income">
                         <div class="kpi-title">
@@ -27,6 +32,11 @@
                             ?>
                         </div>
                         <div class="kpi-amount success-text"><?php echo number_format($total_income) . '₪'; ?>+</div>
+                        <div class="cat-card-footer">
+                            <button type="button" class="btn-cat-details" onclick="loadTypeDetails('income')">
+                                פירוט <i class="fa-solid fa-chevron-left" style="font-size: 0.7rem; margin-right: 5px;"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 

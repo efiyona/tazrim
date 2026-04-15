@@ -336,6 +336,7 @@ CREATE TABLE `users` (
   `role` varchar(20) NOT NULL DEFAULT 'user',
   `remember_token` varchar(255) DEFAULT NULL,
   `api_token` varchar(255) DEFAULT NULL,
+  `theme_preference` enum('light','dark','system') NOT NULL DEFAULT 'light',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),

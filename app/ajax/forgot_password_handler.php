@@ -41,7 +41,12 @@ if ($action === 'send_code') {
         $mail->addAddress($email);
         $mail->isHTML(true);
         $mail->Subject = 'קוד אימות לאיפוס סיסמה';
-        $mail->Body    = "<div dir='rtl'><h2>קוד האימות שלך הוא: <b style='font-size:24px;'>$code</b></h2></div>";
+        $mail->Body    = "<div dir='rtl' style='font-family:Arial,sans-serif;'>
+            <p style='font-size:16px;margin:0 0 8px;'>קוד האימות שלך:</p>
+            <p style='font-size:34px;font-weight:700;letter-spacing:4px;margin:0 0 10px;'>$code</p>
+            <p style='font-size:14px;margin:0;color:#475569;'>הקוד בתוקף ל-10 דקות.</p>
+        </div>";
+        $mail->AltBody = "קוד האימות שלך: $code\nהקוד בתוקף ל-10 דקות.";
 
         $mail->send();
         echo json_encode(['status' => 'success', 'message' => 'קוד נשלח בהצלחה.']);

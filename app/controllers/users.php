@@ -37,6 +37,9 @@ if (isset($_POST['login_btn'])) {
             $_SESSION['nickname'] = $user['nickname'];
             $_SESSION['home_id'] = $user['home_id'];
             $_SESSION['role'] = $user['role'];
+            $_SESSION['theme_preference'] = in_array(($user['theme_preference'] ?? 'light'), ['light', 'dark', 'system'], true)
+                ? $user['theme_preference']
+                : 'light';
             
             // טיפול ב"זכור אותי"
             if(isset($_POST['remember_me'])) {
@@ -178,6 +181,7 @@ if (isset($_POST['register_btn'])) {
             $_SESSION['nickname'] = $nickname;
             $_SESSION['home_id'] = $target_home_id;
             $_SESSION['role'] = $userData['role'];
+            $_SESSION['theme_preference'] = 'light';
 
             header('location: ' . BASE_URL . 'index.php');
             exit();

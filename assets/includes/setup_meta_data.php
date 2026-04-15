@@ -14,6 +14,10 @@ require_once __DIR__ . '/user_css_href.php';
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
 
+<?php if (isset($_SESSION['id'])): ?>
+<?php include(ROOT_PATH . '/assets/includes/theme_bootstrap.php'); ?>
+<?php endif; ?>
+
 <link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_user_css_href(), ENT_QUOTES, 'UTF-8'); ?>">
 
 <link rel="manifest" href="<?php echo BASE_URL; ?>manifest.json">

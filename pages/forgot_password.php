@@ -53,6 +53,9 @@
                     </div>
                 </div>
                 <button type="button" id="btn-step-2" class="submit-btn">אמת קוד והמשך</button>
+                <button type="button" id="btn-resend-code" class="submit-btn" style="margin-top: 10px; background: #e2e8f0; color: #334155;">
+                    שלח קוד מחדש
+                </button>
             </div>
 
             <div id="step-3" class="step-hidden">
@@ -88,6 +91,72 @@
             const handler = '../app/ajax/forgot_password_handler.php';
             const loginSuccessUrl = '<?php echo BASE_URL; ?>pages/login.php?reset=success';
             let email = '';
+            let resendCooldownTimer = null;
+            let resendCooldownRemaining = 0;
+
+            function setResendState(enabled) {
+                const $btn = $('#btn-resend-code');
+                if (!$btn.length) return;
+                if (enabled) {
+                    $btn.prop('disabled', false).text('שלח קוד מחדש');
+                    return;
+                }
+                $btn.prop('disabled', true).text('שלח קוד מחדש בעוד ' + resendCooldownRemaining + ' שנ׳');
+            }
+
+            function startResendCooldown(seconds) {
+                resendCooldownRemaining = seconds;
+                setResendState(false);
+                if (resendCooldownTimer) clearInterval(resendCooldownTimer);
+                resendCooldownTimer = setInterval(function() {
+                    resendCooldownRemaining -= 1;
+                    if (resendCooldownRemaining <= 0) {
+                        clearInterval(resendCooldownTimer);
+                        resendCooldownTimer = null;
+                        setResendState(true);
+                        return;
+                    }
+                    setResendState(false);
+                }, 1000);
+            }
+
+            function sendCode($sourceBtn) {
+                email = $('#email').val();
+                if (!email) {
+                    showAlert('נא להזין מייל', 'error');
+                    return;
+                }
+
+                const originalText = $sourceBtn.text();
+                $sourceBtn.prop('disabled', true).text('שולח...');
+                $.post(handler, { action: 'send_code', email: email }, function(res) {
+                    if (res.status === 'success') {
+                        $('#step-1').fadeOut(300, function() {
+                            $('#step-2').removeClass('step-hidden').hide().fadeIn(300);
+                            $('#step-desc').text('הזינו את הקוד שנשלח אליכם');
+                            showAlert(res.message, 'success');
+                        });
+                        startResendCooldown(30);
+                    } else {
+                        showAlert(res.message, 'error');
+                    }
+                }, 'json').fail(function() {
+                    showAlert('שגיאת תקשורת. נסו שוב.', 'error');
+                }).always(function() {
+                    if ($sourceBtn.attr('id') === 'btn-step-1') {
+                        $sourceBtn.text(originalText);
+                    }
+                    if ($sourceBtn.attr('id') === 'btn-resend-code') {
+                        if (resendCooldownRemaining > 0) {
+                            setResendState(false);
+                        } else {
+                            $sourceBtn.prop('disabled', false).text('שלח קוד מחדש');
+                        }
+                    } else {
+                        $sourceBtn.prop('disabled', false);
+                    }
+                });
+            }
 
             function showAlert(msg, type) {
                 const color = type === 'success' ? 'var(--main)' : 'var(--error)';
@@ -96,25 +165,12 @@
             }
 
             $('#btn-step-1').click(function() {
-                email = $('#email').val();
-                if (!email) return showAlert('נא להזין מייל', 'error');
+                sendCode($(this));
+            });
 
-                $(this).prop('disabled', true).text('שולח...');
-                $.post(handler, { action: 'send_code', email: email }, function(res) {
-                    if (res.status === 'success') {
-                        $('#step-1').fadeOut(300, function() {
-                            $('#step-2').removeClass('step-hidden').hide().fadeIn(300);
-                            $('#step-desc').text('הזינו את הקוד שנשלח אליכם');
-                            showAlert(res.message, 'success');
-                        });
-                    } else {
-                        showAlert(res.message, 'error');
-                        $('#btn-step-1').prop('disabled', false).text('שלח קוד אימות');
-                    }
-                }, 'json').fail(function() {
-                    showAlert('שגיאת תקשורת. נסו שוב.', 'error');
-                    $('#btn-step-1').prop('disabled', false).text('שלח קוד אימות');
-                });
+            $('#btn-resend-code').click(function() {
+                if (resendCooldownRemaining > 0) return;
+                sendCode($(this));
             });
 
             $('#btn-step-2').click(function() {

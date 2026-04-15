@@ -17,6 +17,9 @@ if (!isset($_SESSION['id'])) {
             $_SESSION['nickname'] = $user['nickname'];
             $_SESSION['home_id'] = $user['home_id'];
             $_SESSION['role'] = $user['role'];
+            $_SESSION['theme_preference'] = in_array(($user['theme_preference'] ?? 'light'), ['light', 'dark', 'system'], true)
+                ? $user['theme_preference']
+                : 'light';
         } else {
             setcookie('remember_token', '', time() - 3600, "/");
             header('location: ' . BASE_URL . 'pages/login.php');
@@ -26,6 +29,13 @@ if (!isset($_SESSION['id'])) {
         header('location: ' . BASE_URL . 'pages/login.php');
         exit();
     }
+}
+
+if (!isset($_SESSION['theme_preference']) || !in_array($_SESSION['theme_preference'], ['light', 'dark', 'system'], true)) {
+    $theme_user = selectOne('users', ['id' => (int)$_SESSION['id']]);
+    $_SESSION['theme_preference'] = in_array(($theme_user['theme_preference'] ?? 'light'), ['light', 'dark', 'system'], true)
+        ? $theme_user['theme_preference']
+        : 'light';
 }
 
 // 3. הגדרת דפים מותרים שלא דורשים בדיקת קטגוריות או אישור תקנון

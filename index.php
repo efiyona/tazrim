@@ -328,17 +328,47 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         document.getElementById(containerId).parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+    function getDetailsRequestUrl(ctx) {
+        if (!ctx) return null;
+        if (ctx.mode === 'type' && ctx.type) {
+            return `app/ajax/fetch_category_details.php?mode=type&trans_type=${encodeURIComponent(ctx.type)}&m=${currentMonth}&y=${currentYear}`;
+        }
+        if (ctx.id) {
+            return `app/ajax/fetch_category_details.php?cat_id=${ctx.id}&m=${currentMonth}&y=${currentYear}`;
+        }
+        return null;
+    }
+
     function loadCategoryDetails(catId, catName) {
         const modal = document.getElementById('category-details-modal');
         const content = document.getElementById('cat-details-content');
         const title = document.getElementById('selected-cat-name');
 
-        window.categoryDetailsContext = { id: catId, name: catName };
+        window.categoryDetailsContext = { mode: 'category', id: catId, name: catName };
         modal.style.display = 'block';
         title.innerText = 'פירוט הוצאות: ' + catName;
         content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> רגע…</div>';
 
-        fetch(`app/ajax/fetch_category_details.php?cat_id=${catId}&m=${currentMonth}&y=${currentYear}`)
+        fetch(getDetailsRequestUrl(window.categoryDetailsContext))
+            .then(response => response.text())
+            .then(data => {
+                content.innerHTML = data;
+            });
+    }
+
+    function loadTypeDetails(type) {
+        const modal = document.getElementById('category-details-modal');
+        const content = document.getElementById('cat-details-content');
+        const title = document.getElementById('selected-cat-name');
+        const normalizedType = type === 'income' ? 'income' : 'expense';
+        const typeLabel = normalizedType === 'income' ? 'הכנסות' : 'הוצאות';
+
+        window.categoryDetailsContext = { mode: 'type', type: normalizedType, name: typeLabel };
+        modal.style.display = 'block';
+        title.innerText = `פירוט ${typeLabel}`;
+        content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> רגע…</div>';
+
+        fetch(getDetailsRequestUrl(window.categoryDetailsContext))
             .then(response => response.text())
             .then(data => {
                 content.innerHTML = data;
@@ -354,10 +384,12 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         const modal = document.getElementById('category-details-modal');
         if (!modal || modal.style.display !== 'block') return;
         const ctx = window.categoryDetailsContext;
-        if (!ctx || !ctx.id) return;
+        if (!ctx) return;
+        const url = getDetailsRequestUrl(ctx);
+        if (!url) return;
         const content = document.getElementById('cat-details-content');
         content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> רגע…</div>';
-        return fetch(`app/ajax/fetch_category_details.php?cat_id=${ctx.id}&m=${currentMonth}&y=${currentYear}`)
+        return fetch(url)
             .then(r => r.text())
             .then(html => { content.innerHTML = html; });
     }
