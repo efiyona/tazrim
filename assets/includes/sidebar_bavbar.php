@@ -275,10 +275,17 @@ $target_modal_id = $current_config['plus_modal'] ?? null;
     background: var(--gray-light);
 }
 
+/* מובייל: מרכז מתחת ל-header (כמו התראות) — מונע פתיחה שמאלה מהאייקון, חיתוך בגלילה וחפיפה עם הסרגל */
 @media (max-width: 600px) {
     .theme-switcher-dropdown {
-        left: auto;
-        right: 0;
+        position: fixed !important;
+        top: calc(env(safe-area-inset-top, 0px) + 72px) !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        width: min(92vw, 280px);
+        min-width: 0;
+        z-index: 1300;
     }
 }
 
