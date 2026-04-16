@@ -18,6 +18,29 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
         <p class="text-sm text-gray-600 mt-1">שליחה לפי העדפת מערכת (notify_system) ל־Push, או התראה בפעמון באפליקציה, או שניהם. ניתן לשלוח לכל הבתים או רק לבתים שתבחרו.</p>
     </div>
 
+    <section class="mb-6 rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50/90 to-white p-4 sm:p-5 shadow-sm" aria-label="יצירת תוכן עם AI">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+            <div>
+                <h3 class="text-sm font-bold text-gray-900">יצירה עם AI</h3>
+                <p class="text-xs text-gray-500 mt-0.5">מילוי אוטומטי של כותרת ותוכן לפי הנחיות שלכם (Gemini).</p>
+            </div>
+            <button type="button" id="pb_ai_btn"
+                class="inline-flex items-center justify-center gap-2 shrink-0 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold py-2.5 px-4 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                בקשת תוכן מ-AI
+            </button>
+        </div>
+        <div id="pb_ai_status" class="hidden mb-3 rounded-lg border border-violet-100 bg-violet-50/60 px-3 py-2.5 text-sm text-violet-800 flex items-center gap-2">
+            <i class="fa-solid fa-spinner fa-spin text-violet-500" aria-hidden="true"></i>
+            <span id="pb_ai_status_text">מנתח את ההנחיות…</span>
+        </div>
+        <div id="pb_ai_questions" class="hidden mb-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4 space-y-4"></div>
+        <label for="pb_ai_instructions" class="block text-sm font-semibold text-gray-800 mb-1">הוראות לבינה</label>
+        <p class="text-xs text-amber-800/90 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-2">בכל הרצה השדות <strong>כותרת</strong> ו־<strong>תוכן</strong> מוחלפים בתוצאה החדשה.</p>
+        <textarea id="pb_ai_instructions" rows="3" placeholder="למשל: עדכון על מעבר לתשלום חודשי — טון עדין, להדגיש יתרונות. או: תזכורת להזנת הוצאות של החודש."
+            class="w-full rounded-lg border border-violet-100 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-violet-300 focus:border-violet-400 resize-y min-h-[72px]"></textarea>
+    </section>
+
     <div id="push-flash" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-semibold border" role="status"></div>
 
     <section class="bg-white rounded-lg shadow border border-gray-100 p-4 sm:p-6 w-full min-w-0">
@@ -358,6 +381,209 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
         }
     });
     syncLinkInput();
+
+    /* ── AI generate (SSE with questions) ── */
+    var pbAiBtn = document.getElementById('pb_ai_btn');
+    var pbAiInstructions = document.getElementById('pb_ai_instructions');
+    var pbAiStatus = document.getElementById('pb_ai_status');
+    var pbAiStatusText = document.getElementById('pb_ai_status_text');
+    var pbAiQuestionsEl = document.getElementById('pb_ai_questions');
+    var pbTitle = document.getElementById('pb_title');
+    var pbBody = document.getElementById('pb_body');
+    var pbAiBtnOrigHtml = pbAiBtn ? pbAiBtn.innerHTML : '';
+
+    function pbAiSetBusy(busy, statusMsg) {
+        pbAiBtn.disabled = busy;
+        pbAiBtn.innerHTML = busy
+            ? '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> AI עובד...'
+            : pbAiBtnOrigHtml;
+        if (busy && statusMsg) {
+            pbAiStatusText.textContent = statusMsg;
+            pbAiStatus.classList.remove('hidden');
+        } else if (!busy) {
+            pbAiStatus.classList.add('hidden');
+        }
+    }
+
+    function pbAiCallSSE(payload) {
+        pbAiQuestionsEl.classList.add('hidden');
+        pbAiQuestionsEl.innerHTML = '';
+        pbAiSetBusy(true, 'מנתח את ההנחיות ומנסח הודעה…');
+
+        fetch(apiUrl('admin/ajax/push_broadcast_ai_generate.php'), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(function (response) {
+            if (!response.ok) {
+                return response.text().then(function (t) {
+                    var d; try { d = JSON.parse(t); } catch(e) { d = {}; }
+                    pbAiSetBusy(false);
+                    showFlash(false, d.message || 'שגיאה ' + response.status);
+                });
+            }
+            var reader = response.body.getReader();
+            var decoder = new TextDecoder('utf-8');
+            var buffer = '';
+            function read() {
+                reader.read().then(function (result) {
+                    if (result.done) { pbAiSetBusy(false); return; }
+                    buffer += decoder.decode(result.value, { stream: true });
+                    var lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    var currentEvent = '';
+                    for (var i = 0; i < lines.length; i++) {
+                        var line = lines[i];
+                        if (line.indexOf('event: ') === 0) {
+                            currentEvent = line.slice(7).trim();
+                        } else if (line.indexOf('data: ') === 0) {
+                            var data;
+                            try { data = JSON.parse(line.slice(6)); } catch(e) { continue; }
+                            pbAiHandleEvent(currentEvent, data, payload);
+                            currentEvent = '';
+                        }
+                    }
+                    read();
+                }).catch(function () { pbAiSetBusy(false); showFlash(false, 'שגיאת תקשורת.'); });
+            }
+            read();
+        }).catch(function () { pbAiSetBusy(false); showFlash(false, 'שגיאת תקשורת.'); });
+    }
+
+    function pbAiHandleEvent(event, data, originalPayload) {
+        if (event === 'thinking') {
+            pbAiStatusText.textContent = data.hint || 'חושב…';
+            pbAiStatus.classList.remove('hidden');
+        } else if (event === 'questions') {
+            pbAiSetBusy(false);
+            pbAiRenderQuestions(data.questions || [], originalPayload);
+        } else if (event === 'done') {
+            pbAiSetBusy(false);
+            if (data.status === 'ok') {
+                pbTitle.value = data.title || '';
+                pbBody.value = data.body || '';
+                pbAiQuestionsEl.classList.add('hidden');
+                showFlash(true, 'הכותרת והתוכן עודכנו לפי ה-AI.');
+            } else if (data.status !== 'questions') {
+                showFlash(false, data.message || 'שגיאה');
+            }
+        }
+    }
+
+    function pbAiRenderQuestions(questions, originalPayload) {
+        pbAiQuestionsEl.innerHTML = '';
+        pbAiQuestionsEl.classList.remove('hidden');
+
+        var header = document.createElement('div');
+        header.className = 'flex items-center gap-2 mb-2';
+        header.innerHTML = '<i class="fa-solid fa-comments text-amber-600" aria-hidden="true"></i>'
+            + '<span class="text-sm font-bold text-gray-900">ל-AI יש כמה שאלות לפני היצירה:</span>';
+        pbAiQuestionsEl.appendChild(header);
+
+        var answersMap = {};
+        questions.forEach(function (q) {
+            var wrap = document.createElement('div');
+            wrap.className = 'bg-white rounded-lg border border-amber-100 p-3';
+
+            var qText = document.createElement('p');
+            qText.className = 'text-sm font-semibold text-gray-800 mb-2';
+            qText.textContent = q.text;
+            wrap.appendChild(qText);
+
+            var selectedBtn = null;
+            answersMap[q.id] = '';
+
+            if (q.options && q.options.length > 0) {
+                var optionsWrap = document.createElement('div');
+                optionsWrap.className = 'flex flex-wrap gap-2 mb-2';
+                q.options.forEach(function (opt) {
+                    var optBtn = document.createElement('button');
+                    optBtn.type = 'button';
+                    optBtn.className = 'rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 hover:border-violet-400 hover:bg-violet-50 transition-colors';
+                    optBtn.textContent = opt;
+                    optBtn.addEventListener('click', function () {
+                        if (selectedBtn) {
+                            selectedBtn.classList.remove('border-violet-500', 'bg-violet-100', 'text-violet-800', 'font-semibold');
+                            selectedBtn.classList.add('border-gray-200', 'bg-white', 'text-gray-700');
+                        }
+                        optBtn.classList.remove('border-gray-200', 'bg-white', 'text-gray-700');
+                        optBtn.classList.add('border-violet-500', 'bg-violet-100', 'text-violet-800', 'font-semibold');
+                        selectedBtn = optBtn;
+                        answersMap[q.id] = opt;
+                        customInput.value = '';
+                    });
+                    optionsWrap.appendChild(optBtn);
+                });
+                wrap.appendChild(optionsWrap);
+            }
+
+            var customInput = document.createElement('input');
+            customInput.type = 'text';
+            customInput.placeholder = 'או תשובה מותאמת אישית…';
+            customInput.className = 'w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:ring-2 focus:ring-violet-300 focus:border-violet-400';
+            customInput.addEventListener('input', function () {
+                if (customInput.value.trim()) {
+                    if (selectedBtn) {
+                        selectedBtn.classList.remove('border-violet-500', 'bg-violet-100', 'text-violet-800', 'font-semibold');
+                        selectedBtn.classList.add('border-gray-200', 'bg-white', 'text-gray-700');
+                        selectedBtn = null;
+                    }
+                    answersMap[q.id] = customInput.value.trim();
+                }
+            });
+            wrap.appendChild(customInput);
+            pbAiQuestionsEl.appendChild(wrap);
+        });
+
+        var submitWrap = document.createElement('div');
+        submitWrap.className = 'flex justify-end pt-2';
+        var submitBtn = document.createElement('button');
+        submitBtn.type = 'button';
+        submitBtn.className = 'inline-flex items-center gap-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold py-2.5 px-5 shadow-sm transition-colors';
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane" aria-hidden="true"></i> שליחת תשובות וייצור תוכן';
+        submitBtn.addEventListener('click', function () {
+            var answers = [];
+            var allAnswered = true;
+            questions.forEach(function (q) {
+                var v = (answersMap[q.id] || '').trim();
+                if (!v) allAnswered = false;
+                answers.push({ id: q.id, value: v });
+            });
+            if (!allAnswered) {
+                showFlash(false, 'נא לענות על כל השאלות.');
+                return;
+            }
+            pbAiQuestionsEl.classList.add('hidden');
+            pbAiCallSSE({
+                csrf_token: csrf,
+                phase: 'answer',
+                instructions: (pbAiInstructions.value || '').trim(),
+                original_instructions: originalPayload.instructions || '',
+                answers: answers,
+                prev_questions: questions
+            });
+        });
+        submitWrap.appendChild(submitBtn);
+        pbAiQuestionsEl.appendChild(submitWrap);
+
+        pbAiQuestionsEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (pbAiBtn && pbAiInstructions && pbTitle && pbBody) {
+        pbAiBtn.addEventListener('click', function () {
+            var hint = (pbAiInstructions.value || '').trim();
+            if (!hint) {
+                showFlash(false, 'נא למלא הוראות לבינה.');
+                return;
+            }
+            pbAiCallSSE({
+                csrf_token: csrf,
+                phase: 'generate',
+                instructions: hint
+            });
+        });
+    }
 })();
 </script>
 <?php

@@ -1,6 +1,7 @@
 <?php
 /**
- * יצירת כותרת + HTML לקמפיין פופאפ באמצעות Gemini — program_admin בלבד.
+ * יצירת כותרת + HTML לקמפיין פופאפ באמצעות Gemini — SSE stream.
+ * תומך בשאלות חוזרות מה-AI, חשיבה חכמה, retries, ו-fallback בין מודלים.
  */
 require_once dirname(__DIR__) . '/includes/init_ajax.php';
 
@@ -19,13 +20,13 @@ if (!tazrim_admin_csrf_validate($csrf)) {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'פג תוקף אבטחה. רעננו את הדף.'], 419);
 }
 
+$phase = trim((string) ($body['phase'] ?? 'generate'));
+
 $instructions = trim((string) ($body['instructions'] ?? ''));
-if ($instructions === '') {
+if ($instructions === '' && $phase === 'generate') {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'נא למלא הוראות לבינה.'], 400);
 }
 if (function_exists('mb_strlen') && mb_strlen($instructions, 'UTF-8') > 6000) {
-    tazrim_admin_json_response(['status' => 'error', 'message' => 'הוראות ארוכות מדי.'], 400);
-} elseif (!function_exists('mb_strlen') && strlen($instructions) > 12000) {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'הוראות ארוכות מדי.'], 400);
 }
 
@@ -59,36 +60,31 @@ if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'מפתח AI לא מוגדר בשרת (GEMINI_API_KEY).'], 503);
 }
 
-$systemPrompt = <<<'PROMPT'
-אתה קופירייטר ומעצב UI לאפליקציה בעברית בשם «התזרים» — ניהול תקציב משפחתי.
-עליך להחזיר **רק** אובייקט JSON תקין (בלי טקסט לפני או אחרי, בלי ```), בדיוק עם שני המפתחות הבאים:
-- "title": מחרוזת קצרצרה — כותרת לפופאפ, **2–4 מילים בלבד** (עד 30 תווים מקסימום). דוגמאות: «פיצ׳ר חדש זמין», «עדכון חשוב», «שדרוג המערכת». ככל שקצר יותר — עדיף.
-- "body_html": מחרוזת HTML אחת להצגה בתוך מודאל באפליקציה — **RTL**, עיצוב ויזואלי עשיר ומודרני.
+// --- SSE setup ---
+header('Content-Type: text/event-stream; charset=utf-8');
+header('Cache-Control: no-cache');
+header('X-Accel-Buffering: no');
+@ini_set('output_buffering', 'off');
+@ini_set('zlib.output_compression', '0');
+while (ob_get_level() > 0) {
+    ob_end_flush();
+}
+ob_implicit_flush(true);
 
-מבנה HTML חובה (עטיפה חיצונית):
-- עטיפה חיצונית אחת: <div dir="rtl" style="direction:rtl;text-align:right;font-family:'Assistant',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a202c;line-height:1.7;font-size:0.95rem;"> … </div>
-- בתוך העטיפה: «כרטיס» ויזואלי:
-  • רקע: background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 50%, #eff6ff 100%); (גרדיאנט עדין בגוון ירוק-כחול)
-  • border-radius: 1rem; padding: 1.25rem 1.35rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(15,23,42,0.06);
+function pc_sse(string $event, array $payload): void
+{
+    echo "event: {$event}\n";
+    echo 'data: ' . json_encode($payload, JSON_UNESCAPED_UNICODE) . "\n\n";
+    @flush();
+}
 
-עיצוב ויזואלי (חשוב מאוד!):
-- **כותרת פנימית בולטת** בתחילת הכרטיס: div עם font-size:1.1rem; font-weight:800; color:#1e293b; margin-bottom:0.75rem; — עם אייקון Font Awesome (<i class="fa-solid fa-XYZ" style="color:#29b669;margin-left:0.4rem;font-size:1.1rem;"></i>) לפני הטקסט. בחר אייקון מתאים לנושא (fa-circle-check, fa-star, fa-bolt, fa-gift, fa-rocket, fa-shield-check, fa-sparkles, fa-chart-line וכו׳).
-- **פסקאות**: צבע #475569; font-size:0.9rem; margin-bottom:0.6rem; — תוכן **קצר וברור**, 1–2 משפטים בכל פסקה.
-- **רשימה (ul/li) אם מתאים**: עם אייקוני ✓ בצבע ירוק כנקודות, list-style:none, כל li עם padding:0.35rem 0; border-bottom:1px solid #f1f5f9;
-- **הפרדות ויזואליות**: קו מפריד עדין (<hr style="border:none;border-top:1px solid #e2e8f0;margin:0.75rem 0;">) בין סקשנים אם יש יותר מרעיון אחד.
-- **הדגשות**: השתמש ב-<strong style="color:#1e293b;"> ו-<span style="color:#29b669;font-weight:700;"> לצבע ירוק על מילות מפתח.
-- תוכן **קצר וברור** — עד 2 פסקאות קצרות או רשימת ul עם 2–4 פריטים. ללא חפירות.
-- בלי תגי html/head/body; בלי סקריפטים; בלי iframe; בלי javascript: בקישורים.
+function pc_sse_done_error(string $message): void
+{
+    pc_sse('done', ['status' => 'error', 'message' => $message]);
+    exit;
+}
 
-כללים לתוכן:
-- עברית ברורה וידידותית; ניסוח **נייטרלי מבחינת מגדר** — הימנע מפנייה בלשון זכר או נקבה; העדף לשון רבים («אפשר ל…», «כאן מוצג…») או ניסוח כללי.
-- עקביות עיצובית — סגנון עדין ומקצועי, תואם מערכת פיננסית אמינה.
-
-ההנחיות מהמנהל (מה לפרסם ומה הדגשים):
-PROMPT;
-
-$userBlock = $instructions;
-
+// --- CTA block ---
 $ctaBlock = '';
 if ($ctaHref !== null) {
     if (strpos($ctaHref, 'http') === 0) {
@@ -109,91 +105,250 @@ if ($ctaHref !== null) {
         . "טקסט הכפתור: 2–4 מילים בלבד, פעולה ברורה בהתאם להקשר.";
 }
 
-$fullPrompt = $systemPrompt . $ctaBlock . "\n\n---\n" . $userBlock . "\n\n---\nזכור: החזר רק JSON עם המפתחות title ו-body_html.";
+// --- System prompt ---
+$systemPrompt = <<<'PROMPT'
+אתה קופירייטר ומעצב UI לאפליקציה בעברית בשם «התזרים» — ניהול תקציב משפחתי.
 
-$data = [
-    'contents' => [['parts' => [['text' => $fullPrompt]]]],
-    'generationConfig' => [
-        'temperature' => 0.45,
-        'maxOutputTokens' => 4096,
-    ],
-];
+### פורמט תשובה (JSON בלבד — ללא טקסט לפני/אחרי, ללא ```)
 
+אם **יש לך שאלות** לגבי ההנחיות לפני יצירת התוכן (נתון חסר, העדפת סגנון, קהל יעד ספציפי, וכו׳):
+החזר JSON עם המפתח "questions" בלבד:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "text": "השאלה בעברית",
+      "options": ["אפשרות א", "אפשרות ב", "אפשרות ג"]
+    }
+  ]
+}
+כללי שאלות: שאל **רק** כשבאמת חסר מידע קריטי לעיצוב; עד 3 שאלות; 2–4 אפשרויות לכל שאלה; אפשר לענות גם בחופשי. אל תשאל שאלות מיותרות — אם יש מספיק מידע, צור ישר.
+
+אם **אין שאלות** (או שכבר קיבלת תשובות):
+החזר JSON עם שני מפתחות בלבד:
+{
+  "title": "כותרת קצרצרה (2–4 מילים, עד 30 תווים)",
+  "body_html": "<div dir=\"rtl\" ...>...</div>"
+}
+
+### כללי כותרת
+- **2–4 מילים בלבד** (עד 30 תווים מקסימום). דוגמאות: «פיצ׳ר חדש זמין», «עדכון חשוב», «שדרוג המערכת». ככל שקצר יותר — עדיף.
+
+### מבנה HTML חובה (body_html)
+- עטיפה חיצונית אחת: <div dir="rtl" style="direction:rtl;text-align:right;font-family:'Assistant',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a202c;line-height:1.7;font-size:0.95rem;"> … </div>
+- בתוך העטיפה: «כרטיס» ויזואלי:
+  • רקע: background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 50%, #eff6ff 100%);
+  • border-radius: 1rem; padding: 1.25rem 1.35rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(15,23,42,0.06);
+
+### עיצוב ויזואלי (חשוב מאוד!)
+- **כותרת פנימית בולטת** בתחילת הכרטיס: div עם font-size:1.1rem; font-weight:800; color:#1e293b; margin-bottom:0.75rem; — עם אייקון Font Awesome (<i class="fa-solid fa-XYZ" style="color:#29b669;margin-left:0.4rem;font-size:1.1rem;"></i>) לפני הטקסט. בחר אייקון מתאים לנושא.
+- **פסקאות**: צבע #475569; font-size:0.9rem; margin-bottom:0.6rem; — תוכן **קצר וברור**, 1–2 משפטים בכל פסקה.
+- **רשימה (ul/li) אם מתאים**: עם אייקוני ✓ בצבע ירוק כנקודות, list-style:none, כל li עם padding:0.35rem 0; border-bottom:1px solid #f1f5f9;
+- **הפרדות ויזואליות**: קו מפריד עדין (<hr style="border:none;border-top:1px solid #e2e8f0;margin:0.75rem 0;">) בין סקשנים אם יש יותר מרעיון אחד.
+- **הדגשות**: השתמש ב-<strong style="color:#1e293b;"> ו-<span style="color:#29b669;font-weight:700;"> לצבע ירוק על מילות מפתח.
+- תוכן **קצר וברור** — עד 2 פסקאות קצרות או רשימת ul עם 2–4 פריטים. ללא חפירות.
+- בלי תגי html/head/body; בלי סקריפטים; בלי iframe; בלי javascript: בקישורים.
+
+### כללי תוכן
+- עברית ברורה וידידותית; ניסוח **נייטרלי מבחינת מגדר** — העדף לשון רבים או ניסוח כללי.
+- עקביות עיצובית — סגנון עדין ומקצועי, תואם מערכת פיננסית אמינה.
+PROMPT;
+
+// --- Build conversation history ---
+$conversationHistory = [];
+$answersFromUser = isset($body['answers']) && is_array($body['answers']) ? $body['answers'] : [];
+
+if ($phase === 'answer' && !empty($answersFromUser)) {
+    $prevInstructions = trim((string) ($body['original_instructions'] ?? $instructions));
+    $conversationHistory[] = ['role' => 'user', 'parts' => [['text' =>
+        $systemPrompt . $ctaBlock
+        . "\n\n---\nההנחיות מהמנהל:\n" . $prevInstructions
+        . "\n\n---\nזכור: החזר רק JSON (questions או title+body_html)."
+    ]]];
+    $prevQuestions = isset($body['prev_questions']) ? json_encode($body['prev_questions'], JSON_UNESCAPED_UNICODE) : '[]';
+    $conversationHistory[] = ['role' => 'model', 'parts' => [['text' => $prevQuestions]]];
+    $answersText = "תשובות לשאלות:\n";
+    foreach ($answersFromUser as $ans) {
+        $qid = $ans['id'] ?? '';
+        $val = $ans['value'] ?? '';
+        $answersText .= "- {$qid}: {$val}\n";
+    }
+    $answersText .= "\n---\nעכשיו צור את ה-JSON הסופי עם title ו-body_html לפי ההנחיות + התשובות. אין צורך בעוד שאלות.";
+    $conversationHistory[] = ['role' => 'user', 'parts' => [['text' => $answersText]]];
+} else {
+    $conversationHistory[] = ['role' => 'user', 'parts' => [['text' =>
+        $systemPrompt . $ctaBlock
+        . "\n\n---\nההנחיות מהמנהל:\n" . $instructions
+        . "\n\n---\nזכור: החזר רק JSON (questions או title+body_html)."
+    ]]];
+}
+
+// --- Gemini call with retries & model fallback ---
 $api_key = GEMINI_API_KEY;
-$gemini_models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+$gemini_models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+$maxAttemptsPerModel = 2;
+$retryableCodes = [429, 500, 502, 503, 504];
+$maxJsonRetries = 2;
 
-$http_code = 0;
-$response = '';
-$curl_err = '';
-$max_attempts_per_model = 2;
-$retryable = [429, 500, 503];
+pc_sse('thinking', ['hint' => 'מנתח את ההנחיות ומעצב תוכן…']);
 
-foreach ($gemini_models as $model_name) {
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model_name . ':generateContent?key=' . $api_key;
-    for ($attempt = 0; $attempt < $max_attempts_per_model; $attempt++) {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_TIMEOUT => 90,
-        ]);
-        $response = curl_exec($ch);
-        $http_code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_err = curl_error($ch);
-        curl_close($ch);
+function pc_call_gemini(array $conversationHistory, string $apiKey, array $models, int $maxAttempts, array $retryable): array
+{
+    $data = [
+        'contents' => $conversationHistory,
+        'generationConfig' => [
+            'temperature' => 0.5,
+            'maxOutputTokens' => 8192,
+            'responseMimeType' => 'application/json',
+        ],
+    ];
 
-        if ($http_code === 200) {
-            break 2;
+    foreach ($models as $modelName) {
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $modelName . ':generateContent?key=' . $apiKey;
+        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode($data, JSON_UNESCAPED_UNICODE),
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_TIMEOUT => 120,
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200) {
+                return ['http' => 200, 'body' => $response, 'model' => $modelName];
+            }
+            if (in_array($httpCode, $retryable, true)) {
+                usleep(600000 + random_int(0, 300000));
+                continue;
+            }
+            break;
         }
-        if (in_array($http_code, $retryable, true)) {
-            usleep(500000);
+    }
+    return ['http' => $httpCode ?? 0, 'body' => $response ?? '', 'model' => $models[count($models) - 1] ?? ''];
+}
+
+function pc_extract_json(string $rawText): ?array
+{
+    $s = trim($rawText);
+    if (preg_match('/^```(?:json)?\s*\R(.*?)\R```/s', $s, $m)) {
+        $s = trim($m[1]);
+    } elseif ($s !== '' && $s[0] !== '{' && $s[0] !== '[') {
+        if (preg_match('/\{[\s\S]*\}/s', $s, $m)) {
+            $s = $m[0];
+        }
+    }
+    $parsed = json_decode($s, true);
+    return is_array($parsed) ? $parsed : null;
+}
+
+$jsonResult = null;
+$lastError = '';
+
+for ($jsonTry = 0; $jsonTry <= $maxJsonRetries; $jsonTry++) {
+    if ($jsonTry > 0) {
+        pc_sse('thinking', ['hint' => 'מנסה שוב (ניסיון ' . ($jsonTry + 1) . ')…']);
+        $conversationHistory[] = ['role' => 'user', 'parts' => [['text' =>
+            "התשובה הקודמת לא הייתה JSON תקין. אנא החזר **רק** אובייקט JSON תקין בלי שום טקסט נוסף."
+        ]]];
+    }
+
+    $result = pc_call_gemini($conversationHistory, $api_key, $gemini_models, $maxAttemptsPerModel, $retryableCodes);
+
+    if ($result['http'] !== 200) {
+        $friendly = 'שגיאת תקשורת עם שירות הבינה';
+        $decoded = json_decode($result['body'], true);
+        if (is_array($decoded) && isset($decoded['error']['message'])) {
+            $msg = (string) $decoded['error']['message'];
+            $status = $decoded['error']['status'] ?? '';
+            if (stripos($msg, 'high demand') !== false || $status === 'UNAVAILABLE') {
+                $friendly = 'שירות הבינה עמוס כרגע. נסו שוב בעוד דקה–שתיים.';
+            } elseif ($result['http'] === 404 || $status === 'NOT_FOUND') {
+                $friendly = 'המודל לא זמין ב-API. נסו שוב מאוחר יותר.';
+            }
+        }
+        if ($jsonTry < $maxJsonRetries) {
             continue;
         }
-        break;
+        pc_sse_done_error($friendly);
     }
-}
 
-if ($http_code !== 200) {
-    $friendly = 'שגיאת תקשורת עם שירות הבינה';
-    $decoded = json_decode($response, true);
-    if (is_array($decoded) && isset($decoded['error']['message'])) {
-        $msg = (string) $decoded['error']['message'];
-        $status = $decoded['error']['status'] ?? '';
-        if (stripos($msg, 'high demand') !== false || $status === 'UNAVAILABLE') {
-            $friendly = 'שירות הבינה עמוס כרגע. נסו שוב בעוד דקה–שתיים.';
-        } elseif ($http_code === 404 || $status === 'NOT_FOUND') {
-            $friendly = 'המודל לא זמין ב-API. נסו שוב מאוחר יותר.';
+    $responseData = json_decode($result['body'], true);
+    $rawAiReply = $responseData['candidates'][0]['content']['parts'][0]['text'] ?? '';
+    if (!is_string($rawAiReply) || $rawAiReply === '') {
+        $lastError = 'תשובה ריקה מהמודל.';
+        if ($jsonTry < $maxJsonRetries) {
+            continue;
         }
+        pc_sse_done_error($lastError);
     }
-    tazrim_admin_json_response(['status' => 'error', 'message' => $friendly], 502);
+
+    $conversationHistory[] = ['role' => 'model', 'parts' => [['text' => $rawAiReply]]];
+
+    $parsed = pc_extract_json($rawAiReply);
+    if (!is_array($parsed)) {
+        $lastError = 'לא ניתן לפענח את תשובת ה-AI כ-JSON.';
+        if ($jsonTry < $maxJsonRetries) {
+            continue;
+        }
+        pc_sse_done_error($lastError);
+    }
+
+    $jsonResult = $parsed;
+    break;
 }
 
-$responseData = json_decode($response, true);
-$raw_ai_reply = $responseData['candidates'][0]['content']['parts'][0]['text'] ?? '';
-if (!is_string($raw_ai_reply) || $raw_ai_reply === '') {
-    tazrim_admin_json_response(['status' => 'error', 'message' => 'תשובה ריקה מהמודל.'], 502);
+if (!$jsonResult) {
+    pc_sse_done_error($lastError ?: 'שגיאה לא צפויה.');
 }
 
-$jsonStr = $raw_ai_reply;
-if (preg_match('/^```(?:json)?\s*\R(.*?)\R```/s', trim($raw_ai_reply), $m)) {
-    $jsonStr = trim($m[1]);
-} elseif (preg_match('/\{[\s\S]*\}/s', $raw_ai_reply, $m)) {
-    $jsonStr = $m[0];
+// --- Handle questions from AI ---
+if (isset($jsonResult['questions']) && is_array($jsonResult['questions']) && count($jsonResult['questions']) > 0) {
+    $questions = [];
+    foreach ($jsonResult['questions'] as $q) {
+        if (!isset($q['text'])) continue;
+        $questions[] = [
+            'id' => $q['id'] ?? ('q' . count($questions)),
+            'text' => (string) $q['text'],
+            'options' => isset($q['options']) && is_array($q['options']) ? array_values($q['options']) : [],
+        ];
+    }
+    if (!empty($questions)) {
+        pc_sse('questions', ['questions' => $questions]);
+        pc_sse('done', ['status' => 'questions', 'questions' => $questions]);
+        exit;
+    }
 }
 
-$parsed = json_decode($jsonStr, true);
-if (!is_array($parsed)) {
-    tazrim_admin_json_response(['status' => 'error', 'message' => 'לא ניתן לפענח את תשובת ה-AI כ-JSON.'], 502);
-}
-
-$title = isset($parsed['title']) ? trim((string) $parsed['title']) : '';
-$bodyHtml = isset($parsed['body_html']) ? (string) $parsed['body_html'] : '';
+// --- Extract final title + body_html ---
+$title = isset($jsonResult['title']) ? trim((string) $jsonResult['title']) : '';
+$bodyHtml = isset($jsonResult['body_html']) ? (string) $jsonResult['body_html'] : '';
 
 if ($title === '' || trim($bodyHtml) === '') {
-    tazrim_admin_json_response(['status' => 'error', 'message' => 'המודל לא החזיר כותרת או תוכן מלא.'], 502);
+    pc_sse('thinking', ['hint' => 'חסרים נתונים, מבקש מחדש…']);
+
+    $conversationHistory[] = ['role' => 'user', 'parts' => [['text' =>
+        'התשובה חסרה title או body_html. החזר JSON מלא עם שני המפתחות: title (2–4 מילים) ו-body_html (HTML מעוצב). אל תשאל שאלות, פשוט צור.'
+    ]]];
+
+    $result2 = pc_call_gemini($conversationHistory, $api_key, $gemini_models, $maxAttemptsPerModel, $retryableCodes);
+    if ($result2['http'] === 200) {
+        $data2 = json_decode($result2['body'], true);
+        $raw2 = $data2['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        $parsed2 = pc_extract_json($raw2);
+        if (is_array($parsed2)) {
+            if (!empty($parsed2['title'])) $title = trim((string) $parsed2['title']);
+            if (!empty($parsed2['body_html'])) $bodyHtml = (string) $parsed2['body_html'];
+        }
+    }
+}
+
+if ($title === '' || trim($bodyHtml) === '') {
+    pc_sse_done_error('המודל לא החזיר כותרת או תוכן מלא גם אחרי ניסיונות חוזרים.');
 }
 
 if (function_exists('mb_strlen')) {
@@ -212,7 +367,7 @@ if (function_exists('mb_strlen')) {
     }
 }
 
-tazrim_admin_json_response([
+pc_sse('done', [
     'status' => 'ok',
     'title' => $title,
     'body_html' => $bodyHtml,

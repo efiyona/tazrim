@@ -108,6 +108,11 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
                 בקשת תוכן מ-AI
             </button>
         </div>
+        <div id="pc_ai_status" class="hidden mb-3 rounded-lg border border-violet-100 bg-violet-50/60 px-3 py-2.5 text-sm text-violet-800 flex items-center gap-2">
+            <i class="fa-solid fa-spinner fa-spin text-violet-500" aria-hidden="true"></i>
+            <span id="pc_ai_status_text">מנתח את ההנחיות…</span>
+        </div>
+        <div id="pc_ai_questions" class="hidden mb-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4 space-y-4"></div>
         <label for="pc_ai_instructions" class="block text-sm font-semibold text-gray-800 mb-1">הוראות לבינה</label>
         <p class="text-xs text-amber-800/90 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-2">בכל הרצה השדות <strong>כותרת</strong> ו־<strong>תוכן (HTML)</strong> מתרוקנים ומוחלפים בתוצאה החדשה בלבד.</p>
         <textarea id="pc_ai_instructions" rows="4" placeholder="למשל: פופאפ להשקת עוזר צ'אט — להסביר איפה נמצא הכפתור, מה הוא נותן, בטון קליל. להדגיש שזה אופציונלי."
@@ -458,6 +463,213 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
     var pcAiInstructions = document.getElementById('pc_ai_instructions');
     var pcTitle = document.getElementById('pc_title');
     var pcBody = document.getElementById('pc_body');
+    var pcAiStatus = document.getElementById('pc_ai_status');
+    var pcAiStatusText = document.getElementById('pc_ai_status_text');
+    var pcAiQuestionsEl = document.getElementById('pc_ai_questions');
+    var pcAiBtnOrigHtml = pcAiBtn ? pcAiBtn.innerHTML : '';
+
+    function pcAiSetBusy(busy, statusMsg) {
+        pcAiBtn.disabled = busy;
+        pcAiBtn.innerHTML = busy
+            ? '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> AI עובד...'
+            : pcAiBtnOrigHtml;
+        if (busy && statusMsg) {
+            pcAiStatusText.textContent = statusMsg;
+            pcAiStatus.classList.remove('hidden');
+        } else if (!busy) {
+            pcAiStatus.classList.add('hidden');
+        }
+    }
+
+    function pcAiGetCtaHref() {
+        if (!pcAiLinkPreset || !pcAiLink) return '';
+        var pv = pcAiLinkPreset.value;
+        if (pv === '') return '';
+        var href = (pv === 'custom' ? (pcAiLink.value || '') : pv).trim();
+        if (pv === 'custom' && !href) return null;
+        return href;
+    }
+
+    function pcAiCallSSE(payload) {
+        pcAiQuestionsEl.classList.add('hidden');
+        pcAiQuestionsEl.innerHTML = '';
+        pcAiSetBusy(true, 'מנתח את ההנחיות ומעצב תוכן…');
+
+        fetch(apiUrl('admin/ajax/popup_campaign_ai_generate.php'), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(function (response) {
+            if (!response.ok) {
+                return response.text().then(function (t) {
+                    var d; try { d = JSON.parse(t); } catch(e) { d = {}; }
+                    pcAiSetBusy(false);
+                    showFlash(false, d.message || 'שגיאה ' + response.status);
+                });
+            }
+            var reader = response.body.getReader();
+            var decoder = new TextDecoder('utf-8');
+            var buffer = '';
+            function read() {
+                reader.read().then(function (result) {
+                    if (result.done) {
+                        pcAiSetBusy(false);
+                        return;
+                    }
+                    buffer += decoder.decode(result.value, { stream: true });
+                    var lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    var currentEvent = '';
+                    for (var i = 0; i < lines.length; i++) {
+                        var line = lines[i];
+                        if (line.indexOf('event: ') === 0) {
+                            currentEvent = line.slice(7).trim();
+                        } else if (line.indexOf('data: ') === 0) {
+                            var jsonStr = line.slice(6);
+                            var data;
+                            try { data = JSON.parse(jsonStr); } catch(e) { continue; }
+                            pcAiHandleEvent(currentEvent, data, payload);
+                            currentEvent = '';
+                        }
+                    }
+                    read();
+                }).catch(function () {
+                    pcAiSetBusy(false);
+                    showFlash(false, 'שגיאת תקשורת.');
+                });
+            }
+            read();
+        }).catch(function () {
+            pcAiSetBusy(false);
+            showFlash(false, 'שגיאת תקשורת.');
+        });
+    }
+
+    function pcAiHandleEvent(event, data, originalPayload) {
+        if (event === 'thinking') {
+            pcAiStatusText.textContent = data.hint || 'חושב…';
+            pcAiStatus.classList.remove('hidden');
+        } else if (event === 'questions') {
+            pcAiSetBusy(false);
+            pcAiRenderQuestions(data.questions || [], originalPayload);
+        } else if (event === 'done') {
+            pcAiSetBusy(false);
+            if (data.status === 'ok') {
+                pcTitle.value = data.title || '';
+                pcBody.value = data.body_html || '';
+                pcAiQuestionsEl.classList.add('hidden');
+                showFlash(true, 'הכותרת וה-HTML עודכנו לפי ה-AI.');
+            } else if (data.status === 'questions') {
+                /* handled by questions event */
+            } else {
+                showFlash(false, data.message || 'שגיאה');
+            }
+        }
+    }
+
+    function pcAiRenderQuestions(questions, originalPayload) {
+        pcAiQuestionsEl.innerHTML = '';
+        pcAiQuestionsEl.classList.remove('hidden');
+
+        var header = document.createElement('div');
+        header.className = 'flex items-center gap-2 mb-2';
+        header.innerHTML = '<i class="fa-solid fa-comments text-amber-600" aria-hidden="true"></i>'
+            + '<span class="text-sm font-bold text-gray-900">ל-AI יש כמה שאלות לפני היצירה:</span>';
+        pcAiQuestionsEl.appendChild(header);
+
+        var answersMap = {};
+        questions.forEach(function (q) {
+            var wrap = document.createElement('div');
+            wrap.className = 'bg-white rounded-lg border border-amber-100 p-3';
+
+            var qText = document.createElement('p');
+            qText.className = 'text-sm font-semibold text-gray-800 mb-2';
+            qText.textContent = q.text;
+            wrap.appendChild(qText);
+
+            var selectedBtn = null;
+            answersMap[q.id] = '';
+
+            if (q.options && q.options.length > 0) {
+                var optionsWrap = document.createElement('div');
+                optionsWrap.className = 'flex flex-wrap gap-2 mb-2';
+                q.options.forEach(function (opt) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 hover:border-violet-400 hover:bg-violet-50 transition-colors';
+                    btn.textContent = opt;
+                    btn.addEventListener('click', function () {
+                        if (selectedBtn) {
+                            selectedBtn.classList.remove('border-violet-500', 'bg-violet-100', 'text-violet-800', 'font-semibold');
+                            selectedBtn.classList.add('border-gray-200', 'bg-white', 'text-gray-700');
+                        }
+                        btn.classList.remove('border-gray-200', 'bg-white', 'text-gray-700');
+                        btn.classList.add('border-violet-500', 'bg-violet-100', 'text-violet-800', 'font-semibold');
+                        selectedBtn = btn;
+                        answersMap[q.id] = opt;
+                        customInput.value = '';
+                    });
+                    optionsWrap.appendChild(btn);
+                });
+                wrap.appendChild(optionsWrap);
+            }
+
+            var customInput = document.createElement('input');
+            customInput.type = 'text';
+            customInput.placeholder = 'או תשובה מותאמת אישית…';
+            customInput.className = 'w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:ring-2 focus:ring-violet-300 focus:border-violet-400';
+            customInput.addEventListener('input', function () {
+                var v = customInput.value.trim();
+                if (v) {
+                    if (selectedBtn) {
+                        selectedBtn.classList.remove('border-violet-500', 'bg-violet-100', 'text-violet-800', 'font-semibold');
+                        selectedBtn.classList.add('border-gray-200', 'bg-white', 'text-gray-700');
+                        selectedBtn = null;
+                    }
+                    answersMap[q.id] = v;
+                }
+            });
+            wrap.appendChild(customInput);
+            pcAiQuestionsEl.appendChild(wrap);
+        });
+
+        var submitWrap = document.createElement('div');
+        submitWrap.className = 'flex justify-end pt-2';
+        var submitBtn = document.createElement('button');
+        submitBtn.type = 'button';
+        submitBtn.className = 'inline-flex items-center gap-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold py-2.5 px-5 shadow-sm transition-colors';
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane" aria-hidden="true"></i> שליחת תשובות וייצור תוכן';
+        submitBtn.addEventListener('click', function () {
+            var answers = [];
+            var allAnswered = true;
+            questions.forEach(function (q) {
+                var v = (answersMap[q.id] || '').trim();
+                if (!v) allAnswered = false;
+                answers.push({ id: q.id, value: v });
+            });
+            if (!allAnswered) {
+                showFlash(false, 'נא לענות על כל השאלות.');
+                return;
+            }
+            pcAiQuestionsEl.classList.add('hidden');
+            var ctaHref = pcAiGetCtaHref();
+            pcAiCallSSE({
+                csrf_token: csrf,
+                phase: 'answer',
+                instructions: (pcAiInstructions.value || '').trim(),
+                original_instructions: originalPayload.instructions || '',
+                cta_href: ctaHref || '',
+                answers: answers,
+                prev_questions: questions
+            });
+        });
+        submitWrap.appendChild(submitBtn);
+        pcAiQuestionsEl.appendChild(submitWrap);
+
+        pcAiQuestionsEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     if (pcAiBtn && pcAiInstructions && pcTitle && pcBody) {
         pcAiBtn.addEventListener('click', function () {
             var hint = (pcAiInstructions.value || '').trim();
@@ -465,43 +677,17 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
                 showFlash(false, 'נא למלא הוראות לבינה.');
                 return;
             }
-            var ctaHref = '';
-            if (pcAiLinkPreset && pcAiLink) {
-                var pv = pcAiLinkPreset.value;
-                if (pv !== '') {
-                    ctaHref = (pv === 'custom' ? (pcAiLink.value || '') : pv).trim();
-                    if (pv === 'custom' && !ctaHref) {
-                        showFlash(false, 'נא להזין נתיב לקישור או לבחור «ללא כפתור קישור».');
-                        return;
-                    }
-                }
+            var ctaHref = pcAiGetCtaHref();
+            if (ctaHref === null) {
+                showFlash(false, 'נא להזין נתיב לקישור או לבחור «ללא כפתור קישור».');
+                return;
             }
-            pcAiBtn.disabled = true;
-            var origHtml = pcAiBtn.innerHTML;
-            pcAiBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> יוצר תוכן...';
-            fetch(apiUrl('admin/ajax/popup_campaign_ai_generate.php'), {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ csrf_token: csrf, instructions: hint, cta_href: ctaHref })
-            })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    pcAiBtn.disabled = false;
-                    pcAiBtn.innerHTML = origHtml;
-                    if (data.status !== 'ok') {
-                        showFlash(false, data.message || 'שגיאה');
-                        return;
-                    }
-                    pcTitle.value = data.title || '';
-                    pcBody.value = data.body_html || '';
-                    showFlash(true, 'הכותרת וה-HTML עודכנו לפי ה-AI.');
-                })
-                .catch(function () {
-                    pcAiBtn.disabled = false;
-                    pcAiBtn.innerHTML = origHtml;
-                    showFlash(false, 'שגיאת תקשורת.');
-                });
+            pcAiCallSSE({
+                csrf_token: csrf,
+                phase: 'generate',
+                instructions: hint,
+                cta_href: ctaHref
+            });
         });
     }
 
