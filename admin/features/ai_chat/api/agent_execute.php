@@ -18,10 +18,35 @@ declare(strict_types=1);
  *  7. logging של כל פעולה ל-ai_api_logs
  */
 
+// הגנה: תמיד נחזיר JSON נקי — מונע 'network_error' בלקוח
+// עקב warnings/notices שנשפכו ל-output ושברו את הפענוח.
+@ini_set('display_errors', '0');
+@ini_set('html_errors', '0');
+@ini_set('zlib.output_compression', '0');
+while (ob_get_level() > 0) { @ob_end_clean(); }
+ob_start();
+
 require_once __DIR__ . '/_init.php';
 require_once __DIR__ . '/../services/agent_schema.php';
 
 header('Content-Type: application/json; charset=utf-8');
+
+// מסגרת בטיחות — מוודאת שבכל מקרה לצד הלקוח תגיע תשובת JSON תקינה
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if (is_array($err) && in_array($err['type'] ?? 0, [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR], true)) {
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        while (ob_get_level() > 0) { @ob_end_clean(); }
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'שגיאת שרת בלתי-צפויה',
+            'detail' => 'fatal: ' . (string) ($err['message'] ?? 'unknown'),
+        ], JSON_UNESCAPED_UNICODE);
+    }
+});
 
 /**
  * חיסכון במצב גלובלי עבור שמירת תוצאת הביצוע בהיסטוריית הצ'אט בעת exit.
@@ -67,18 +92,27 @@ function admin_ai_agent_exec_respond(array $payload, int $status = 200): void
 {
     global $conn;
     if (($payload['status'] ?? '') === 'success' && $conn instanceof mysqli) {
-        admin_ai_agent_exec_persist_result($conn, $payload);
+        try { admin_ai_agent_exec_persist_result($conn, $payload); } catch (\Throwable $e) { /* noop */ }
     }
-    http_response_code($status);
+    // נקה כל output מקדים (warnings/notices) לפני פליטת JSON
+    while (ob_get_level() > 0) { @ob_end_clean(); }
+    if (!headers_sent()) {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+    }
     echo json_encode($payload, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 function admin_ai_agent_exec_log(mysqli $conn, int $homeId, int $userId, string $text): void
 {
-    $trimmed = function_exists('mb_substr') ? mb_substr($text, 0, 500, 'UTF-8') : substr($text, 0, 500);
-    $escaped = mysqli_real_escape_string($conn, $trimmed);
-    @mysqli_query($conn, "INSERT INTO ai_api_logs (home_id, user_id, action_type) VALUES ({$homeId}, {$userId}, '{$escaped}')");
+    try {
+        $trimmed = function_exists('mb_substr') ? mb_substr($text, 0, 500, 'UTF-8') : substr($text, 0, 500);
+        $escaped = mysqli_real_escape_string($conn, $trimmed);
+        @mysqli_query($conn, "INSERT INTO ai_api_logs (home_id, user_id, action_type) VALUES ({$homeId}, {$userId}, '{$escaped}')");
+    } catch (\Throwable $e) {
+        // לוג בלבד — לא לשבור את ה-response גם אם הטבלה חסרה/אין הרשאה
+    }
 }
 
 /**
@@ -202,6 +236,8 @@ $chatId = (int) ($payload['chat_id'] ?? 0);
 $data = isset($payload['data']) && is_array($payload['data']) ? $payload['data'] : [];
 $rowId = isset($payload['id']) ? (int) $payload['id'] : 0;
 $rawSql = (string) ($payload['sql'] ?? '');
+// חותמת זמן ההצעה (ב-ms) שנשלחת מהלקוח לאכיפת TTL של 5 דקות
+$proposedAtMs = isset($payload['proposed_at']) ? (int) $payload['proposed_at'] : 0;
 
 $GLOBALS['admin_ai_agent_exec_chat_context'] = [
     'chat_id' => $chatId,
@@ -213,6 +249,38 @@ $GLOBALS['admin_ai_agent_exec_chat_context'] = [
 
 if (!in_array($action, ['create', 'update', 'delete', 'sql'], true)) {
     admin_ai_agent_exec_respond(['status' => 'error', 'message' => 'invalid_action', 'action' => $action], 400);
+}
+
+// ===== אכיפת תוקף של 5 דקות על הצעת הפעולה =====
+// הגנה בעומק מעבר לבדיקת הלקוח: אם חותמת הזמן חסרה, ישנה (>5 דק')
+// או עתידית לא-סבירה (>2 דק' קדימה עקב clock drift) — נדחה את הבקשה.
+$ACTION_PROPOSAL_TTL_MS = 5 * 60 * 1000;
+$CLOCK_SKEW_TOLERANCE_MS = 2 * 60 * 1000;
+$nowMs = (int) round(microtime(true) * 1000);
+if ($proposedAtMs <= 0) {
+    admin_ai_agent_exec_respond([
+        'status' => 'error',
+        'message' => 'הצעת הפעולה חסרת חותמת זמן. רענן את הדף ובקש מהסוכן להציע מחדש.',
+        'reason' => 'missing_proposal_timestamp',
+    ], 200);
+}
+$ageMs = $nowMs - $proposedAtMs;
+if ($ageMs > $ACTION_PROPOSAL_TTL_MS) {
+    $ageSec = (int) round($ageMs / 1000);
+    admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent ACTION EXPIRED action=' . $action . ' age_sec=' . $ageSec . ' chat=' . $chatId);
+    admin_ai_agent_exec_respond([
+        'status' => 'error',
+        'message' => 'תוקף ההצעה פג (מעל 5 דקות). בקש מהסוכן להציע את הפעולה מחדש.',
+        'reason' => 'proposal_expired',
+        'age_seconds' => $ageSec,
+    ], 200);
+}
+if ($ageMs < -$CLOCK_SKEW_TOLERANCE_MS) {
+    admin_ai_agent_exec_respond([
+        'status' => 'error',
+        'message' => 'חותמת זמן לא תקינה בהצעה. רענן את הדף ונסה שוב.',
+        'reason' => 'future_proposal_timestamp',
+    ], 200);
 }
 
 // ===== SQL גולמי (DML/DDL) =====
@@ -238,19 +306,28 @@ if ($action === 'sql') {
     admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent SQL ATTEMPT verb=' . $verb . ' kind=' . $kind . ' chat=' . $chatId . ' sql=' . substr($safeSql, 0, 400));
 
     $startedAt = microtime(true);
-    $queryResult = @mysqli_query($conn, $safeSql);
+    $queryResult = false;
+    $caughtErr = '';
+    try {
+        // בחלק מהסביבות mysqli מדווח דרך exceptions (PHP 8.1+)
+        $queryResult = @mysqli_query($conn, $safeSql);
+    } catch (\Throwable $e) {
+        $caughtErr = $e->getMessage();
+        $queryResult = false;
+    }
     $elapsedMs = (int) ((microtime(true) - $startedAt) * 1000);
 
     if ($queryResult === false) {
-        $err = mysqli_error($conn);
+        $err = $caughtErr !== '' ? $caughtErr : (string) mysqli_error($conn);
+        if ($err === '') { $err = 'שגיאה בלתי-ידועה במסד הנתונים'; }
         admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent SQL FAILED verb=' . $verb . ' err=' . substr($err, 0, 200) . ' chat=' . $chatId);
         admin_ai_agent_exec_respond([
             'status' => 'error',
-            'message' => 'sql_execute_failed',
+            'message' => 'ביצוע ה-SQL נכשל: ' . $err,
             'detail' => $err,
             'verb' => $verb,
             'kind' => $kind,
-        ], 500);
+        ], 200);
     }
 
     $affected = mysqli_affected_rows($conn);

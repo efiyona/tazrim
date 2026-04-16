@@ -5,6 +5,10 @@
   const baseUrl = baseUrlRaw.endsWith("/") ? baseUrlRaw : baseUrlRaw + "/";
   const apiBase = baseUrl + "admin/features/ai_chat/api/";
 
+  // תוקף הצעת פעולה (ביצוע שינויים במסד) — 5 דקות מרגע ההצעה.
+  // מעבר לזה הכפתור ננעל ולא מתבצע שום דבר, מסיבות בטיחות.
+  const ACTION_PROPOSAL_TTL_MS = 5 * 60 * 1000;
+
   const state = {
     open: false,
     activeChatId: null,
@@ -507,11 +511,44 @@
     return '<div class="admin-ai-chat-action-data">' + rows + "</div>";
   }
 
+  function formatDurationMs(ms) {
+    if (!isFinite(ms) || ms < 0) ms = 0;
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return m + ":" + (s < 10 ? "0" + s : String(s));
+  }
+
+  function actionProposalRemainingMs(actionPayload) {
+    const t = actionPayload && actionPayload.proposedAt;
+    if (!t) return ACTION_PROPOSAL_TTL_MS;
+    return Math.max(0, (t + ACTION_PROPOSAL_TTL_MS) - Date.now());
+  }
+
+  function isActionProposalExpired(actionPayload) {
+    return actionProposalRemainingMs(actionPayload) <= 0;
+  }
+
+  function clearActionExpiryTimer(bubbleEl) {
+    if (!bubbleEl) return;
+    const t = bubbleEl.__adminAiActionExpiryTimer;
+    if (t) {
+      clearInterval(t);
+      bubbleEl.__adminAiActionExpiryTimer = null;
+    }
+  }
+
   function renderActionCard(bubbleEl, actionPayload, opts) {
     const o = opts || {};
     const inner = bubbleEl && bubbleEl.querySelector(".admin-ai-chat-bubble-inner");
     if (!inner) return;
     bubbleEl.classList.remove("admin-ai-chat-bubble--agent-working");
+    clearActionExpiryTimer(bubbleEl);
+
+    // מוודאים חותמת זמן על ההצעה, למימוש TTL של 5 דקות
+    if (!actionPayload.proposedAt) {
+      actionPayload.proposedAt = Date.now();
+    }
 
     const action = actionPayload.action || "";
     const table = actionPayload.table || "";
@@ -572,17 +609,48 @@
       html += "</div>";
     }
     html += '<div class="admin-ai-chat-action-actions">';
-    if (o.executed && o.executionResult) {
-      const success = o.executionResult.status === "success";
-      html += '<div class="admin-ai-chat-action-result admin-ai-chat-action-result--' + (success ? "success" : "error") + '">';
-      html += '<i class="fa-solid ' + (success ? "fa-circle-check" : "fa-circle-xmark") + '"></i> ';
-      html += escapeHtml(o.executionResult.message || (success ? "בוצע בהצלחה" : "נכשל"));
+    const resultState = o.executed && o.executionResult ? o.executionResult : null;
+    const resultStatus = resultState ? (resultState.status || "") : "";
+    const isSuccess = resultStatus === "success";
+    const isHistorical = resultStatus === "historical";
+    const isCancelled = resultStatus === "cancelled";
+    const isFailure = resultState && !isSuccess && !isHistorical && !isCancelled;
+
+    if (resultState) {
+      const stateClass = isSuccess ? "success" : (isFailure ? "error" : "info");
+      const icon = isSuccess ? "fa-circle-check" : (isFailure ? "fa-circle-xmark" : "fa-circle-info");
+      html += '<div class="admin-ai-chat-action-result admin-ai-chat-action-result--' + stateClass + '">';
+      html += '<i class="fa-solid ' + icon + '"></i> ';
+      html += escapeHtml(resultState.message || (isSuccess ? "בוצע בהצלחה" : (isFailure ? "נכשל" : "—")));
+      if (isFailure && resultState.detail) {
+        html += '<div class="admin-ai-chat-action-result-detail">' + escapeHtml(String(resultState.detail)) + "</div>";
+      }
       html += "</div>";
-      html += '<button type="button" class="admin-ai-chat-action-btn admin-ai-chat-action-btn--done" disabled>';
-      html += '<i class="fa-solid fa-check"></i> בוצע';
-      html += "</button>";
+
+      if (isFailure && !isHistorical) {
+        html += '<button type="button" class="admin-ai-chat-action-retry"><i class="fa-solid fa-rotate-right"></i> נסה שוב</button>';
+        html += '<button type="button" class="admin-ai-chat-action-cancel admin-ai-chat-action-cancel--after-fail">סגור</button>';
+      } else {
+        html += '<button type="button" class="admin-ai-chat-action-btn admin-ai-chat-action-btn--done" disabled>';
+        html += '<i class="fa-solid fa-check"></i> ' + (isSuccess ? "בוצע" : (isCancelled ? "בוטל" : "נסגר"));
+        html += "</button>";
+      }
     } else {
-      html += '<button type="button" class="admin-ai-chat-action-btn' + (dangerous ? " admin-ai-chat-action-btn--danger" : "") + '">';
+      const remainingMs = actionProposalRemainingMs(actionPayload);
+      const alreadyExpired = remainingMs <= 0;
+      const ttlClass = alreadyExpired
+        ? "admin-ai-chat-action-ttl--expired"
+        : (remainingMs <= 60 * 1000 ? "admin-ai-chat-action-ttl--warning" : "");
+      html += '<div class="admin-ai-chat-action-ttl ' + ttlClass + '" data-admin-ai-action-ttl>';
+      if (alreadyExpired) {
+        html += '<i class="fa-solid fa-hourglass-end"></i> ';
+        html += '<span data-admin-ai-action-ttl-text>תוקף ההצעה פג — בקש מהסוכן להציע מחדש</span>';
+      } else {
+        html += '<i class="fa-solid fa-hourglass-half"></i> ';
+        html += '<span data-admin-ai-action-ttl-text>תוקף ההצעה: נותרו <strong data-admin-ai-action-ttl-clock>' + formatDurationMs(remainingMs) + '</strong> דקות</span>';
+      }
+      html += '</div>';
+      html += '<button type="button" class="admin-ai-chat-action-btn' + (dangerous ? " admin-ai-chat-action-btn--danger" : "") + '"' + (alreadyExpired ? ' disabled' : '') + '>';
       html += '<i class="fa-solid fa-bolt"></i> ' + escapeHtml(actionBtnLabel(action));
       html += "</button>";
       html += '<button type="button" class="admin-ai-chat-action-cancel">' + escapeHtml("ביטול") + "</button>";
@@ -592,11 +660,52 @@
 
     inner.innerHTML = html;
 
-    if (!o.executed) {
+    if (!resultState) {
       const btn = inner.querySelector(".admin-ai-chat-action-btn");
       const cancelBtn = inner.querySelector(".admin-ai-chat-action-cancel");
+      const ttlWrap = inner.querySelector("[data-admin-ai-action-ttl]");
+      const ttlTextWrap = inner.querySelector("[data-admin-ai-action-ttl-text]");
+      const ttlClock = inner.querySelector("[data-admin-ai-action-ttl-clock]");
+
+      function markExpiredUi() {
+        if (btn) {
+          btn.disabled = true;
+          btn.classList.add("admin-ai-chat-action-btn--expired");
+        }
+        if (ttlWrap) {
+          ttlWrap.classList.remove("admin-ai-chat-action-ttl--warning");
+          ttlWrap.classList.add("admin-ai-chat-action-ttl--expired");
+        }
+        if (ttlTextWrap) {
+          ttlTextWrap.innerHTML = '<i class="fa-solid fa-hourglass-end"></i> תוקף ההצעה פג — בקש מהסוכן להציע מחדש';
+        }
+        clearActionExpiryTimer(bubbleEl);
+      }
+
+      if (actionProposalRemainingMs(actionPayload) > 0) {
+        bubbleEl.__adminAiActionExpiryTimer = setInterval(() => {
+          if (!bubbleEl.isConnected) {
+            clearActionExpiryTimer(bubbleEl);
+            return;
+          }
+          const remaining = actionProposalRemainingMs(actionPayload);
+          if (remaining <= 0) {
+            markExpiredUi();
+            return;
+          }
+          if (ttlClock) ttlClock.textContent = formatDurationMs(remaining);
+          if (ttlWrap && remaining <= 60 * 1000) {
+            ttlWrap.classList.add("admin-ai-chat-action-ttl--warning");
+          }
+        }, 1000);
+      }
+
       if (btn) {
         btn.addEventListener("click", () => {
+          if (isActionProposalExpired(actionPayload)) {
+            markExpiredUi();
+            return;
+          }
           executeAction(bubbleEl, actionPayload, o.preamble || "");
         });
       }
@@ -609,6 +718,39 @@
           });
         });
       }
+    } else if (isFailure) {
+      const retryBtn = inner.querySelector(".admin-ai-chat-action-retry");
+      const closeBtn = inner.querySelector(".admin-ai-chat-action-cancel--after-fail");
+      if (retryBtn) {
+        retryBtn.addEventListener("click", () => {
+          if (isActionProposalExpired(actionPayload)) {
+            renderActionCard(bubbleEl, actionPayload, {
+              preamble: o.preamble || "",
+              executed: true,
+              executionResult: {
+                status: "error",
+                message: "תוקף הפעולה פג (מעל 5 דקות). בקש מהסוכן להציע אותה מחדש.",
+              },
+            });
+            return;
+          }
+          // חזור למצב "טרם הורץ" ואז הפעל מחדש
+          renderActionCard(bubbleEl, actionPayload, { preamble: o.preamble || "" });
+          executeAction(bubbleEl, actionPayload, o.preamble || "");
+        });
+      }
+      if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+          renderActionCard(bubbleEl, actionPayload, {
+            preamble: o.preamble || "",
+            executed: true,
+            executionResult: {
+              status: "cancelled",
+              message: "הפעולה נסגרה. ניתן לנסח את הבקשה מחדש.",
+            },
+          });
+        });
+      }
     }
 
     const wrap = qs("adminAiChatMessages");
@@ -616,6 +758,19 @@
   }
 
   async function executeAction(bubbleEl, actionPayload, preamble) {
+    if (isActionProposalExpired(actionPayload)) {
+      clearActionExpiryTimer(bubbleEl);
+      renderActionCard(bubbleEl, actionPayload, {
+        preamble: preamble,
+        executed: true,
+        executionResult: {
+          status: "error",
+          message: "תוקף הפעולה פג (מעל 5 דקות). בקש מהסוכן להציע אותה מחדש.",
+        },
+      });
+      return;
+    }
+
     const token = window.ADMIN_AI_CHAT_API_TOKEN || "";
     if (!token) {
       renderActionCard(bubbleEl, actionPayload, {
@@ -625,6 +780,7 @@
       });
       return;
     }
+    clearActionExpiryTimer(bubbleEl);
 
     const inner = bubbleEl && bubbleEl.querySelector(".admin-ai-chat-bubble-inner");
     if (inner) {
@@ -642,24 +798,46 @@
       action: actionPayload.action,
       table: actionPayload.table || "",
       chat_id: state.activeChatId,
+      proposed_at: actionPayload.proposedAt || Date.now(),
     };
     if (actionPayload.id != null) body.id = actionPayload.id;
     if (actionPayload.data) body.data = actionPayload.data;
     if (actionPayload.sql) body.sql = actionPayload.sql;
 
     let result;
+    const url = apiBase + "agent_execute.php";
     try {
-      const res = await fetch(apiBase + "agent_execute.php", {
+      const res = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(body),
+        credentials: "same-origin",
       });
-      result = await res.json();
-      if (!res.ok && !result) {
-        result = { status: "error", message: "request_failed_" + res.status };
+      const rawText = await res.text();
+      let parsed = null;
+      if (rawText) {
+        try { parsed = JSON.parse(rawText); } catch (e) { parsed = null; }
+      }
+      if (parsed && typeof parsed === "object") {
+        result = parsed;
+        if (!result.status) result.status = res.ok ? "success" : "error";
+      } else {
+        const snippet = (rawText || "").replace(/\s+/g, " ").trim().slice(0, 240);
+        result = {
+          status: "error",
+          message: res.ok
+            ? "השרת החזיר תשובה לא-JSON (HTTP " + res.status + ")"
+            : "הבקשה נכשלה (HTTP " + res.status + ")",
+          detail: snippet || ("HTTP " + res.status + " · " + res.statusText),
+          http_status: res.status,
+        };
       }
     } catch (err) {
-      result = { status: "error", message: "network_error" };
+      result = {
+        status: "error",
+        message: "שגיאת רשת בדרך לשרת",
+        detail: (err && err.message) ? String(err.message) : "Fetch failed",
+      };
     }
 
     renderActionCard(bubbleEl, actionPayload, {
