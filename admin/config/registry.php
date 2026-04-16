@@ -123,4 +123,58 @@ return [
             'is_current' => ['type' => 'checkbox', 'label' => 'גרסה נוכחית (רק אחת; משתמשים יידרשו לאשר אם השתנה)'],
         ],
     ],
+    'feedback_reports' => [
+        'table' => 'feedback_reports',
+        'label' => 'דיווחי באג/פיצר',
+        'list_columns' => ['id', 'created_at', 'kind', 'status', 'user_id', 'home_id', 'title', 'context_screen'],
+        'per_page' => 30,
+        'order_by' => 'created_at DESC, id DESC',
+        'allow_delete' => false,
+        'fields' => [
+            'user_id' => [
+                'type' => 'fk_lookup',
+                'label' => 'משתמש מדווח',
+                'fk' => [
+                    'table' => 'users',
+                    'value_column' => 'id',
+                    'label_template' => '{first_name} {last_name} ({email})',
+                    'search_columns' => ['first_name', 'last_name', 'email', 'nickname'],
+                    'order_by' => 'last_name ASC, first_name ASC',
+                    'optional' => false,
+                ],
+            ],
+            'home_id' => [
+                'type' => 'fk_lookup',
+                'label' => 'בית',
+                'fk' => [
+                    'table' => 'homes',
+                    'value_column' => 'id',
+                    'label_template' => '{name} (#{id}) · {join_code}',
+                    'search_columns' => ['name', 'join_code'],
+                    'order_by' => 'name ASC',
+                    'optional' => true,
+                ],
+            ],
+            'kind' => [
+                'type' => 'enum',
+                'label' => 'סוג דיווח',
+                'enum_options' => [
+                    'bug' => 'באג',
+                    'idea' => 'רעיון לפיצר',
+                ],
+            ],
+            'title' => ['type' => 'text', 'label' => 'כותרת'],
+            'message' => ['type' => 'textarea', 'label' => 'תיאור הדיווח', 'rows' => 10],
+            'context_screen' => ['type' => 'text', 'label' => 'מסך / הקשר'],
+            'status' => [
+                'type' => 'enum',
+                'label' => 'סטטוס טיפול',
+                'enum_options' => [
+                    'new' => 'חדש',
+                    'in_review' => 'בטיפול',
+                    'done' => 'טופל',
+                ],
+            ],
+        ],
+    ],
 ];
