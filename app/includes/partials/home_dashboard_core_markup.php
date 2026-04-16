@@ -100,11 +100,11 @@
                                     <div class="transaction-amount">
                                         <?php echo ($row['type'] == 'income') ? '+' : '-'; ?> <?php echo number_format($row['amount'], 0); ?> ₪
                                     </div>
-                                    <div style="display:flex; gap: 5px;">
-                                        <div style="background: var(--gray); color: var(--text); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;" title="ערוך פעולה">
+                                    <div class="transaction-row-actions">
+                                        <div class="transaction-action-pill" title="ערוך פעולה">
                                             <i class="fa-solid fa-pen" style="font-size: 0.9rem;"></i>
                                         </div>
-                                        <button type="button" onclick="event.stopPropagation(); deleteTransaction(<?php echo (int) $row['id']; ?>, 'main')" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק פעולה">
+                                        <button type="button" onclick="event.stopPropagation(); deleteTransaction(<?php echo (int) $row['id']; ?>, 'main')" class="transaction-action-pill transaction-action-pill--danger" title="מחק פעולה">
                                             <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>
                                         </button>
                                     </div>
@@ -148,11 +148,11 @@
                                         <div class="transaction-amount">
                                             <?php echo ($row['type'] == 'income') ? '+' : '-'; ?> <?php echo number_format($row['amount'], 0); ?> ₪
                                         </div>
-                                        <div style="display:flex; gap: 5px;">
-                                            <div style="background: var(--gray); color: var(--text); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;" title="ערוך פעולה">
+                                        <div class="transaction-row-actions">
+                                            <div class="transaction-action-pill" title="ערוך פעולה">
                                                 <i class="fa-solid fa-pen" style="font-size: 0.9rem;"></i>
                                             </div>
-                                            <button type="button" onclick="event.stopPropagation(); deleteTransaction(<?php echo (int) $row['id']; ?>, 'main')" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק פעולה">
+                                            <button type="button" onclick="event.stopPropagation(); deleteTransaction(<?php echo (int) $row['id']; ?>, 'main')" class="transaction-action-pill transaction-action-pill--danger" title="מחק פעולה">
                                                 <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>
                                             </button>
                                         </div>

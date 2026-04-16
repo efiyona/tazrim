@@ -7,7 +7,7 @@ $shopping_stores = $shopping_stores ?? [];
 ?>
 <div class="manage-categories-toolbar">
     <h2 class="section-subtitle" style="margin: 0;">חנויות קניות</h2>
-    <button type="button" class="btn-primary" style="width: max-content; margin: 0; padding: 8px 20px; font-size: 0.95rem; border-radius: 10px; box-shadow: 0 4px 10px rgba(35, 114, 39, 0.2);" onclick="openAddShoppingStoreModal()">
+    <button type="button" class="btn-primary" style="width: max-content; margin: 0; padding: 8px 20px; font-size: 0.95rem; box-shadow: 0 4px 10px rgba(35, 114, 39, 0.2);" onclick="openAddShoppingStoreModal()">
         הוספה <i class="fa-solid fa-plus"></i>
     </button>
 </div>
@@ -34,11 +34,11 @@ $shopping_stores = $shopping_stores ?? [];
                     </div>
                 </div>
                 <div class="transaction-actions">
-                    <div style="display:flex; gap: 5px;">
-                        <div style="background: var(--gray); color: var(--text); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;" title="ערוך חנות">
+                    <div class="transaction-row-actions">
+                        <div class="transaction-action-pill" title="ערוך חנות">
                             <i class="fa-solid fa-pen" style="font-size: 0.9rem;"></i>
                         </div>
-                        <button type="button" onclick="event.stopPropagation(); deleteShoppingStore(<?php echo (int) $store['id']; ?>)" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק חנות">
+                        <button type="button" onclick="event.stopPropagation(); deleteShoppingStore(<?php echo (int) $store['id']; ?>)" class="transaction-action-pill transaction-action-pill--danger" title="מחק חנות">
                             <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>
                         </button>
                     </div>

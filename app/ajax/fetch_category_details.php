@@ -78,13 +78,13 @@ if (mysqli_num_rows($result) > 0) {
         echo '          <span class="date">' . date('d/m/Y', strtotime($row['transaction_date'])) . '</span>';
         echo '      </div>';
         echo '  </div>';
-        echo '  <div style="display: flex; align-items: center; gap: 10px;">';
+        echo '  <div class="transaction-actions">';
         echo '      <div class="transaction-amount">' . $amount_prefix . ' ' . number_format($row['amount'], 0) . ' ₪</div>';
-        echo '      <div style="display:flex; gap: 5px;">';
-        echo '          <button type="button" onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . $safe_desc . '\', \'' . $row['type'] . '\', \'category-details\')" style="background: var(--gray); border: none; color: var(--text); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="ערוך פעולה">';
+        echo '      <div class="transaction-row-actions">';
+        echo '          <button type="button" onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . $safe_desc . '\', \'' . $row['type'] . '\', \'category-details\')" class="transaction-action-pill" title="ערוך פעולה">';
         echo '              <i class="fa-solid fa-pen" style="font-size: 1rem;"></i>';
         echo '          </button>';
-        echo '          <button type="button" onclick="event.stopPropagation(); deleteTransaction(' . $row['id'] . ', \'category-details\')" style="background: #fee2e2; border: none; color: #dc2626; cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center;" title="מחק פעולה">';
+        echo '          <button type="button" onclick="event.stopPropagation(); deleteTransaction(' . $row['id'] . ', \'category-details\')" class="transaction-action-pill transaction-action-pill--danger" title="מחק פעולה">';
         echo '              <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>';
         echo '          </button>';
         echo '      </div>';

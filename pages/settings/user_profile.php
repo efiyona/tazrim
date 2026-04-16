@@ -83,7 +83,7 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
             color: var(--error);
             border: 2px solid var(--error);
             padding: 10px 15px;
-            border-radius: 10px;
+            border-radius: 999px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -205,12 +205,27 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
             border: 1px solid #cbd5e1;
             background: #e2e8f0;
             color: #334155;
-            border-radius: 10px;
+            border-radius: 999px;
             min-height: 42px;
             font-size: 0.9rem;
             font-weight: 700;
             cursor: pointer;
             margin-top: 8px;
+        }
+        .btn-device-notifications-muted {
+            width: 100%;
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: 0.2s;
         }
     </style>
 </head>
@@ -360,7 +375,7 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
                                         <strong>התראות Push מופעלות במכשיר הזה.</strong><br>
                                         תקבל התראות כאן רק אם גם סוגי ההתראות למטה מופעלים בחשבון שלך.
                                     </div>
-                                    <button type="button" id="btn-disable-notifications" onclick="disablePushSubscription()" style="width: 100%; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+                                    <button type="button" id="btn-disable-notifications" class="btn-device-notifications-muted" onclick="disablePushSubscription()">
                                         <i class="fa-solid fa-bell-slash"></i> בטל התראות במכשיר זה
                                     </button>
                                 </div>

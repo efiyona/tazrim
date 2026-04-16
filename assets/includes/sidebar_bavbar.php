@@ -383,7 +383,7 @@ require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
 .qf-kind {
     flex: 1;
     min-height: 42px;
-    border-radius: 10px;
+    border-radius: 999px;
     border: 1px solid #d1d5db;
     background: #f9fafb;
     font-weight: 700;
@@ -433,7 +433,7 @@ require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
     width: 100%;
     min-height: 46px;
     border: 0;
-    border-radius: 12px;
+    border-radius: 999px;
     background: var(--main);
     color: #fff;
     font-size: 1rem;

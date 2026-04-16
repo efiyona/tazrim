@@ -191,7 +191,7 @@ h3 {
     color: var(--white);
     border: none;
     padding: 15px;
-    border-radius: 10px;
+    border-radius: 999px;
     font-weight: 700;
     font-size: 1.1rem;
     cursor: pointer;
@@ -540,7 +540,7 @@ body.auth-cp .submit-btn {
     background: var(--main);
     color: var(--white);
     border: none;
-    border-radius: 12px;
+    border-radius: 999px;
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
@@ -1200,7 +1200,7 @@ body.auth-forgot .auth-switch a {
     background-color: var(--white);
     border: 2px solid var(--gray);
     padding: 12px;
-    border-radius: 12px;
+    border-radius: 999px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1285,7 +1285,7 @@ body.auth-forgot .auth-switch a {
     width: 42px;
     height: 42px;
     background-color: var(--gray-light);
-    border-radius: 12px;
+    border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1361,7 +1361,9 @@ body.auth-forgot .auth-switch a {
     top: var(--app-edge-inset);
     z-index: 50;
     flex-shrink: 0;
-    background-color: var(--white);
+    background-color: rgba(255, 255, 255, 0.68);
+    -webkit-backdrop-filter: blur(24px) saturate(155%);
+    backdrop-filter: blur(24px) saturate(155%);
     margin: var(--app-edge-inset) var(--app-edge-inset) 0 var(--app-edge-inset);
     padding: 12px 25px;
     border-radius: 20px;
@@ -1369,6 +1371,21 @@ body.auth-forgot .auth-switch a {
     align-items: center;
     justify-content: space-between;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.top-bar::before {
+    content: "";
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    bottom: 100%;
+    height: var(--app-edge-inset);
+    background: rgba(255, 255, 255, 0.34);
+    -webkit-backdrop-filter: blur(24px) saturate(155%);
+    backdrop-filter: blur(24px) saturate(155%);
+    border-radius: 20px 20px 0 0;
+    pointer-events: none;
 }
 
 /* סידור הפרופיל בתוך ה-Top Bar */
@@ -1432,7 +1449,7 @@ body.auth-forgot .auth-switch a {
     width: 40px;
     height: 40px;
     background-color: var(--gray-light);
-    border-radius: 12px;
+    border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1582,7 +1599,7 @@ body.auth-forgot .auth-switch a {
     border: none;
     background-color: var(--gray-light);
     color: var(--text);
-    border-radius: 10px;
+    border-radius: 999px;
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
@@ -1675,7 +1692,7 @@ body.auth-forgot .auth-switch a {
     font-weight: 700;
     background: none;
     border: none;
-    border-radius: 10px;
+    border-radius: 999px;
     cursor: pointer;
     color: var(--text-light);
     line-height: 1;
@@ -1693,6 +1710,41 @@ body.auth-forgot .auth-switch a {
 }
 .close-modal-btn:active {
     color: var(--error);
+}
+
+.transaction-row-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.transaction-action-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    border: none;
+    border-radius: 999px;
+    background: var(--gray);
+    color: var(--text);
+    transition: all 0.2s ease;
+}
+
+.transaction-action-pill--danger {
+    background: #fee2e2;
+    color: #dc2626;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .transaction-action-pill--danger:hover {
+        background: #fecaca;
+    }
+}
+
+.transaction-action-pill--danger:active {
+    background: #fecaca;
 }
 
 .close-modal-btn:focus-visible {
@@ -1787,7 +1839,7 @@ body.auth-forgot .auth-switch a {
     width: auto;
     padding: 12px 16px;
     font-size: 1rem;
-    border-radius: 12px;
+    border-radius: 999px;
     font-weight: 700;
     cursor: pointer;
     transition: background-color 0.2s, transform 0.15s;
@@ -1799,7 +1851,7 @@ body.auth-forgot .auth-switch a {
     flex: 1;
     padding: 12px 16px;
     font-size: 1rem;
-    border-radius: 12px;
+    border-radius: 999px;
 }
 
 /* הודעת alert: כפתור «הבנתי» ברוחב מלא כמו בפופאפ המידע */
@@ -1816,7 +1868,7 @@ body.auth-forgot .auth-switch a {
     background: var(--gray-light);
     color: var(--text);
     border: none;
-    border-radius: 12px;
+    border-radius: 999px;
 }
 
 @media (hover: hover) {
@@ -2019,7 +2071,7 @@ body.auth-forgot .auth-switch a {
 .modern-toggle {
     display: flex;
     background-color: var(--gray);
-    border-radius: 12px;
+    border-radius: 999px;
     padding: 5px;
     margin-bottom: 25px;
 }
@@ -2032,7 +2084,7 @@ body.auth-forgot .auth-switch a {
     flex: 1;
     text-align: center;
     padding: 12px;
-    border-radius: 10px;
+    border-radius: 999px;
     font-weight: 800;
     cursor: pointer;
     color: var(--text-light);
@@ -2130,7 +2182,7 @@ body.auth-forgot .auth-switch a {
 
 /* דף ניהול הבית *//* === עיצוב חדש לכרטיסיות הקטגוריות === */
         .icon-option {
-            width: 40px; height: 40px; border-radius: 10px; background: var(--gray);
+            width: 40px; height: 40px; border-radius: 999px; background: var(--gray);
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             color: var(--text-light); transition: 0.2s; border: 2px solid transparent; font-size: 1.2rem;
         }
@@ -2424,7 +2476,7 @@ body.auth-forgot .auth-switch a {
             border: none;
             cursor: pointer;
             padding: 5px 10px;
-            border-radius: 5px;
+            border-radius: 999px;
             transition: 0.2s;
         }
         .btn-edit { color: var(--main); }
@@ -2888,7 +2940,7 @@ body.auth-forgot .auth-switch a {
     background: #25d366;
     color: white;
     padding: 6px 12px;
-    border-radius: 8px;
+    border-radius: 999px;
     text-decoration: none;
     font-size: 0.85rem;
     font-weight: 600;
@@ -2940,6 +2992,7 @@ body.auth-forgot .auth-switch a {
     background: #e2e8f0;
     border: none;
     padding: 0 15px;
+    border-radius: 999px;
     cursor: pointer;
     color: #475569;
     transition: 0.2s;
@@ -2955,7 +3008,7 @@ body.auth-forgot .auth-switch a {
     color: white;
     border: none;
     padding: 10px 15px;
-    border-radius: 8px;
+    border-radius: 999px;
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
@@ -2976,7 +3029,7 @@ body.auth-forgot .auth-switch a {
     color: var(--error);
     border: 1px solid #fecaca;
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: 999px;
     cursor: pointer;
     font-size: 0.8rem;
     font-weight: 600;
@@ -3135,7 +3188,7 @@ body.auth-forgot .auth-switch a {
     gap: 12px;
     width: 100%;
     padding: 12px 14px;
-    border-radius: 12px;
+    border-radius: 999px;
     background: #fff;
     border: 1px solid #e2e8f0;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -3161,7 +3214,7 @@ body.auth-forgot .auth-switch a {
     flex-shrink: 0;
     width: 36px;
     height: 36px;
-    border-radius: 10px;
+    border-radius: 999px;
     background: #f1f5f9;
     color: var(--text-dark);
     display: flex;
@@ -3286,7 +3339,7 @@ body.auth-forgot .auth-switch a {
 .btn-clear-category {
     background: transparent;
     border: none;
-    border-radius: 8px;
+    border-radius: 999px;
     width: 32px;
     height: 32px;
     display: flex;
@@ -3313,7 +3366,7 @@ body.auth-forgot .auth-switch a {
 .btn-edit-store {
     background: transparent;
     border: none;
-    border-radius: 8px;
+    border-radius: 999px;
     width: 32px;
     height: 32px;
     display: flex;
@@ -3522,7 +3575,7 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
     width: 100%;
     margin-top: 20px;
     padding: 14px;
-    border-radius: 12px;
+    border-radius: 999px;
     font-weight: 800;
     font-size: 1rem;
     border: none;
@@ -3558,7 +3611,7 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
     justify-content: center;
     gap: 8px;
     padding: 12px 14px;
-    border-radius: 12px;
+    border-radius: 999px;
     border: 1.5px solid #fecaca;
     background: #fff5f5;
     color: var(--error);
@@ -3675,7 +3728,7 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
     flex: 1;
     padding: 12px;
     border: 2px dashed #ccc;
-    border-radius: 12px;
+    border-radius: 999px;
     font-family: inherit;
     font-size: 1rem;
     text-align: right;
@@ -3690,7 +3743,7 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
     color: var(--text);
     border: none;
     padding: 0 20px;
-    border-radius: 12px;
+    border-radius: 999px;
     font-weight: 700;
     cursor: pointer;
     transition: 0.2s;
@@ -3706,7 +3759,7 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
     color: white;
     border: none;
     padding: 14px 30px;
-    border-radius: 12px;
+    border-radius: 999px;
     font-size: 1.1rem;
     font-weight: 700;
     cursor: pointer;
@@ -4115,7 +4168,7 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
     padding: 12px 15px;
     background-color: var(--input-bg);
     border: 1.5px solid #ddd;
-    border-radius: 10px;
+    border-radius: 999px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
