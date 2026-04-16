@@ -816,3 +816,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<?php include ROOT_PATH . '/assets/includes/popup_campaigns_modal.php'; ?>
+

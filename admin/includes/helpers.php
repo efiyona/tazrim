@@ -50,11 +50,26 @@ function tazrim_admin_nav_items(): array
             'href' => BASE_URL . 'admin/dashboard.php',
         ],
         [
-            'type' => 'link',
-            'key' => 'push_broadcast',
-            'label' => 'שידור פוש',
+            'type' => 'group',
+            'key' => 'broadcast_user_messages',
+            'label' => 'הודעות למשתמשים',
             'icon' => 'fa-bullhorn',
-            'href' => BASE_URL . 'admin/push_broadcast.php',
+            'children' => [
+                [
+                    'type' => 'link',
+                    'key' => 'push_broadcast',
+                    'label' => 'שידור פוש',
+                    'icon' => 'fa-bullhorn',
+                    'href' => BASE_URL . 'admin/push_broadcast.php',
+                ],
+                [
+                    'type' => 'link',
+                    'key' => 'popup_campaigns',
+                    'label' => 'פופאפים למשתמשים',
+                    'icon' => 'fa-message',
+                    'href' => BASE_URL . 'admin/popup_campaigns.php',
+                ],
+            ],
         ],
     ];
     $groupOrder = [];

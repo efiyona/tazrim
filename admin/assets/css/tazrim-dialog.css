@@ -260,3 +260,57 @@
 body.no-scroll {
     overflow: hidden;
 }
+
+/* תצוגת מקדימה לקמפיין פופאפ / זהה למבנה באפליקציה (.tazrim-system-popup) */
+.tazrim-system-popup {
+    z-index: 10050 !important;
+}
+
+.tazrim-system-popup .tazrim-app-dialog__content {
+    max-width: min(600px, 96vw);
+}
+
+.tazrim-system-popup .modal-body.tazrim-app-dialog__body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    max-height: min(78vh, 640px);
+    background: var(--white) !important;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    overflow: hidden;
+}
+
+.tazrim-system-popup__html {
+    margin: 0;
+    text-align: right;
+    direction: rtl;
+    color: var(--text-light);
+    line-height: 1.6;
+    font-size: 0.95rem;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tazrim-system-popup__html h4 {
+    color: var(--main);
+    margin-top: 16px;
+    margin-bottom: 6px;
+    font-weight: 800;
+}
+
+.tazrim-system-popup__html h4:first-child {
+    margin-top: 0;
+}
+
+.tazrim-system-popup .tazrim-app-dialog__actions {
+    margin-top: 16px;
+    flex-shrink: 0;
+}
+
+.tazrim-system-popup .tazrim-app-dialog__actions .btn-primary {
+    border-radius: 999px;
+    margin-top: 0;
+}

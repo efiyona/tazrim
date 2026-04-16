@@ -356,5 +356,6 @@ if ($has_active_categories) {
             });
         });
     </script>
+    <?php include ROOT_PATH . '/assets/includes/popup_campaigns_modal.php'; ?>
 </body>
 </html>
