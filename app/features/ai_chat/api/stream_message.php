@@ -32,6 +32,26 @@ function ai_chat_strip_json_fences(string $raw): string
 }
 
 /**
+ * האם כדאי לנסות שוב לאחר כשל API זמני.
+ */
+function ai_chat_should_retry_http_code(int $httpCode): bool
+{
+    return in_array($httpCode, [429, 500, 502, 503, 504], true);
+}
+
+/**
+ * backoff פשוט במילישניות (עם jitter קטן) בין ניסיונות.
+ */
+function ai_chat_backoff_usleep(int $attempt): void
+{
+    $scheduleMs = [320, 900, 1800];
+    $idx = max(0, min($attempt - 1, count($scheduleMs) - 1));
+    $baseMs = $scheduleMs[$idx];
+    $jitterMs = random_int(0, 220);
+    usleep(($baseMs + $jitterMs) * 1000);
+}
+
+/**
  * קריאה סינכרונית ל-Gemini (ללא סטרים) — לשלב ניתוב.
  *
  * @return string|null טקסט מועמד ראשון או null
@@ -39,26 +59,36 @@ function ai_chat_strip_json_fences(string $raw): string
 function ai_chat_gemini_generate_text(string $apiKey, string $model, array $body): ?string
 {
     $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_UNICODE));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 28);
-    $raw = curl_exec($ch);
-    $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    if ($raw === false || $http !== 200) {
-        return null;
-    }
-    $decoded = json_decode($raw, true);
-    if (!is_array($decoded)) {
-        return null;
-    }
-    $text = (string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? '');
+    $maxAttempts = 3;
+    for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_UNICODE));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 28);
+        $raw = curl_exec($ch);
+        $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
 
-    return $text !== '' ? $text : null;
+        if ($raw !== false && $http === 200) {
+            $decoded = json_decode($raw, true);
+            if (!is_array($decoded)) {
+                return null;
+            }
+            $text = (string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? '');
+
+            return $text !== '' ? $text : null;
+        }
+
+        if (!ai_chat_should_retry_http_code($http) || $attempt >= $maxAttempts) {
+            return null;
+        }
+        ai_chat_backoff_usleep($attempt);
+    }
+
+    return null;
 }
 
 /**
@@ -279,59 +309,67 @@ if ($needsDeep) {
 }
 
 foreach ($models as $modelName) {
-    $usedModel = $modelName;
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:streamGenerateContent?alt=sse&key={$apiKey}";
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestBody, JSON_UNESCAPED_UNICODE));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-    curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($curl, $chunk) use (&$assistantText, &$lastModelChunk) {
-        $lines = preg_split("/\r\n|\n|\r/", (string) $chunk);
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if ($line === '' || strncmp($line, 'data:', 5) !== 0) {
-                continue;
-            }
-            $json = trim(substr($line, 5));
-            if ($json === '' || $json === '[DONE]') {
-                continue;
-            }
-            $decoded = json_decode($json, true);
-            if (!is_array($decoded)) {
-                continue;
-            }
-            $text = (string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? '');
-            if ($text !== '') {
-                $delta = $text;
-                if ($lastModelChunk !== '' && strpos($text, $lastModelChunk) === 0) {
-                    $delta = substr($text, strlen($lastModelChunk));
+    $maxStreamAttempts = 2;
+    for ($streamAttempt = 1; $streamAttempt <= $maxStreamAttempts; $streamAttempt++) {
+        $usedModel = $modelName;
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:streamGenerateContent?alt=sse&key={$apiKey}";
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestBody, JSON_UNESCAPED_UNICODE));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($curl, $chunk) use (&$assistantText, &$lastModelChunk) {
+            $lines = preg_split("/\r\n|\n|\r/", (string) $chunk);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if ($line === '' || strncmp($line, 'data:', 5) !== 0) {
+                    continue;
                 }
-                if ($delta !== '') {
-                    $assistantText .= $delta;
-                    ai_chat_sse_event('token', ['text' => $delta]);
+                $json = trim(substr($line, 5));
+                if ($json === '' || $json === '[DONE]') {
+                    continue;
                 }
-                $lastModelChunk = $text;
+                $decoded = json_decode($json, true);
+                if (!is_array($decoded)) {
+                    continue;
+                }
+                $text = (string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? '');
+                if ($text !== '') {
+                    $delta = $text;
+                    if ($lastModelChunk !== '' && strpos($text, $lastModelChunk) === 0) {
+                        $delta = substr($text, strlen($lastModelChunk));
+                    }
+                    if ($delta !== '') {
+                        $assistantText .= $delta;
+                        ai_chat_sse_event('token', ['text' => $delta]);
+                    }
+                    $lastModelChunk = $text;
+                }
             }
+            return strlen($chunk);
+        });
+
+        $execOk = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+
+        if ($execOk !== false && $httpCode === 200 && $assistantText !== '') {
+            $streamOk = true;
+            break 2;
         }
-        return strlen($chunk);
-    });
 
-    $execOk = curl_exec($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErr = curl_error($ch);
-    curl_close($ch);
+        $streamErr = $curlErr !== '' ? $curlErr : "http_{$httpCode}";
+        $assistantText = '';
+        $lastModelChunk = '';
 
-    if ($execOk !== false && $httpCode === 200 && $assistantText !== '') {
-        $streamOk = true;
-        break;
+        if (!ai_chat_should_retry_http_code($httpCode) || $streamAttempt >= $maxStreamAttempts) {
+            break;
+        }
+        ai_chat_backoff_usleep($streamAttempt);
     }
-
-    $streamErr = $curlErr !== '' ? $curlErr : "http_{$httpCode}";
-    $assistantText = '';
-    $lastModelChunk = '';
 }
 
 if (!$streamOk) {
@@ -353,6 +391,3 @@ ai_chat_sse_event('done', ['chat_id' => $chatId, 'deep_pass' => $needsDeep]);
 $deepTag = $needsDeep ? ' deep=1' : '';
 $statusText = mysqli_real_escape_string($conn, 'AI Chat Success (Model: ' . $usedModel . $deepTag . ')');
 mysqli_query($conn, "INSERT INTO ai_api_logs (home_id, user_id, action_type) VALUES ({$homeId}, {$userId}, '{$statusText}')");
-
-
-אולי מפה תבין מה הבעיה
