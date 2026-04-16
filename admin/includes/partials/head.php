@@ -21,7 +21,6 @@ $pageTitle = isset($pageTitle) ? $pageTitle : 'ניהול מערכת';
             },
         };
     </script>
-    <style>[x-cloak]{display:none!important}</style>
     <link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_admin_asset_href('admin/assets/css/admin.css'), ENT_QUOTES, 'UTF-8'); ?>">
     <link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_admin_asset_href('admin/assets/css/tazrim-dialog.css'), ENT_QUOTES, 'UTF-8'); ?>">
     <script src="<?php echo htmlspecialchars(tazrim_admin_asset_href('assets/js/tazrim_dialogs.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>

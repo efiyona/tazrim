@@ -1,6 +1,6 @@
 <?php
 /**
- * פתיחת מעטפת Tailwind + Alpine: סיידבר, מובייל, שורת עליון, תוכן.
+ * פתיחת מעטפת Tailwind: סיידבר, מובייל, שורת עליון, תוכן (ללא Alpine — תואם CSP ללא unsafe-eval).
  * דורש לפני כן: $admin_nav_context (אופציונלי), init.php.
  */
 $u = tazrim_admin_current_user_row();
@@ -40,23 +40,23 @@ function admin_nav_link_class(bool $active): string
     return $cls . 'text-gray-700 hover:text-blue-600 hover:bg-gray-200';
 }
 ?>
-<div class="admin-tw-shell h-[100dvh] min-h-0 flex overflow-hidden min-w-0 max-w-[100vw]" x-data="{ sidemenu: false }" x-cloak @keydown.window.escape="sidemenu = false">
+<div class="admin-tw-shell h-[100dvh] min-h-0 flex overflow-hidden min-w-0 max-w-[100vw]">
 
     <div class="md:hidden">
         <div
-            @click="sidemenu = false"
-            class="fixed inset-0 z-30 bg-gray-600 transition-opacity ease-linear duration-300"
-            :class="sidemenu ? 'opacity-75 pointer-events-auto' : 'opacity-0 pointer-events-none'"
+            id="admin-mobile-nav-overlay"
+            class="fixed inset-0 z-30 bg-gray-600 transition-opacity ease-linear duration-300 opacity-0 pointer-events-none"
             aria-hidden="true"
         ></div>
 
         <div
-            class="fixed inset-y-0 right-0 flex flex-col z-40 max-w-xs w-full bg-white shadow-xl transform ease-in-out duration-300"
-            :class="sidemenu ? 'translate-x-0' : 'translate-x-full'"
+            id="admin-mobile-nav-drawer"
+            class="fixed inset-y-0 right-0 flex flex-col z-40 max-w-xs w-full bg-white shadow-xl transform ease-in-out duration-300 translate-x-full"
+            aria-hidden="true"
         >
             <div class="flex items-center justify-between px-4 py-3 h-16 border-b border-gray-100">
                 <div class="text-xl font-bold tracking-tight text-gray-800">התזרים</div>
-                <button type="button" class="p-2 rounded-lg hover:bg-gray-100 text-gray-600" @click="sidemenu = false" aria-label="סגור תפריט">
+                <button type="button" id="admin-mobile-nav-close-btn" class="p-2 rounded-lg hover:bg-gray-100 text-gray-600" aria-label="סגור תפריט">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
@@ -65,24 +65,22 @@ function admin_nav_link_class(bool $active): string
                     <?php foreach ($navItems as $item): ?>
                         <?php $isActive = tazrim_admin_nav_item_is_active($item, $navCtx); ?>
                         <?php if (($item['type'] ?? 'link') === 'group'): ?>
-                            <li x-data="{ open: <?php echo $isActive ? 'true' : 'false'; ?> }" class="admin-nav-group">
+                            <li class="admin-nav-group">
                                 <button type="button" class="<?php echo admin_nav_link_class($isActive); ?> w-full justify-between admin-nav-toggle"
                                     data-nav-label="<?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
-                                    @click="open = !open"
-                                    :aria-expanded="open ? 'true' : 'false'">
+                                    aria-expanded="<?php echo $isActive ? 'true' : 'false'; ?>">
                                     <span class="flex items-center gap-3 min-w-0">
                                         <i class="fa-solid <?php echo htmlspecialchars($item['icon'] ?? 'fa-folder-tree', ENT_QUOTES, 'UTF-8'); ?> w-6 text-center opacity-50"></i>
                                         <span class="truncate"><?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
                                     </span>
-                                    <i class="fa-solid fa-chevron-down text-xs transition-transform" :class="open ? 'rotate-180' : ''"></i>
+                                    <i class="fa-solid fa-chevron-down text-xs transition-transform <?php echo $isActive ? 'rotate-180' : ''; ?>"></i>
                                 </button>
-                                <ul x-show="open" class="mt-1 me-3 border-r border-gray-200 pr-2">
+                                <ul class="mt-1 me-3 border-r border-gray-200 pr-2 admin-nav-group-children <?php echo $isActive ? '' : 'hidden'; ?>">
                                     <?php foreach (($item['children'] ?? []) as $child): ?>
                                         <li class="admin-nav-leaf">
                                             <a href="<?php echo htmlspecialchars($child['href'] ?? '#', ENT_QUOTES, 'UTF-8'); ?>"
-                                               class="<?php echo admin_nav_link_class($navCtx === ($child['key'] ?? '')); ?> admin-nav-link"
-                                               data-nav-label="<?php echo htmlspecialchars($child['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
-                                               @click="sidemenu = false">
+                                               class="<?php echo admin_nav_link_class($navCtx === ($child['key'] ?? '')); ?> admin-nav-link admin-mobile-nav-close-link"
+                                               data-nav-label="<?php echo htmlspecialchars($child['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                                                 <i class="fa-solid <?php echo htmlspecialchars($child['icon'] ?? 'fa-table', ENT_QUOTES, 'UTF-8'); ?> w-6 text-center opacity-50"></i>
                                                 <?php echo htmlspecialchars($child['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
                                             </a>
@@ -93,9 +91,8 @@ function admin_nav_link_class(bool $active): string
                         <?php else: ?>
                             <li>
                                 <a href="<?php echo htmlspecialchars($item['href'] ?? '#', ENT_QUOTES, 'UTF-8'); ?>"
-                                   class="<?php echo admin_nav_link_class($isActive); ?> admin-nav-link"
-                                   data-nav-label="<?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
-                                   @click="sidemenu = false">
+                                   class="<?php echo admin_nav_link_class($isActive); ?> admin-nav-link admin-mobile-nav-close-link"
+                                   data-nav-label="<?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                                     <i class="fa-solid <?php echo htmlspecialchars($item['icon'] ?? 'fa-table', ENT_QUOTES, 'UTF-8'); ?> w-6 text-center opacity-50"></i>
                                     <?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
                                 </a>
@@ -116,19 +113,18 @@ function admin_nav_link_class(bool $active): string
             <ul class="space-y-0.5">
                 <?php foreach ($navItems as $item): ?>
                     <?php $isActive = tazrim_admin_nav_item_is_active($item, $navCtx); ?>
-                    <?php if (($item['type'] ?? 'link') === 'group'): ?>
-                        <li x-data="{ open: <?php echo $isActive ? 'true' : 'false'; ?> }" class="admin-nav-group">
+                        <?php if (($item['type'] ?? 'link') === 'group'): ?>
+                        <li class="admin-nav-group">
                             <button type="button" class="<?php echo admin_nav_link_class($isActive); ?> w-full justify-between admin-nav-toggle"
                                 data-nav-label="<?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
-                                @click="open = !open"
-                                :aria-expanded="open ? 'true' : 'false'">
+                                aria-expanded="<?php echo $isActive ? 'true' : 'false'; ?>">
                                 <span class="flex items-center gap-3 min-w-0">
                                     <i class="fa-solid <?php echo htmlspecialchars($item['icon'] ?? 'fa-folder-tree', ENT_QUOTES, 'UTF-8'); ?> w-6 text-center opacity-50"></i>
                                     <span class="truncate"><?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
                                 </span>
-                                <i class="fa-solid fa-chevron-down text-xs transition-transform" :class="open ? 'rotate-180' : ''"></i>
+                                <i class="fa-solid fa-chevron-down text-xs transition-transform <?php echo $isActive ? 'rotate-180' : ''; ?>"></i>
                             </button>
-                            <ul x-show="open" class="mt-1 me-3 border-r border-gray-200 pr-2">
+                            <ul class="mt-1 me-3 border-r border-gray-200 pr-2 admin-nav-group-children <?php echo $isActive ? '' : 'hidden'; ?>">
                                 <?php foreach (($item['children'] ?? []) as $child): ?>
                                     <li class="admin-nav-leaf">
                                         <a href="<?php echo htmlspecialchars($child['href'] ?? '#', ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo admin_nav_link_class($navCtx === ($child['key'] ?? '')); ?> admin-nav-link" data-nav-label="<?php echo htmlspecialchars($child['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
@@ -197,9 +193,11 @@ function admin_nav_link_class(bool $active): string
                 >
                 <button
                     type="button"
+                    id="admin-mobile-nav-open-btn"
                     class="p-2 rounded-full hover:bg-gray-200 cursor-pointer md:hidden text-gray-600 shrink-0"
-                    @click="sidemenu = !sidemenu"
                     aria-label="פתח תפריט"
+                    aria-expanded="false"
+                    aria-controls="admin-mobile-nav-drawer"
                 >
                     <i class="fa-solid fa-bars text-xl"></i>
                 </button>
