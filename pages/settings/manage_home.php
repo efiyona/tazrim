@@ -117,6 +117,18 @@ $members_result = mysqli_query($conn, $members_query);
 
                             <hr class="management-divider">
 
+                            <div class="management-block">
+                                <span class="block-label">תקנון ומדיניות פרטיות:</span>
+                                <div class="join-row">
+                                    <a href="<?php echo htmlspecialchars(BASE_URL . 'pages/accept_tos.php', ENT_QUOTES, 'UTF-8'); ?>" class="btn-whatsapp-minimal" style="text-decoration: none;">
+                                        <i class="fa-solid fa-file-lines"></i> צפייה בתקנון
+                                    </a>
+                                </div>
+                                <p class="block-help">כאן אפשר לצפות בנוסח התקנון האחרון שאישרתם.</p>
+                            </div>
+
+                            <hr class="management-divider">
+
                             <form id="update-home-form">
                                 <div class="input-group">
                                     <label>שם הבית</label>

@@ -12,6 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    $has_active_categories = (bool) selectOne('categories', ['home_id' => $home_id, 'is_active' => 1]);
+    if ($has_active_categories) {
+        echo json_encode(['status' => 'error', 'message' => 'ההגדרות הראשוניות כבר הושלמו לבית זה.']);
+        exit();
+    }
+
     // 1. עדכון פרטי הבית (שם ויתרה התחלתית)
     $home_name = isset($_POST['home_name']) ? mysqli_real_escape_string($conn, trim($_POST['home_name'])) : '';
     $initial_balance = isset($_POST['initial_balance']) ? (float)$_POST['initial_balance'] : 0;

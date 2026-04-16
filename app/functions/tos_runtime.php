@@ -103,6 +103,27 @@ if (!function_exists('tazrim_current_tos_row')) {
     }
 }
 
+if (!function_exists('tazrim_tos_row_by_version')) {
+    /**
+     * @return array<string, mixed>|null
+     */
+    function tazrim_tos_row_by_version(string $version): ?array
+    {
+        global $conn;
+        if ($version === '' || !tazrim_tos_terms_table_ready() || !$conn) {
+            return null;
+        }
+
+        $escapedVersion = mysqli_real_escape_string($conn, $version);
+        $r = mysqli_query($conn, "SELECT * FROM `tos_terms` WHERE `version` = '{$escapedVersion}' LIMIT 1");
+        if ($r && mysqli_num_rows($r) > 0) {
+            return mysqli_fetch_assoc($r);
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('tazrim_tos_version')) {
     function tazrim_tos_version(): string
     {
@@ -125,6 +146,18 @@ if (!function_exists('tazrim_tos_last_updated')) {
     }
 }
 
+if (!function_exists('tazrim_tos_last_updated_by_version')) {
+    function tazrim_tos_last_updated_by_version(string $version): string
+    {
+        $row = tazrim_tos_row_by_version($version);
+        if ($row && isset($row['last_updated_label'])) {
+            return (string) $row['last_updated_label'];
+        }
+
+        return tazrim_tos_last_updated();
+    }
+}
+
 if (!function_exists('tazrim_tos_content_html')) {
     function tazrim_tos_content_html(): string
     {
@@ -137,5 +170,17 @@ if (!function_exists('tazrim_tos_content_html')) {
             return (string) file_get_contents($path);
         }
         return '';
+    }
+}
+
+if (!function_exists('tazrim_tos_content_html_by_version')) {
+    function tazrim_tos_content_html_by_version(string $version): string
+    {
+        $row = tazrim_tos_row_by_version($version);
+        if ($row && isset($row['content_html']) && $row['content_html'] !== '') {
+            return (string) $row['content_html'];
+        }
+
+        return tazrim_tos_content_html();
     }
 }

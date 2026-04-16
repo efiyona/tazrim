@@ -8,25 +8,27 @@ if (!isset($_SESSION['id'])) {
     exit();
 }
 
-// === חסימת גישה למשתמשים שכבר אישרו ===
 $user_id_for_tos = $_SESSION['id'];
-
-// קודם נבדוק בסשן (הכי מהיר)
-if (isset($_SESSION['tos_version']) && $_SESSION['tos_version'] === tazrim_tos_version()) {
-    header("Location: " . BASE_URL . "index.php");
-    exit();
-}
-
-// אם לא קיים בסשן, נבדוק בוודאות מול מסד הנתונים
-$tos_query = "SELECT tos_version FROM tos_agreements WHERE user_id = $user_id_for_tos ORDER BY accepted_at DESC LIMIT 1";
+$current_tos_version = tazrim_tos_version();
+$tos_query = "SELECT tos_version, accepted_at FROM tos_agreements WHERE user_id = $user_id_for_tos ORDER BY accepted_at DESC LIMIT 1";
 $tos_result = mysqli_query($conn, $tos_query);
 $tos_data = mysqli_fetch_assoc($tos_result);
+$accepted_version = (string) ($tos_data['tos_version'] ?? '');
+$accepted_at = (string) ($tos_data['accepted_at'] ?? '');
+$is_view_only = $accepted_version !== '' && $accepted_version === $current_tos_version;
+$display_version = $is_view_only ? $accepted_version : $current_tos_version;
+$display_last_updated = tazrim_tos_last_updated_by_version($display_version);
+$display_content_html = tazrim_tos_content_html_by_version($display_version);
+$accepted_at_label = '';
 
-if ($tos_data && $tos_data['tos_version'] === tazrim_tos_version()) {
-    // נעדכן את הסשן כדי לחסוך קריאות בהמשך
-    $_SESSION['tos_version'] = tazrim_tos_version();
-    header("Location: " . BASE_URL . "index.php");
-    exit();
+if ($is_view_only) {
+    $_SESSION['tos_version'] = $current_tos_version;
+    if ($accepted_at !== '') {
+        $accepted_ts = strtotime($accepted_at);
+        if ($accepted_ts !== false) {
+            $accepted_at_label = date('d/m/Y H:i', $accepted_ts);
+        }
+    }
 }
 ?>
 
@@ -34,7 +36,7 @@ if ($tos_data && $tos_data['tos_version'] === tazrim_tos_version()) {
 <html lang="he" dir="rtl">
 <head>
     <?php include(ROOT_PATH . '/assets/includes/setup_meta_data.php'); ?>
-    <title>אישור תקנון | התזרים</title>
+    <title><?php echo $is_view_only ? 'צפייה בתקנון' : 'אישור תקנון'; ?> | התזרים</title>
     <style>
         * { box-sizing: border-box; }
         .welcome-body { background: #f3f4f6; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Assistant', sans-serif; margin: 0; padding: 20px 0; }
@@ -72,6 +74,45 @@ if ($tos_data && $tos_data['tos_version'] === tazrim_tos_version()) {
         
         .tos-scroll-box h4 { color: var(--main); margin-top: 20px; margin-bottom: 5px; font-weight: 800; }
         .tos-scroll-box h4:first-child { margin-top: 0; }
+
+        .tos-meta-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .tos-chip {
+            background: #f0fdf4;
+            color: var(--main-dark);
+            border: 1px solid #c2e0c6;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+
+        .btn-secondary-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            background: #f8fafc;
+            color: var(--text);
+            border: 1px solid #dbe3ea;
+            font-weight: 700;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+        .btn-secondary-link:hover {
+            background: #eef4f8;
+        }
         
         /* צ'קבוקס אישור */
         .accept-checkbox-wrapper {
@@ -117,34 +158,57 @@ if ($tos_data && $tos_data['tos_version'] === tazrim_tos_version()) {
         <form id="tos-form">
             <div class="step active" id="step-1">
                 <div class="welcome-icon"><i class="fa-solid fa-file-signature"></i></div>
-                <h1 style="font-weight: 800; margin-bottom: 10px;">עדכנו את תנאי השימוש!</h1>
-                <p style="color: #666; line-height: 1.6; margin-bottom: 10px;">כדי להמשיך להשתמש במערכת בבטחה, אנא קראו ואשרו את התקנון המעודכן שלנו.</p>
-                <p style="color: var(--main); font-weight: 600; background: #f0fdf4; padding: 10px; border-radius: 8px; display: inline-block;">
-                    עודכן לאחרונה: <?php echo htmlspecialchars(tazrim_tos_last_updated(), ENT_QUOTES, 'UTF-8'); ?>
+                <h1 style="font-weight: 800; margin-bottom: 10px;">
+                    <?php echo $is_view_only ? 'התקנון שאישרתם' : 'עדכנו את תנאי השימוש!'; ?>
+                </h1>
+                <p style="color: #666; line-height: 1.6; margin-bottom: 10px;">
+                    <?php echo $is_view_only
+                        ? 'כאן אפשר לצפות בכל עת בנוסח התקנון האחרון שאישרתם.'
+                        : 'כדי להמשיך להשתמש במערכת בבטחה, אנא קראו ואשרו את התקנון המעודכן שלנו.'; ?>
                 </p>
-                <button type="button" class="btn-welcome" onclick="nextStep(2)">מעבר לתקנון <i class="fa-solid fa-arrow-left"></i></button>
+                <p style="color: var(--main); font-weight: 600; background: #f0fdf4; padding: 10px; border-radius: 8px; display: inline-block;">
+                    עודכן לאחרונה: <?php echo htmlspecialchars($display_last_updated, ENT_QUOTES, 'UTF-8'); ?>
+                </p>
+                <button type="button" class="btn-welcome" onclick="nextStep(2)">
+                    <?php echo $is_view_only ? 'צפייה בתקנון' : 'מעבר לתקנון'; ?> <i class="fa-solid fa-arrow-left"></i>
+                </button>
             </div>
 
             <div class="step" id="step-2">
                 <h2 style="font-weight: 800; margin-bottom: 15px;">תקנון ומדיניות פרטיות</h2>
+
+                <div class="tos-meta-row">
+                    <span class="tos-chip">גרסה: <?php echo htmlspecialchars($display_version, ENT_QUOTES, 'UTF-8'); ?></span>
+                    <?php if ($accepted_at_label !== ''): ?>
+                        <span class="tos-chip">אושר בתאריך: <?php echo htmlspecialchars($accepted_at_label, ENT_QUOTES, 'UTF-8'); ?></span>
+                    <?php endif; ?>
+                </div>
                 
-                <?php echo tazrim_tos_content_html(); ?>
+                <?php echo $display_content_html; ?>
 
-                <label class="accept-checkbox-wrapper">
-                    <input type="checkbox" id="tos-checkbox" onchange="toggleSubmitBtn()">
-                    <span>קראתי ואני מסכים לתנאי השימוש ומדיניות הפרטיות</span>
-                </label>
+                <?php if (!$is_view_only): ?>
+                    <label class="accept-checkbox-wrapper">
+                        <input type="checkbox" id="tos-checkbox" onchange="toggleSubmitBtn()">
+                        <span>קראתי ואני מסכים לתנאי השימוש ומדיניות הפרטיות</span>
+                    </label>
 
-                <div id="tos-msg" style="margin-top: 15px; display: none; padding: 10px; border-radius: 8px; font-weight: 700;"></div>
+                    <div id="tos-msg" style="margin-top: 15px; display: none; padding: 10px; border-radius: 8px; font-weight: 700;"></div>
 
-                <button type="submit" id="finish-btn" class="btn-welcome" disabled>
-                    <i class="fa-solid fa-check"></i> מאושר - המשך למערכת
-                </button>
+                    <button type="submit" id="finish-btn" class="btn-welcome" disabled>
+                        <i class="fa-solid fa-check"></i> מאושר - המשך למערכת
+                    </button>
+                <?php else: ?>
+                    <a href="<?php echo BASE_URL; ?>pages/settings/manage_home.php" class="btn-secondary-link">
+                        <i class="fa-solid fa-arrow-right"></i> חזרה להגדרות הבית
+                    </a>
+                <?php endif; ?>
             </div>
         </form>
     </div>
 
     <script>
+        const isViewOnly = <?php echo $is_view_only ? 'true' : 'false'; ?>;
+
         function nextStep(stepNum) {
             document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
             document.getElementById('step-' + stepNum).classList.add('active');
@@ -155,12 +219,16 @@ if ($tos_data && $tos_data['tos_version'] === tazrim_tos_version()) {
 
         // מדליק ומכבה את כפתור השליחה לפי ה-Checkbox
         function toggleSubmitBtn() {
+            if (isViewOnly) return;
             const isChecked = document.getElementById('tos-checkbox').checked;
             document.getElementById('finish-btn').disabled = !isChecked;
         }
 
         // שליחת האישור לשרת
         document.getElementById('tos-form').addEventListener('submit', function(e) {
+            if (isViewOnly) {
+                return;
+            }
             e.preventDefault();
             const btn = document.getElementById('finish-btn');
             const msgBox = document.getElementById('tos-msg');

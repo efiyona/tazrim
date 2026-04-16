@@ -5,6 +5,12 @@ include(ROOT_PATH . '/assets/includes/auth_check.php');
 
 $home_id = $_SESSION['home_id'];
 $home_data = selectOne('homes', ['id' => $home_id]);
+$has_active_categories = (bool) selectOne('categories', ['home_id' => $home_id, 'is_active' => 1]);
+
+if ($has_active_categories) {
+    header('Location: ' . BASE_URL . 'index.php');
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
