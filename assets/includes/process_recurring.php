@@ -69,9 +69,6 @@ if (mysqli_num_rows($recurring_result) > 0) {
             // קידום הלולאה לחודש הבא
             $start_date->modify('+1 month');
         }
-
-        // מחיקת Cache של ה-AI בסיום הטיפול בפעולה זו
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
     }
 }
 ?>

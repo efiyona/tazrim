@@ -32,8 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (mysqli_query($conn, $query)) {
-        // חשוב! בגלל ששינינו תקציב או קטגוריות, התובנות הקודמות של הבינה המלאכותית כבר לא מעודכנות
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
         echo json_encode(['status' => 'success']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'שגיאה בשמירת הנתונים.']);

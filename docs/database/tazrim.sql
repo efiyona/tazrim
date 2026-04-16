@@ -33,23 +33,6 @@ CREATE TABLE `ai_api_logs` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `ai_insights_cache`
---
-
-DROP TABLE IF EXISTS `ai_insights_cache`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `ai_insights_cache` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `home_id` int(11) NOT NULL,
-  `insight_type` varchar(50) NOT NULL,
-  `insight_text` text NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `api_tokens`
 --
 

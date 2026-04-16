@@ -61,7 +61,6 @@ try {
     }
 
     if (mysqli_query($conn, $query)) {
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
         echo json_encode(['status' => 'success']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'שגיאה בשמירת הנתונים.']);

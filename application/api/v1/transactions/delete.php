@@ -61,8 +61,6 @@ try {
         exit();
     }
 
-    mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
-
     echo json_encode(['status' => 'success', 'data' => ['message' => 'הפעולה נמחקה.']]);
     exit();
 } catch (Throwable $e) {

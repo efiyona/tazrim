@@ -28,8 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      WHERE id = $trans_id AND home_id = $home_id";
 
     if (mysqli_query($conn, $update_query)) {
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
-
         $after = mysqli_query($conn, "SELECT type, category FROM transactions WHERE id = $trans_id AND home_id = $home_id LIMIT 1");
         if ($after) {
             $row = mysqli_fetch_assoc($after);

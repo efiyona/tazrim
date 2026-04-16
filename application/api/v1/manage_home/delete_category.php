@@ -42,7 +42,6 @@ try {
 
     $update_query = "UPDATE categories SET is_active = 0 WHERE id = $cat_id AND home_id = $home_id";
     if (mysqli_query($conn, $update_query)) {
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
         echo json_encode(['status' => 'success']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'שגיאה במסד הנתונים.']);

@@ -74,7 +74,6 @@ if ($recurring_id > 0) {
 
     $q = "UPDATE recurring_transactions SET type='$type', amount=$amount, category=$category_id, description='$description', day_of_month=$day_of_month WHERE id=$recurring_id AND home_id=$home_id";
     if (mysqli_query($conn, $q)) {
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
         echo json_encode(['status' => 'success']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'שגיאה בעדכון הנתונים.']);
@@ -83,7 +82,6 @@ if ($recurring_id > 0) {
     $q = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, category, description, day_of_month, last_injected_month, is_active) 
           VALUES ($home_id, $user_id, '$type', $amount, $category_id, '$description', $day_of_month, NULL, 1)";
     if (mysqli_query($conn, $q)) {
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
         echo json_encode(['status' => 'success']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'שגיאה בשמירת הנתונים.']);

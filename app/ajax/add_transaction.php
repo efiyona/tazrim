@@ -41,9 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_query($conn, $insert_recurring);
         }
 
-        // ניקוי Cache של ה-AI
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
-
         // 6. יצירת התראה פנימית לבית (בתוך האפליקציה)
         $user_name = $_SESSION['first_name'];
         $amount_formatted = number_format($amount, 2);

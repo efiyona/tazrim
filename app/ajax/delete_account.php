@@ -58,7 +58,6 @@ try {
         mysqli_query($conn, "DELETE FROM shopping_categories WHERE home_id = $home_id");
         mysqli_query($conn, "DELETE FROM categories WHERE home_id = $home_id");
         mysqli_query($conn, "DELETE FROM notifications WHERE home_id = $home_id");
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
         mysqli_query($conn, "DELETE FROM ai_api_logs WHERE home_id = $home_id");
         
         // מחיקת הבית עצמו

@@ -64,7 +64,6 @@ $insert_query = "INSERT INTO transactions (home_id, user_id, type, amount, categ
 if (mysqli_query($conn, $insert_query)) {
     
     mysqli_query($conn, "UPDATE api_tokens SET last_used = CURRENT_TIMESTAMP() WHERE token = '$token'");
-    mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
 
     $user_data = selectOne('users', ['id' => $user_id]);
     $user_name = $user_data['first_name'] ?? 'משתמש';

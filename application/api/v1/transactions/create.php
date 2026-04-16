@@ -97,8 +97,6 @@ try {
         mysqli_query($conn, $insert_recurring);
     }
 
-    mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
-
     $user_name = $user['first_name'] ?? 'משתמש';
     $amount_formatted = number_format($amount, 2);
     $notif_title = $user_name;

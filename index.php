@@ -95,23 +95,6 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                 </div>
                 
                 <?php echo tazrim_render_home_dashboard_core($conn, $home_id, $selected_month, $selected_year); ?>
-
-                <section class="ai-advisor-section" style="margin-bottom: 40px;">
-                    <div class="ai-card">
-                        <div class="ai-card-header">
-                            <div class="ai-icon-wrapper">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                            </div>
-                            <h2 class="ai-title">תובנות חכמות מ-Gemini</h2>
-                        </div>
-                        <div class="ai-card-body" id="ai-insight-content">
-                            <p class="ai-intro-text">לחצו על הכפתור כדי לקבל ניתוח חכם של קצב ההוצאות שלכם החודש (Burn Rate).</p>
-                            <button id="btn-generate-insight" class="btn-ai-generate" onclick="generateAIInsight()">
-                                <i class="fa-solid fa-robot"></i> תובנה לחודש
-                            </button>
-                        </div>
-                    </div>
-                </section>
             </div>
         </main>
 
@@ -420,14 +403,6 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
             .catch(() => { window.location.reload(); });
     }
 
-    function resetAiInsightCard() {
-        const el = document.getElementById('ai-insight-content');
-        if (!el) return;
-        el.innerHTML = '<p class="ai-intro-text">לחצו על הכפתור כדי לקבל ניתוח חכם של קצב ההוצאות שלכם החודש (Burn Rate).</p>' +
-            '<button type="button" id="btn-generate-insight" class="btn-ai-generate" onclick="generateAIInsight()">' +
-            '<i class="fa-solid fa-robot"></i> תובנה לחודש</button>';
-    }
-
     window.addEventListener('click', function(event) {
         const modal = document.getElementById('category-details-modal');
         if (modal && event.target === modal) {
@@ -436,22 +411,6 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         }
     });
 
-    function generateAIInsight() {
-        const btn = document.getElementById('btn-generate-insight');
-        const content = document.getElementById('ai-insight-content');
-
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מנתח…';
-        btn.disabled = true;
-
-        fetch(`app/ajax/generate_ai_insight.php?m=${currentMonth}&y=${currentYear}`)
-            .then(response => response.text())
-            .then(data => {
-                content.innerHTML = `<div class="ai-result-text">${data}</div>`;
-            })
-            .catch(error => {
-                content.innerHTML = '<p style="color: var(--error);">שגיאה בתקשורת עם היועץ החכם.</p>';
-            });
-    }
 </script>
 <script>
     const addModal = document.getElementById('add-transaction-modal');
@@ -620,7 +579,7 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                 setTimeout(() => {
                     closeAddModal();
                     closeCatDetails();
-                    refreshHomeDashboardCore().then(() => resetAiInsightCard());
+                    refreshHomeDashboardCore();
                 }, 500);
             } else {
                 msgBox.style.display = 'block';
@@ -702,11 +661,10 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                 closeEditTransModal();
                 if (src === 'category-details') {
                     refreshHomeDashboardCore()
-                        .then(() => refreshOpenCategoryDetailsIfAny())
-                        .then(() => resetAiInsightCard());
+                        .then(() => refreshOpenCategoryDetailsIfAny());
                 } else {
                     closeCatDetails();
-                    refreshHomeDashboardCore().then(() => resetAiInsightCard());
+                    refreshHomeDashboardCore();
                 }
             })
             .catch(err => {
@@ -752,11 +710,10 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                     closeEditTransModal();
                     if (src === 'category-details') {
                         refreshHomeDashboardCore()
-                            .then(() => refreshOpenCategoryDetailsIfAny())
-                            .then(() => resetAiInsightCard());
+                            .then(() => refreshOpenCategoryDetailsIfAny());
                     } else {
                         closeCatDetails();
-                        refreshHomeDashboardCore().then(() => resetAiInsightCard());
+                        refreshHomeDashboardCore();
                     }
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> שמור שינויים';

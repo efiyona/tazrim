@@ -17,8 +17,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $delete_query = "DELETE FROM transactions WHERE id = $trans_id AND home_id = $home_id";
 
     if (mysqli_query($conn, $delete_query)) {
-        // מוחקים את הקאש של הבינה המלאכותית כי הנתונים הפיננסיים השתנו
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
         echo json_encode(['status' => 'success']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'שגיאה במסד הנתונים.']);

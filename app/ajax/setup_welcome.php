@@ -74,9 +74,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // בדיקה סופית: האם יש לנו לפחות קטגוריה אחת פעילה?
     if ($cats_added_count > 0) {
-        // ניקוי קאש של הבינה המלאכותית (כדי שתנתח את המבנה החדש)
-        mysqli_query($conn, "DELETE FROM ai_insights_cache WHERE home_id = $home_id");
-        
         echo json_encode(['status' => 'success']);
     } else {
         // מקרה קצה: המשתמש מחק את הכל או הוסיף בלוקים ריקים בלבד
