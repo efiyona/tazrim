@@ -1,6 +1,8 @@
 <?php
 // קובץ זה בודק אם יש פעולות קבועות שצריך להזריק לחודש הנוכחי (או לחודשים שפוספסו)
 
+require_once ROOT_PATH . '/app/functions/currency.php';
+
 $home_id = $_SESSION['home_id'];
 $current_month_start = date('Y-m-01'); 
 
@@ -19,9 +21,11 @@ if (mysqli_num_rows($recurring_result) > 0) {
 
     while ($template = mysqli_fetch_assoc($recurring_result)) {
         $template_id = $template['id'];
+        $debug_run_id = uniqid('proc_rec_', true);
         $user_id = $template['user_id'];
         $type = $template['type'];
-        $amount = $template['amount'];
+        $amount = (float) $template['amount'];
+        $currency_code = tazrim_normalize_currency_code($template['currency_code'] ?? 'ILS');
         $category = $template['category'];
         $description = mysqli_real_escape_string($conn, $template['description']);
         $day_of_month = $template['day_of_month'];
@@ -49,9 +53,37 @@ if (mysqli_num_rows($recurring_result) > 0) {
             $actual_day = ($day_of_month > $days_in_month) ? $days_in_month : $day_of_month;
             $transaction_date = sprintf('%04d-%02d-%02d', $loop_year, $loop_month, $actual_day);
 
+            try {
+                $conversion = tazrim_convert_amount_to_ils($conn, $amount, $currency_code);
+            } catch (Throwable $e) {
+                // #region agent log
+                tazrim_debug_log('assets/includes/process_recurring.php:58', 'Recurring injection conversion failed', [
+                    'template_id' => $template_id,
+                    'currency_code' => $currency_code,
+                    'amount_original' => $amount,
+                    'transaction_date' => $transaction_date,
+                    'error_class' => get_class($e),
+                ], 'H5', $debug_run_id);
+                // #endregion
+                addNotification($home_id, 'שגיאת המרת מטבע', 'לא הצלחנו להזריק כרגע את הפעולה הקבועה "' . htmlspecialchars($template['description'], ENT_QUOTES, 'UTF-8') . '". ננסה שוב בכניסה הבאה.', 'error');
+                break;
+            }
+            $amount_ils = (float) $conversion['converted_amount'];
+
+            $currency_code_esc = mysqli_real_escape_string($conn, $currency_code);
+            // #region agent log
+            tazrim_debug_log('assets/includes/process_recurring.php:71', 'Recurring injection conversion succeeded', [
+                'template_id' => $template_id,
+                'currency_code' => $currency_code,
+                'amount_original' => $amount,
+                'amount_ils' => $amount_ils,
+                'transaction_date' => $transaction_date,
+            ], 'H5', $debug_run_id);
+            // #endregion
+
             // 1. הזרקה לטבלת הפעולות הרגילה
-            $insert_trans = "INSERT INTO transactions (home_id, user_id, amount, type, category, description, transaction_date) 
-                             VALUES ($home_id, $user_id, $amount, '$type', $category, '$description', '$transaction_date')";
+            $insert_trans = "INSERT INTO transactions (home_id, user_id, amount, currency_code, type, category, description, transaction_date) 
+                             VALUES ($home_id, $user_id, $amount_ils, '$currency_code_esc', '$type', $category, '$description', '$transaction_date')";
             
             if (mysqli_query($conn, $insert_trans)) {
                 
@@ -59,7 +91,7 @@ if (mysqli_num_rows($recurring_result) > 0) {
                 mysqli_query($conn, "UPDATE recurring_transactions SET last_injected_month = '$loop_month_start' WHERE id = $template_id");
 
                 // 3. יצירת התראה מותאמת אישית לאותו חודש שבוצע
-                $amount_fmt = number_format($amount, 0);
+                $amount_fmt = number_format($amount_ils, 0);
                 $month_name = $hebrew_months[$loop_month];
                 $notif_msg = "הזרקה אוטומטית ($month_name): <span class='notif-bold'>{$template['description']}</span> בסך {$amount_fmt} ₪";
                 

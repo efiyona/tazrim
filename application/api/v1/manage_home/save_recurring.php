@@ -17,6 +17,7 @@ header('Content-Type: application/json; charset=utf-8');
 try {
     require('../../../../path.php');
     include(ROOT_PATH . '/app/database/db.php');
+    require_once ROOT_PATH . '/app/functions/currency.php';
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
     $token = isset($_GET['token']) ? trim($_GET['token']) : '';
@@ -49,6 +50,7 @@ try {
     $type = (($body['rec_type'] ?? 'expense') === 'income') ? 'income' : 'expense';
     $category_id = isset($body['rec_category']) ? (int) $body['rec_category'] : 0;
     $amount = isset($body['rec_amount']) ? (float) $body['rec_amount'] : 0;
+    $currency_code = tazrim_normalize_currency_code($body['currency_code'] ?? 'ILS');
     $description = mysqli_real_escape_string($conn, trim((string) ($body['rec_description'] ?? '')));
 
     $day_of_month = 0;
@@ -100,15 +102,17 @@ try {
             exit();
         }
 
-        $q = "UPDATE recurring_transactions SET type='$type', amount=$amount, category=$category_id, description='$description', day_of_month=$day_of_month WHERE id=$recurring_id AND home_id=$home_id";
+        $currency_code_esc = mysqli_real_escape_string($conn, $currency_code);
+        $q = "UPDATE recurring_transactions SET type='$type', amount=$amount, currency_code='$currency_code_esc', category=$category_id, description='$description', day_of_month=$day_of_month WHERE id=$recurring_id AND home_id=$home_id";
         if (mysqli_query($conn, $q)) {
             echo json_encode(['status' => 'success']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'שגיאה בעדכון הנתונים.']);
         }
     } else {
-        $q = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, category, description, day_of_month, last_injected_month, is_active) 
-              VALUES ($home_id, $user_id, '$type', $amount, $category_id, '$description', $day_of_month, NULL, 1)";
+        $currency_code_esc = mysqli_real_escape_string($conn, $currency_code);
+        $q = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, currency_code, category, description, day_of_month, last_injected_month, is_active) 
+              VALUES ($home_id, $user_id, '$type', $amount, '$currency_code_esc', $category_id, '$description', $day_of_month, NULL, 1)";
         if (mysqli_query($conn, $q)) {
             echo json_encode(['status' => 'success']);
         } else {

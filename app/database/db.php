@@ -105,6 +105,91 @@ function tazrim_ensure_feedback_reports_table() {
 
 tazrim_ensure_feedback_reports_table();
 
+/**
+ * מבטיח עמודת מטבע בטבלת הפעולות.
+ */
+function tazrim_ensure_transactions_currency_column() {
+    global $conn;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    if (!$conn) {
+        return;
+    }
+
+    $result = @mysqli_query($conn, "SHOW COLUMNS FROM `transactions` LIKE 'currency_code'");
+    if ($result && mysqli_num_rows($result) === 0) {
+        @mysqli_query(
+            $conn,
+            "ALTER TABLE `transactions`
+             ADD COLUMN `currency_code` VARCHAR(3) NOT NULL DEFAULT 'ILS' AFTER `amount`"
+        );
+    }
+}
+
+tazrim_ensure_transactions_currency_column();
+
+/**
+ * מבטיח עמודת מטבע בטבלת הפעולות הקבועות.
+ */
+function tazrim_ensure_recurring_currency_column() {
+    global $conn;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    if (!$conn) {
+        return;
+    }
+
+    $result = @mysqli_query($conn, "SHOW COLUMNS FROM `recurring_transactions` LIKE 'currency_code'");
+    if ($result && mysqli_num_rows($result) === 0) {
+        @mysqli_query(
+            $conn,
+            "ALTER TABLE `recurring_transactions`
+             ADD COLUMN `currency_code` VARCHAR(3) NOT NULL DEFAULT 'ILS' AFTER `amount`"
+        );
+    }
+}
+
+tazrim_ensure_recurring_currency_column();
+
+/**
+ * מבטיח טבלת cache לשערי מטבע.
+ */
+function tazrim_ensure_fx_rates_cache_table() {
+    global $conn;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    if (!$conn) {
+        return;
+    }
+
+    @mysqli_query(
+        $conn,
+        "CREATE TABLE IF NOT EXISTS `fx_rates_cache` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `base_currency` varchar(3) NOT NULL,
+            `quote_currency` varchar(3) NOT NULL,
+            `rate` decimal(14,6) NOT NULL,
+            `provider` varchar(64) NOT NULL DEFAULT 'frankfurter',
+            `fetched_at` datetime NOT NULL,
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uq_fx_pair` (`base_currency`, `quote_currency`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+}
+
+tazrim_ensure_fx_rates_cache_table();
+
 function dd($value)
 {
     echo "<pre>", print_r($value, true), "</pre>";

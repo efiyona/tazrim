@@ -186,6 +186,86 @@ h3 {
     box-shadow: 0 0 0 4px var(--main-light);
 }
 
+.form-fields-pill .input-with-icon input,
+.form-fields-pill .input-with-icon select,
+.form-fields-pill .custom-select-trigger {
+    border-radius: 999px;
+}
+
+.input-with-icon--currency input {
+    padding-left: 58px;
+}
+
+.currency-toggle-btn {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--main-light);
+    color: var(--main);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.currency-toggle-btn i {
+    position: static;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.98rem;
+    line-height: 1;
+}
+
+@media (hover: hover) {
+    .currency-toggle-btn:hover {
+        transform: translateY(-50%) scale(1.04);
+        background: var(--main);
+        color: var(--white);
+    }
+}
+
+.currency-toggle-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--main-light);
+}
+
+.currency-toggle-btn__tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    transform: none;
+    background: rgba(34, 34, 34, 0.94);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 1;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.currency-toggle-btn__tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 11px;
+    transform: none;
+    border-width: 5px;
+    border-style: solid;
+    border-color: rgba(34, 34, 34, 0.94) transparent transparent transparent;
+}
+
 .btn-primary {
     background-color: var(--main);
     color: var(--white);

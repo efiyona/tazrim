@@ -128,14 +128,14 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                 <button type="button" onclick="closeAddModal()" class="close-modal-btn" aria-label="סגור" title="סגור"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body">
-                <form id="add-transaction-form">
+                <form id="add-transaction-form" class="form-fields-pill">
                     
                     <div class="modern-toggle">
                         <input type="radio" name="type" id="type-expense" value="expense" checked onchange="filterCategories()">
-                        <label for="type-expense" class="toggle-option expense">הוצאה (-)</label>
+                        <label for="type-expense" class="toggle-option expense">הוצאה</label>
                         
                         <input type="radio" name="type" id="type-income" value="income" onchange="filterCategories()">
-                        <label for="type-income" class="toggle-option income">הכנסה (+)</label>
+                        <label for="type-income" class="toggle-option income">הכנסה</label>
                     </div>
 
                     <div class="input-group">
@@ -147,10 +147,15 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                     </div>
 
                     <div class="input-group">
-                        <label>סכום (₪)</label>
-                        <div class="input-with-icon">
-                            <i class="fa-solid fa-shekel-sign"></i>
+                        <label>סכום</label>
+                        <div class="input-with-icon input-with-icon--currency">
+                            <i class="fa-solid fa-money-bill-wave"></i>
                             <input type="number" name="amount" id="trans-amount" step="0.01" min="0.01" required placeholder="0.00" style="font-size: 1.2rem; font-weight: 800;">
+                            <input type="hidden" name="currency_code" id="trans-currency-code" value="ILS">
+                            <button type="button" id="trans-currency-toggle" class="currency-toggle-btn" onclick="toggleCurrencyField('trans-currency-code', 'trans-currency-toggle')" aria-label="החלף מטבע" title="לחיצה מחליפה בין שקל לדולר">
+                                <i class="fa-solid fa-shekel-sign" aria-hidden="true"></i>
+                                <span class="currency-toggle-btn__tooltip">לחיצה מחליפה בין שקל לדולר</span>
+                            </button>
                         </div>
                     </div>
 
@@ -192,7 +197,7 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                 <button type="button" onclick="closeEditTransModal()" class="close-modal-btn" aria-label="סגור" title="סגור"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body">
-                <form id="edit-transaction-form">
+                <form id="edit-transaction-form" class="form-fields-pill">
                     <input type="hidden" name="transaction_id" id="edit-trans-id">
                     <input type="hidden" id="edit-trans-type">
 
@@ -524,10 +529,41 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         resetAddForm();
     }
 
+    function syncCurrencyToggle(inputId, buttonId) {
+        const hiddenInput = document.getElementById(inputId);
+        const button = document.getElementById(buttonId);
+        if (!hiddenInput || !button) {
+            return;
+        }
+
+        const icon = button.querySelector('i');
+        const currencyCode = hiddenInput.value === 'USD' ? 'USD' : 'ILS';
+        hiddenInput.value = currencyCode;
+        if (icon) {
+            icon.className = currencyCode === 'USD' ? 'fa-solid fa-dollar-sign' : 'fa-solid fa-shekel-sign';
+        }
+        button.setAttribute('aria-label', currencyCode === 'USD' ? 'מטבע נוכחי דולר, לחץ להחלפה לשקל' : 'מטבע נוכחי שקל, לחץ להחלפה לדולר');
+    }
+
+    function toggleCurrencyField(inputId, buttonId) {
+        const hiddenInput = document.getElementById(inputId);
+        const button = document.getElementById(buttonId);
+        if (!hiddenInput || !button) {
+            return;
+        }
+
+        hiddenInput.value = hiddenInput.value === 'USD' ? 'ILS' : 'USD';
+        syncCurrencyToggle(inputId, buttonId);
+        button.classList.add('tooltip-visible');
+        window.setTimeout(() => button.classList.remove('tooltip-visible'), 1200);
+    }
+
     function resetAddForm() {
         addForm.reset();
         document.getElementById('type-expense').checked = true; 
         document.getElementById('trans-date').value = "<?php echo date('Y-m-d'); ?>"; 
+        document.getElementById('trans-currency-code').value = 'ILS';
+        syncCurrencyToggle('trans-currency-code', 'trans-currency-toggle');
         document.getElementById('selected-category-id').value = ""; 
         document.getElementById('add-trans-msg').style.display = 'none';
         
@@ -607,6 +643,8 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
             closeAddModal();
         }
     });
+
+    syncCurrencyToggle('trans-currency-code', 'trans-currency-toggle');
 </script>
 
 <script>

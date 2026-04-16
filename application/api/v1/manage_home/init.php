@@ -19,6 +19,7 @@ header('Content-Type: application/json; charset=utf-8');
 try {
     require('../../../../path.php');
     include(ROOT_PATH . '/app/database/db.php');
+    require_once ROOT_PATH . '/app/functions/currency.php';
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
     $token = isset($_GET['token']) ? trim($_GET['token']) : '';
@@ -75,6 +76,7 @@ try {
         while ($rec = mysqli_fetch_assoc($recurring_result)) {
             $rec['id'] = (int) $rec['id'];
             $rec['amount'] = (float) $rec['amount'];
+            $rec['currency_code'] = tazrim_normalize_currency_code($rec['currency_code'] ?? 'ILS');
             $rec['category'] = (int) $rec['category'];
             $rec['day_of_month'] = (int) $rec['day_of_month'];
             if ($rec['type'] === 'expense') {

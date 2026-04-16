@@ -192,6 +192,7 @@ CREATE TABLE `recurring_transactions` (
   `user_id` int(11) NOT NULL,
   `type` enum('income','expense') NOT NULL,
   `amount` decimal(10,2) NOT NULL,
+  `currency_code` varchar(3) NOT NULL DEFAULT 'ILS',
   `category` int(11) NOT NULL,
   `description` varchar(255) NOT NULL,
   `day_of_month` int(11) NOT NULL,
@@ -200,6 +201,27 @@ CREATE TABLE `recurring_transactions` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fx_rates_cache`
+--
+
+DROP TABLE IF EXISTS `fx_rates_cache`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `fx_rates_cache` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `base_currency` varchar(3) NOT NULL,
+  `quote_currency` varchar(3) NOT NULL,
+  `rate` decimal(14,6) NOT NULL,
+  `provider` varchar(64) NOT NULL DEFAULT 'frankfurter',
+  `fetched_at` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_fx_pair` (`base_currency`,`quote_currency`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -271,6 +293,7 @@ CREATE TABLE `transactions` (
   `home_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `amount` decimal(10,2) NOT NULL,
+  `currency_code` varchar(3) NOT NULL DEFAULT 'ILS',
   `type` enum('income','expense') NOT NULL,
   `category` varchar(100) DEFAULT NULL,
   `description` varchar(255) DEFAULT NULL,

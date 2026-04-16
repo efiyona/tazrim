@@ -213,15 +213,15 @@ $members_result = mysqli_query($conn, $members_query);
                 <button type="button" onclick="closeRecurringModal()" class="close-modal-btn" aria-label="סגור" title="סגור"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body">
-                <form id="recurring-form">
+                <form id="recurring-form" class="form-fields-pill">
                     <input type="hidden" name="recurring_id" id="recurring-id" value="">
 
                     <div class="modern-toggle" id="rec-type-toggle">
                         <input type="radio" name="rec_type" id="type-expense" value="expense" checked onchange="filterRecurringCategories()">
-                        <label for="type-expense" class="toggle-option expense">הוצאה (-)</label>
+                        <label for="type-expense" class="toggle-option expense">הוצאה</label>
 
                         <input type="radio" name="rec_type" id="type-income" value="income" onchange="filterRecurringCategories()">
-                        <label for="type-income" class="toggle-option income">הכנסה (+)</label>
+                        <label for="type-income" class="toggle-option income">הכנסה</label>
                     </div>
 
                     <div class="input-group">
@@ -233,10 +233,15 @@ $members_result = mysqli_query($conn, $members_query);
                     </div>
 
                     <div class="input-group">
-                        <label>סכום (₪)</label>
-                        <div class="input-with-icon">
-                            <i class="fa-solid fa-shekel-sign"></i>
+                        <label>סכום</label>
+                        <div class="input-with-icon input-with-icon--currency">
+                            <i class="fa-solid fa-money-bill-wave"></i>
                             <input type="number" name="rec_amount" id="rec-amount" step="0.01" min="0.01" required placeholder="0.00" style="font-size: 1.2rem; font-weight: 800;">
+                            <input type="hidden" name="currency_code" id="rec-currency-code" value="ILS">
+                            <button type="button" id="rec-currency-toggle" class="currency-toggle-btn" onclick="toggleCurrencyField('rec-currency-code', 'rec-currency-toggle')" aria-label="החלף מטבע" title="לחיצה מחליפה בין שקל לדולר">
+                                <i class="fa-solid fa-shekel-sign" aria-hidden="true"></i>
+                                <span class="currency-toggle-btn__tooltip">לחיצה מחליפה בין שקל לדולר</span>
+                            </button>
                         </div>
                     </div>
 
@@ -533,11 +538,44 @@ $members_result = mysqli_query($conn, $members_query);
             buildRecurringCategorySelect('rec-category-grid-container', 'rec-selected-category-id', selectedType);
         }
 
+        function syncCurrencyToggle(inputId, buttonId) {
+            var hiddenInput = document.getElementById(inputId);
+            var button = document.getElementById(buttonId);
+            if (!hiddenInput || !button) {
+                return;
+            }
+
+            var icon = button.querySelector('i');
+            var currencyCode = hiddenInput.value === 'USD' ? 'USD' : 'ILS';
+            hiddenInput.value = currencyCode;
+            if (icon) {
+                icon.className = currencyCode === 'USD' ? 'fa-solid fa-dollar-sign' : 'fa-solid fa-shekel-sign';
+            }
+            button.setAttribute('aria-label', currencyCode === 'USD' ? 'מטבע נוכחי דולר, לחץ להחלפה לשקל' : 'מטבע נוכחי שקל, לחץ להחלפה לדולר');
+        }
+
+        function toggleCurrencyField(inputId, buttonId) {
+            var hiddenInput = document.getElementById(inputId);
+            var button = document.getElementById(buttonId);
+            if (!hiddenInput || !button) {
+                return;
+            }
+
+            hiddenInput.value = hiddenInput.value === 'USD' ? 'ILS' : 'USD';
+            syncCurrencyToggle(inputId, buttonId);
+            button.classList.add('tooltip-visible');
+            window.setTimeout(function () {
+                button.classList.remove('tooltip-visible');
+            }, 1200);
+        }
+
         function resetRecurringForm() {
             recurringForm.reset();
             document.getElementById('recurring-id').value = '';
             document.getElementById('type-expense').checked = true;
             document.getElementById('rec-trans-date').value = '<?php echo date('Y-m-d'); ?>';
+            document.getElementById('rec-currency-code').value = 'ILS';
+            syncCurrencyToggle('rec-currency-code', 'rec-currency-toggle');
             document.getElementById('rec-selected-category-id').value = '';
             document.getElementById('rec-msg').style.display = 'none';
             var submitBtn = document.getElementById('btn-save-recurring');
@@ -584,7 +622,7 @@ $members_result = mysqli_query($conn, $members_query);
             recurringModal.style.display = 'block';
         }
 
-        function openEditRecurringModal(id, description, amount, type, categoryId, dayOfMonth) {
+        function openEditRecurringModal(id, description, amount, type, categoryId, dayOfMonth, currencyCode) {
             recurringForm.reset();
             document.getElementById('recurring-id').value = id;
             document.getElementById('rec-modal-title').innerText = 'עריכת פעולה';
@@ -596,6 +634,8 @@ $members_result = mysqli_query($conn, $members_query);
             }
             buildRecurringCategorySelect('rec-category-grid-container', 'rec-selected-category-id', type, categoryId);
             document.getElementById('rec-amount').value = amount;
+            document.getElementById('rec-currency-code').value = currencyCode || 'ILS';
+            syncCurrencyToggle('rec-currency-code', 'rec-currency-toggle');
             document.getElementById('rec-description').value = description;
             var now = new Date();
             var y = now.getFullYear();
@@ -679,6 +719,8 @@ $members_result = mysqli_query($conn, $members_query);
                         : '<i class="fa-solid fa-plus"></i> הוסף פעולה';
                 });
         });
+
+        syncCurrencyToggle('rec-currency-code', 'rec-currency-toggle');
 
         // === ניהול פופאפ קטגוריות ===
         const catModal = document.getElementById('category-modal');

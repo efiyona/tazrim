@@ -3,6 +3,7 @@
  * תוכן פנימי של #manage-home-recurring-panel — פעולות קבועות בעמוד ניהול הבית.
  * דורש: $recurring_expenses, $recurring_income (מערכים של שורות recurring_transactions עם cat_name, cat_icon).
  */
+require_once ROOT_PATH . '/app/functions/currency.php';
 $recurring_expenses = $recurring_expenses ?? [];
 $recurring_income = $recurring_income ?? [];
 ?>
@@ -27,9 +28,10 @@ $recurring_income = $recurring_income ?? [];
             $cat_icon = !empty($rec['cat_icon']) ? $rec['cat_icon'] : 'fa-tag';
             $desc = $rec['description'];
             $cat_name = $rec['cat_name'] ?? '';
+            $currency_code = tazrim_normalize_currency_code($rec['currency_code'] ?? 'ILS');
         ?>
             <div class="transaction-item expense"
-                onclick='openEditRecurringModal(<?php echo (int) $rec['id']; ?>, <?php echo json_encode($desc, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $rec['amount']); ?>, <?php echo json_encode($rec['type']); ?>, <?php echo (int) $rec['category']; ?>, <?php echo (int) $rec['day_of_month']; ?>)'
+                onclick='openEditRecurringModal(<?php echo (int) $rec['id']; ?>, <?php echo json_encode($desc, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $rec['amount']); ?>, <?php echo json_encode($rec['type']); ?>, <?php echo (int) $rec['category']; ?>, <?php echo (int) $rec['day_of_month']; ?>, <?php echo json_encode($currency_code); ?>)'
                 style="cursor: pointer;">
                 <div class="transaction-info">
                     <div class="cat-icon-wrapper">
@@ -42,7 +44,7 @@ $recurring_income = $recurring_income ?? [];
                 </div>
                 <div class="transaction-actions">
                     <div class="transaction-amount" style="color: var(--error); font-weight: 700;">
-                        <?php echo number_format((float) $rec['amount'], 0); ?> ₪
+                        <?php echo htmlspecialchars(tazrim_format_money((float) $rec['amount'], $currency_code, 0), ENT_QUOTES, 'UTF-8'); ?>
                     </div>
                     <div class="transaction-row-actions">
                         <div class="transaction-action-pill" title="ערוך">
@@ -72,9 +74,10 @@ $recurring_income = $recurring_income ?? [];
             $cat_icon = !empty($rec['cat_icon']) ? $rec['cat_icon'] : 'fa-tag';
             $desc = $rec['description'];
             $cat_name = $rec['cat_name'] ?? '';
+            $currency_code = tazrim_normalize_currency_code($rec['currency_code'] ?? 'ILS');
         ?>
             <div class="transaction-item income"
-                onclick='openEditRecurringModal(<?php echo (int) $rec['id']; ?>, <?php echo json_encode($desc, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $rec['amount']); ?>, <?php echo json_encode($rec['type']); ?>, <?php echo (int) $rec['category']; ?>, <?php echo (int) $rec['day_of_month']; ?>)'
+                onclick='openEditRecurringModal(<?php echo (int) $rec['id']; ?>, <?php echo json_encode($desc, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $rec['amount']); ?>, <?php echo json_encode($rec['type']); ?>, <?php echo (int) $rec['category']; ?>, <?php echo (int) $rec['day_of_month']; ?>, <?php echo json_encode($currency_code); ?>)'
                 style="cursor: pointer;">
                 <div class="transaction-info" style="flex: 1; min-width: 0;">
                     <div class="cat-icon-wrapper">
@@ -87,7 +90,7 @@ $recurring_income = $recurring_income ?? [];
                 </div>
                 <div class="transaction-actions">
                     <div class="transaction-amount" style="color: var(--success); font-weight: 700;">
-                        <?php echo number_format((float) $rec['amount'], 0); ?> ₪
+                        <?php echo htmlspecialchars(tazrim_format_money((float) $rec['amount'], $currency_code, 0), ENT_QUOTES, 'UTF-8'); ?>
                     </div>
                     <div class="transaction-row-actions">
                         <div class="transaction-action-pill" title="ערוך">

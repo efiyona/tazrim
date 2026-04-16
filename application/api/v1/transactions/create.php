@@ -17,6 +17,7 @@ try {
     require('../../../../path.php');
     include(ROOT_PATH . '/app/database/db.php');
     require_once ROOT_PATH . '/app/functions/budget_overrun_push.php';
+    require_once ROOT_PATH . '/app/functions/currency.php';
 
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
@@ -34,6 +35,7 @@ try {
     $token = trim($body['token'] ?? '');
     $type = $body['type'] ?? 'expense';
     $amount = isset($body['amount']) ? (float) $body['amount'] : 0;
+    $currency_code = tazrim_normalize_currency_code($body['currency_code'] ?? 'ILS');
     $category_id = isset($body['category_id']) ? (int) $body['category_id'] : 0;
     $description = trim($body['description'] ?? '');
     $transaction_date = trim($body['transaction_date'] ?? date('Y-m-d'));
@@ -80,9 +82,13 @@ try {
     $desc_esc = mysqli_real_escape_string($conn, $description);
     $type_esc = mysqli_real_escape_string($conn, $type);
     $date_esc = mysqli_real_escape_string($conn, $transaction_date);
+    $conversion = tazrim_convert_amount_to_ils($conn, $amount, $currency_code);
+    $amount_ils = (float) $conversion['converted_amount'];
 
-    $insert_query = "INSERT INTO transactions (home_id, user_id, type, amount, category, description, transaction_date) 
-                     VALUES ($home_id, $user_id, '$type_esc', $amount, $category_id, '$desc_esc', '$date_esc')";
+    $currency_code_esc = mysqli_real_escape_string($conn, $currency_code);
+
+    $insert_query = "INSERT INTO transactions (home_id, user_id, type, amount, currency_code, category, description, transaction_date) 
+                     VALUES ($home_id, $user_id, '$type_esc', $amount_ils, '$currency_code_esc', $category_id, '$desc_esc', '$date_esc')";
 
     if (!mysqli_query($conn, $insert_query)) {
         echo json_encode(['status' => 'error', 'message' => 'שגיאת שרת בשמירת הנתונים.']);
@@ -92,13 +98,13 @@ try {
     if ($is_recurring) {
         $day_of_month = (int) date('d', strtotime($transaction_date));
         $current_month_start = date('Y-m-01');
-        $insert_recurring = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, category, description, day_of_month, last_injected_month, is_active) 
-                             VALUES ($home_id, $user_id, '$type_esc', $amount, $category_id, '$desc_esc', $day_of_month, '$current_month_start', 1)";
+        $insert_recurring = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, currency_code, category, description, day_of_month, last_injected_month, is_active) 
+                             VALUES ($home_id, $user_id, '$type_esc', $amount, '$currency_code_esc', $category_id, '$desc_esc', $day_of_month, '$current_month_start', 1)";
         mysqli_query($conn, $insert_recurring);
     }
 
     $user_name = $user['first_name'] ?? 'משתמש';
-    $amount_formatted = number_format($amount, 2);
+    $amount_formatted = number_format($amount_ils, 2);
     $notif_title = $user_name;
     $notif_msg = "הוסיף פעולה חדשה: <span class='notif-bold'>$description</span> בסך $amount_formatted ₪";
     addNotification($home_id, $notif_title, $notif_msg, 'info', null);
@@ -122,7 +128,7 @@ try {
 } catch (Throwable $e) {
     echo json_encode([
         'status' => 'error',
-        'message' => 'שגיאת מערכת בשרת: ' . $e->getMessage(),
+        'message' => 'שגיאת מערכת בשרת.',
     ]);
     exit();
 }
