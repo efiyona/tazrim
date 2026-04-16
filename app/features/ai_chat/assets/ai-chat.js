@@ -273,6 +273,7 @@
     if (!el) return;
     let inner = el.querySelector(".ai-chat-bubble-inner");
     if (!inner) return;
+    el.classList.remove("ai-chat-bubble--thinking");
     if (opts.clearThinking) {
       clearThinkingBanner(el);
     }
@@ -286,6 +287,7 @@
     if (!el) return;
     const inner = el.querySelector(".ai-chat-bubble-inner");
     if (!inner) return;
+    el.classList.remove("ai-chat-bubble--thinking");
     inner.classList.remove("ai-chat-bubble-inner--typing");
     inner.innerHTML = formatAssistantHtml(fullText);
     el.querySelectorAll(".ai-chat-deep-footnote").forEach((n) => n.remove());
@@ -306,6 +308,7 @@
   function showThinkingBanner(bubbleEl, hint) {
     const inner = bubbleEl && bubbleEl.querySelector(".ai-chat-bubble-inner");
     if (!inner) return;
+    bubbleEl.classList.add("ai-chat-bubble--thinking");
     const h = (hint || "").trim();
     const hintBlock = h
       ? '<span class="ai-chat-thinking-hint">' + escapeHtml(h) + "</span>"
@@ -329,6 +332,7 @@
   function clearThinkingBanner(bubbleEl) {
     const inner = bubbleEl && bubbleEl.querySelector(".ai-chat-bubble-inner");
     if (!inner) return;
+    bubbleEl.classList.remove("ai-chat-bubble--thinking");
     if (inner.querySelector(".ai-chat-thinking-banner")) {
       inner.innerHTML = "";
     }

@@ -94,11 +94,11 @@ function ai_chat_gemini_generate_text(string $apiKey, string $model, array $body
 /**
  * מחליט אם לעבור לשלב תשובה מעמיקה (קריאת JSON קטנה).
  *
- * @return array{needs_deep:bool,reason_code:string,user_hint:string}
+ * @return array{needs_deep:bool,needs_full_transactions:bool,reason_code:string,user_hint:string}
  */
 function ai_chat_route_decision(string $apiKey, string $message, array $scope): array
 {
-    $default = ['needs_deep' => false, 'reason_code' => 'simple', 'user_hint' => ''];
+    $default = ['needs_deep' => false, 'needs_full_transactions' => false, 'reason_code' => 'simple', 'user_hint' => ''];
     $routerInstruction = ai_chat_build_router_system_instruction($scope);
     $baseBody = [
         'system_instruction' => [
@@ -144,6 +144,17 @@ function ai_chat_route_decision(string $apiKey, string $message, array $scope): 
             }
             $reason = (string) ($parsed['reason_code'] ?? 'simple');
             $hint = trim((string) ($parsed['user_hint'] ?? ''));
+            $needsFullTx = false;
+            if (array_key_exists('needs_full_transactions', $parsed)) {
+                $v2 = $parsed['needs_full_transactions'];
+                if (is_bool($v2)) {
+                    $needsFullTx = $v2;
+                } elseif (is_int($v2) || is_float($v2)) {
+                    $needsFullTx = ((int) $v2) === 1;
+                } elseif (is_string($v2)) {
+                    $needsFullTx = in_array(strtolower(trim($v2)), ['1', 'true', 'yes'], true);
+                }
+            }
             if (function_exists('mb_substr')) {
                 $hint = mb_substr($hint, 0, 48);
             } else {
@@ -155,6 +166,7 @@ function ai_chat_route_decision(string $apiKey, string $message, array $scope): 
 
             return [
                 'needs_deep' => $needs,
+                'needs_full_transactions' => $needsFullTx,
                 'reason_code' => $reason !== '' ? $reason : 'other',
                 'user_hint' => $hint,
             ];
@@ -244,9 +256,6 @@ foreach ($historyRows as $row) {
     ];
 }
 
-$userFirstName = ai_chat_format_user_first_name((string) ($_SESSION['first_name'] ?? ''));
-$modelContext = ai_chat_build_model_context_block($conn, $homeId, is_array($scope) ? $scope : [], $userFirstName);
-
 $pageCtx = $payload['page_context'] ?? null;
 $pagePath = '';
 $pageTitle = '';
@@ -256,9 +265,6 @@ if (is_array($pageCtx)) {
 }
 if (ai_chat_scope_topic(is_array($scope) ? $scope : []) === 'system') {
     $pageBlock = ai_chat_format_client_page_context($pagePath, $pageTitle);
-    if ($pageBlock !== '') {
-        $modelContext .= "\n\n---\n" . $pageBlock;
-    }
 }
 
 $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
@@ -269,6 +275,20 @@ if ($apiKey === '') {
 
 $route = ai_chat_route_decision($apiKey, $message, is_array($scope) ? $scope : []);
 $needsDeep = !empty($route['needs_deep']);
+$needsFullTransactions = !empty($route['needs_full_transactions']);
+
+$userFirstName = ai_chat_format_user_first_name((string) ($_SESSION['first_name'] ?? ''));
+$modelContext = ai_chat_build_model_context_block(
+    $conn,
+    $homeId,
+    is_array($scope) ? $scope : [],
+    $userFirstName,
+    ['need_full_transactions' => $needsFullTransactions]
+);
+
+if (ai_chat_scope_topic(is_array($scope) ? $scope : []) === 'system' && $pageBlock !== '') {
+    $modelContext .= "\n\n---\n" . $pageBlock;
+}
 
 if ($needsDeep) {
     $modelContext .= "\n\n---\n" . ai_chat_build_deep_system_layer_suffix();

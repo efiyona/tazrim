@@ -97,10 +97,11 @@ if (!function_exists('ai_chat_build_router_system_instruction')) {
         return "אתה מסווג בקשות בלבד למערכת «התזרים». נושא השיחה: {$topicLabel}.\n\n"
             . "החזר **אובייקט JSON בלבד** — בלי markdown, בלי טקסט לפני או אחרי, בלי ```.\n"
             . "סכמה:\n"
-            . '{"needs_deep":boolean,"reason_code":"simple|compare_periods|trend|budget_scenario|scenario|multi_part|ambiguous|other","user_hint":"עברית עד 48 תווים"}' . "\n\n"
+            . '{"needs_deep":boolean,"needs_full_transactions":boolean,"reason_code":"simple|compare_periods|trend|budget_scenario|scenario|multi_part|ambiguous|other","user_hint":"עברית עד 48 תווים"}' . "\n\n"
             . "כללים:\n"
             . "- needs_deep=true כשהשאלה דורשת ניתוח מרובה שלבים, השוואה בין תקופות/חודשים, מגמות, תרחישי תקציב, פירוק מורכב, או כמה חלקים בשאלה אחת.\n"
             . "- needs_deep=false לשאלה ישירה: איפה מסך, איך פעולה, ערך בודד, הסבר קצר, או שאלה פשוטה על נתון אחד.\n"
+            . "- needs_full_transactions=true רק אם צריך לעבור על פעולות ברמת שורה (לדוגמה: איתור פעולה חריגה/כפולה, התאמה בין פעולות, ביקורת מפורטת). אחרת false.\n"
             . "- reason_code: בחר את המתאים ביותר; לשאלה פשוטה השתמש ב־simple.\n"
             . "- user_hint: משפט קצר וברור למשתמש (יוצג בממשק) — למה מפעילים חשיבה מעמיקה. רק כש־needs_deep=true; אחרת מחרוזת ריקה \"\".\n";
     }
@@ -124,7 +125,7 @@ if (!function_exists('ai_chat_build_deep_system_layer_suffix')) {
  * נתונים פיננסיים: חודש קלנדרי נוכחי + חודש אחד אחורה, לפי home_id.
  */
 if (!function_exists('ai_chat_build_financial_snapshot')) {
-    function ai_chat_build_financial_snapshot(mysqli $conn, int $homeId, array $scope): string
+    function ai_chat_build_financial_snapshot(mysqli $conn, int $homeId, array $scope, array $options = []): string
     {
         if (ai_chat_scope_topic($scope) !== 'financial') {
             return '';
@@ -169,6 +170,11 @@ if (!function_exists('ai_chat_build_financial_snapshot')) {
                 'end' => $prevMonthStart->format('Y-m-t'),
             ],
         ];
+
+        $needFullTx = !empty($options['need_full_transactions']);
+        $defaultTxLimit = 45;
+        $safeFullTxCap = 300;
+        $txLimit = $needFullTx ? $safeFullTxCap : $defaultTxLimit;
 
         foreach ($periods as $p) {
             $start = $p['start'];
@@ -254,18 +260,25 @@ if (!function_exists('ai_chat_build_financial_snapshot')) {
                 LEFT JOIN users u ON u.id = t.user_id
                 WHERE t.home_id = ? AND t.transaction_date BETWEEN ? AND ?
                 ORDER BY t.transaction_date DESC, t.id DESC
-                LIMIT 45";
+                LIMIT ?";
             $stmt = $conn->prepare($txSql);
-            $stmt->bind_param('iss', $homeId, $start, $end);
+            $stmt->bind_param('issi', $homeId, $start, $end, $txLimit);
             $stmt->execute();
             $txs = $stmt->get_result()->fetch_all(MYSQLI_ASSOC) ?: [];
             $stmt->close();
             if ($txs) {
-                $lines[] = '- דוגמאות פעולות (עד 45 אחרונות בחודש):';
+                if ($needFullTx) {
+                    $lines[] = '- פירוט פעולות (מצב מורחב — עד ' . $txLimit . ' אחרונות בחודש, ייתכן קיטום):';
+                } else {
+                    $lines[] = '- דוגמאות פעולות (עד ' . $txLimit . ' אחרונות בחודש):';
+                }
                 foreach ($txs as $trow) {
                     $who = isset($trow['user_name']) && $trow['user_name'] !== '' ? ' [' . $trow['user_name'] . ']' : '';
                     $lines[] = '  • ' . $trow['transaction_date'] . ' | ' . $trow['type'] . ' | ' . $trow['amount'] . ' ₪ | '
                         . ($trow['cat_name'] ?? '') . ' | ' . ($trow['description'] ?? '') . $who;
+                }
+                if ($needFullTx && count($txs) >= $txLimit) {
+                    $lines[] = '  • ... ייתכנו פעולות נוספות מעבר לגבול השליפה';
                 }
             }
             $lines[] = '';
@@ -303,13 +316,13 @@ if (!function_exists('ai_chat_build_model_context_block')) {
     /**
      * טקסט אחד ל-system instruction: לפי נושא — עם או בלי נתונים פיננסיים / מדריך מלא.
      */
-    function ai_chat_build_model_context_block(mysqli $conn, int $homeId, array $scope, string $userFirstName = ''): string
+    function ai_chat_build_model_context_block(mysqli $conn, int $homeId, array $scope, string $userFirstName = '', array $options = []): string
     {
         $instruction = ai_chat_build_system_instruction($scope, $userFirstName);
         $topic = ai_chat_scope_topic($scope);
 
         if ($topic === 'financial') {
-            $data = ai_chat_build_financial_snapshot($conn, $homeId, $scope);
+            $data = ai_chat_build_financial_snapshot($conn, $homeId, $scope, $options);
             return $instruction . "\n\n---\nנתוני תזרים (לשימושך בלבד):\n" . ($data !== '' ? $data : '(ריק)');
         }
 
