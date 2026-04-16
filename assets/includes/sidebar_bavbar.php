@@ -42,7 +42,7 @@ $navigation = [
         'icon' => 'fa-chart-line',
         'url' => BASE_URL . 'pages/reports.php',
         'file' => 'reports.php',
-        'plus_modal' => null,
+        'plus_modal' => 'excel-export-modal',
     ],
     [
         'name' => 'קניות',
@@ -117,15 +117,18 @@ require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
         </ul>
     </div>
    <?php if ($target_modal_id): ?>
-    <?php $is_shopping_fab = $current_page === 'shopping.php'; ?>
+    <?php
+        $is_shopping_fab = $current_page === 'shopping.php';
+        $is_reports_export_fab = $current_page === 'reports.php';
+    ?>
     <div class="detached-plus-wrapper <?php echo $is_shopping_fab ? 'detached-plus-wrapper--danger' : ''; ?>">
         <div
             class="plus-btn-detached <?php echo $is_shopping_fab ? 'plus-btn-detached--danger' : ''; ?>"
             <?php if (!$is_shopping_fab): ?>onclick="openDynamicModal('<?php echo $target_modal_id; ?>')"<?php endif; ?>
-            aria-label="<?php echo $is_shopping_fab ? 'אפשרויות מחיקה' : 'הוספה'; ?>"
-            title="<?php echo $is_shopping_fab ? 'אפשרויות מחיקה' : 'הוספה'; ?>"
+            aria-label="<?php echo $is_shopping_fab ? 'אפשרויות מחיקה' : ($is_reports_export_fab ? 'ייצוא לאקסל' : 'הוספה'); ?>"
+            title="<?php echo $is_shopping_fab ? 'אפשרויות מחיקה' : ($is_reports_export_fab ? 'ייצוא לאקסל' : 'הוספה'); ?>"
         >
-            <i class="fa-solid <?php echo $is_shopping_fab ? 'fa-trash-can' : 'fa-plus'; ?>"></i>
+            <i class="fa-solid <?php echo $is_shopping_fab ? 'fa-trash-can' : ($is_reports_export_fab ? 'fa-file-excel' : 'fa-plus'); ?>"<?php echo $is_reports_export_fab ? ' style="color:#fff;"' : ''; ?>></i>
         </div>
     </div>
     <?php endif; ?>

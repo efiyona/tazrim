@@ -93,6 +93,30 @@ $budgets = [];
 while($row = mysqli_fetch_assoc($budget_result)) {
     $budgets[] = $row;
 }
+
+// === נתונים לבלוק ייצוא אקסל ===
+$categories_query = "SELECT id, name, type, icon FROM categories WHERE home_id = $home_id AND is_active = 1 ORDER BY type ASC, name ASC";
+$categories_result = mysqli_query($conn, $categories_query);
+if (!$categories_result) die("<div style='direction:rtl; padding:20px; color:red;'><strong>שגיאה 5:</strong> " . mysqli_error($conn) . "</div>");
+
+$expense_categories = [];
+$income_categories = [];
+while ($category_row = mysqli_fetch_assoc($categories_result)) {
+    if ($category_row['type'] === 'expense') {
+        $expense_categories[] = $category_row;
+    } elseif ($category_row['type'] === 'income') {
+        $income_categories[] = $category_row;
+    }
+}
+
+$users_query = "SELECT id, first_name FROM users WHERE home_id = $home_id ORDER BY first_name ASC";
+$users_result = mysqli_query($conn, $users_query);
+if (!$users_result) die("<div style='direction:rtl; padding:20px; color:red;'><strong>שגיאה 6:</strong> " . mysqli_error($conn) . "</div>");
+
+$house_users = [];
+while ($user_row = mysqli_fetch_assoc($users_result)) {
+    $house_users[] = $user_row;
+}
 ?>
 
 <!DOCTYPE html>
@@ -107,6 +131,100 @@ while($row = mysqli_fetch_assoc($budget_result)) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?php echo htmlspecialchars(tazrim_user_css_href(), ENT_QUOTES, 'UTF-8'); ?>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .excel-export-modal { padding: 18px; }
+        .excel-export-modal[style*="display: block"] { display: block !important; }
+        .excel-export-modal .modal-content { max-width: 980px; max-height: 88vh; }
+        .excel-export-card { margin-top: 0; border: 0; box-shadow: none; padding: 0; }
+        .excel-export-subtitle { margin: 0 0 14px; color: #667085; font-size: .95rem; }
+        .excel-export-form { display: grid; gap: 14px; }
+        .excel-export-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+        .excel-export-field { display: grid; gap: 6px; }
+        .excel-export-field > span { font-size: .85rem; color: #475467; font-weight: 600; }
+        .excel-export-field input, .excel-export-field select {
+            height: 42px; border: 1.5px solid #ddd; border-radius: 10px; background: #fff;
+            padding: 0 12px; font-family: inherit; font-size: .95rem; color: #101828;
+            outline: none; transition: all .3s ease;
+        }
+        .excel-export-field input:focus, .excel-export-field select:focus {
+            border-color: var(--main); background: var(--white);
+            box-shadow: 0 0 0 4px var(--main-light);
+        }
+        .excel-export-footer { display: flex; flex-wrap: wrap; gap: 10px; }
+        .excel-export-footer .btn-primary {
+            margin-top: 0; width: 100%; padding: 14px 18px; font-size: 1.05rem;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            color: #fff !important;
+        }
+        .excel-export-btn { border: 0; }
+        .excel-export-reset-row { display: flex; justify-content: flex-end; margin-bottom: 2px; }
+        .excel-export-reset-btn {
+            border: 1.5px solid #ddd; background: #fff; font: inherit; font-size: .82rem; font-weight: 700;
+            color: var(--text); cursor: pointer; padding: 6px 14px; border-radius: 10px;
+            display: inline-flex; align-items: center; gap: 5px; transition: all .2s;
+        }
+        .excel-export-reset-btn:hover { border-color: var(--main); color: var(--main); }
+
+        .cat-picker { position: relative; }
+        .cat-picker__label { font-size: .85rem; color: #475467; font-weight: 600; display: block; margin-bottom: 6px; }
+        .cat-picker__trigger {
+            display: flex; align-items: center; justify-content: space-between; width: 100%;
+            min-height: 42px; padding: 6px 12px; border: 1.5px solid #ddd; border-radius: 10px;
+            background: #fff; font-family: inherit; font-size: .9rem; color: #101828;
+            cursor: pointer; outline: none; transition: all .3s ease; text-align: right;
+        }
+        .cat-picker__trigger:hover { border-color: #bbb; }
+        .cat-picker__trigger.is-open { border-color: var(--main); box-shadow: 0 0 0 4px var(--main-light); }
+        .cat-picker__trigger-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cat-picker__trigger i { font-size: .75rem; color: #98a2b3; transition: transform .2s; flex-shrink: 0; margin-inline-start: 8px; }
+        .cat-picker__trigger.is-open i { transform: rotate(180deg); }
+        .cat-picker__panel {
+            display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+            background: #fff; border: 1px solid #d0d5dd; border-radius: 12px;
+            box-shadow: 0 12px 28px rgba(0,0,0,.12); z-index: 60;
+            max-height: 340px; overflow-y: auto;
+        }
+        .cat-picker__panel.is-open { display: block; }
+        .cat-picker__actions {
+            display: flex; gap: 6px; padding: 8px 14px; border-bottom: 1px solid #f2f4f7;
+            position: sticky; top: 0; background: #fff; z-index: 1;
+            justify-content: flex-start; direction: ltr;
+        }
+        .cat-picker__action {
+            border: 1.5px solid #ddd; background: #fff; font: inherit; font-size: .78rem; font-weight: 700;
+            color: var(--text); cursor: pointer; padding: 5px 12px; border-radius: 8px; transition: all .2s;
+        }
+        .cat-picker__action:hover { border-color: var(--main); color: var(--main); }
+        .cat-picker__group-title {
+            padding: 8px 14px 4px; font-size: .78rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: .3px; user-select: none;
+        }
+        .cat-picker__group-title--expense { color: #b42318; }
+        .cat-picker__group-title--income { color: #027a48; }
+        .cat-picker__row {
+            display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+            cursor: pointer; transition: background .12s;
+        }
+        .cat-picker__row:hover { background: #f9fafb; }
+        .cat-picker__row:active { background: #f2f4f7; }
+        .cat-picker__icon {
+            width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .7rem; transition: .15s;
+        }
+        .cat-picker__icon--off { background: #f2f4f7; color: #d0d5dd; border: 2px solid #e4e7ec; }
+        .cat-picker__icon--on { background: var(--main); color: #fff; border: 2px solid var(--main); }
+        .cat-picker__cat-icon { font-size: .85rem; color: #667085; width: 18px; text-align: center; flex-shrink: 0; }
+        .cat-picker__name { font-size: .9rem; color: #344054; font-weight: 500; }
+        @media (max-width: 768px) {
+            .excel-export-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .excel-export-footer { width: 100%; }
+            .excel-export-footer .btn-primary { width: 100%; justify-content: center; }
+        }
+        @media (max-width: 420px) {
+            .excel-export-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body class="bg-gray">
 
@@ -249,6 +367,113 @@ while($row = mysqli_fetch_assoc($budget_result)) {
                 </div>
             </div>
 
+            <div id="excel-export-modal" class="modal excel-export-modal" aria-hidden="true">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 style="margin:0;"><i class="fa-solid fa-file-excel" style="color: #1d6f42;"></i> הגדרות ייצוא לאקסל</h3>
+                        <button type="button" id="closeExcelExportModalBtn" class="close-modal-btn" aria-label="סגור חלון ייצוא">
+                            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="excel-export-subtitle">
+                            בחרו בדיוק מה תרצו לייצא. ברירת המחדל היא כל התנועות לחודש הנוכחי.
+                        </p>
+
+                        <form id="excelExportForm" class="excel-export-form" action="<?php echo BASE_URL; ?>/app/ajax/export_transactions_excel.php" method="GET">
+                    <div class="excel-export-reset-row">
+                        <button type="reset" class="excel-export-reset-btn">
+                            <i class="fa-solid fa-rotate-left"></i> איפוס פילטרים
+                        </button>
+                    </div>
+                    <div class="excel-export-grid">
+                        <label class="excel-export-field">
+                            <span>מתאריך</span>
+                            <input type="date" name="start_date" value="<?php echo htmlspecialchars($start_date, ENT_QUOTES, 'UTF-8'); ?>" required>
+                        </label>
+                        <label class="excel-export-field">
+                            <span>עד תאריך</span>
+                            <input type="date" name="end_date" value="<?php echo htmlspecialchars($end_date, ENT_QUOTES, 'UTF-8'); ?>" required>
+                        </label>
+                        <label class="excel-export-field">
+                            <span>סוג תנועות</span>
+                            <select name="scope" id="exportScope">
+                                <option value="all" selected>הכל</option>
+                                <option value="expense">הוצאות בלבד</option>
+                                <option value="income">הכנסות בלבד</option>
+                            </select>
+                        </label>
+                        <label class="excel-export-field">
+                            <span>משתמש</span>
+                            <select name="user_id">
+                                <option value="">כל המשתמשים</option>
+                                <?php foreach ($house_users as $house_user): ?>
+                                    <option value="<?php echo (int)$house_user['id']; ?>"><?php echo htmlspecialchars($house_user['first_name'], ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                        <label class="excel-export-field">
+                            <span>סכום מינימום</span>
+                            <input type="number" name="min_amount" min="0" step="0.01" placeholder="ללא מינימום">
+                        </label>
+                        <label class="excel-export-field">
+                            <span>סכום מקסימום</span>
+                            <input type="number" name="max_amount" min="0" step="0.01" placeholder="ללא מקסימום">
+                        </label>
+                    </div>
+
+                    <div class="cat-picker" id="catPicker">
+                        <span class="cat-picker__label">קטגוריות לייצוא</span>
+                        <button type="button" id="catPickerTrigger" class="cat-picker__trigger">
+                            <span id="catPickerText" class="cat-picker__trigger-text">כל הקטגוריות</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div id="catPickerPanel" class="cat-picker__panel">
+                            <div class="cat-picker__actions">
+                                <button type="button" class="cat-picker__action" id="catPickerSelectAll">בחר הכל</button>
+                                <button type="button" class="cat-picker__action" id="catPickerClearAll">נקה הכל</button>
+                            </div>
+                            <?php if (!empty($expense_categories)): ?>
+                                <div class="cat-picker__group-title cat-picker__group-title--expense"><i class="fa-solid fa-arrow-trend-down"></i> הוצאות</div>
+                                <?php foreach ($expense_categories as $cat): $cat_icon = !empty($cat['icon']) ? $cat['icon'] : 'fa-tag'; ?>
+                                    <div class="cat-picker__row" data-cat-id="<?php echo (int)$cat['id']; ?>">
+                                        <span class="cat-picker__icon cat-picker__icon--on"><i class="fa-solid fa-check"></i></span>
+                                        <i class="fa-solid <?php echo htmlspecialchars($cat_icon, ENT_QUOTES, 'UTF-8'); ?> cat-picker__cat-icon"></i>
+                                        <span class="cat-picker__name"><?php echo htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            <?php if (!empty($income_categories)): ?>
+                                <div class="cat-picker__group-title cat-picker__group-title--income"><i class="fa-solid fa-arrow-trend-up"></i> הכנסות</div>
+                                <?php foreach ($income_categories as $cat): $cat_icon = !empty($cat['icon']) ? $cat['icon'] : 'fa-tag'; ?>
+                                    <div class="cat-picker__row" data-cat-id="<?php echo (int)$cat['id']; ?>">
+                                        <span class="cat-picker__icon cat-picker__icon--on"><i class="fa-solid fa-check"></i></span>
+                                        <i class="fa-solid <?php echo htmlspecialchars($cat_icon, ENT_QUOTES, 'UTF-8'); ?> cat-picker__cat-icon"></i>
+                                        <span class="cat-picker__name"><?php echo htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                        <?php foreach ($expense_categories as $cat): ?>
+                            <input class="export-cat-cb" type="checkbox" name="category_ids[]" value="<?php echo (int)$cat['id']; ?>" data-type="expense" checked hidden>
+                        <?php endforeach; ?>
+                        <?php foreach ($income_categories as $cat): ?>
+                            <input class="export-cat-cb" type="checkbox" name="category_ids[]" value="<?php echo (int)$cat['id']; ?>" data-type="income" checked hidden>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <input type="hidden" name="include_summary" value="1">
+                    <input type="hidden" name="include_user" value="1">
+                    <input type="hidden" name="include_category" value="1">
+
+                    <div class="excel-export-footer">
+                        <button type="submit" class="btn-primary excel-export-btn">ייצוא לאקסל</button>
+                    </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             </div>
         </main>
     </div>
@@ -302,6 +527,122 @@ while($row = mysqli_fetch_assoc($budget_result)) {
             // אם אין נתונים לחודש הזה נציג הודעה
             document.querySelector('.canvas-wrapper').innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#888; font-weight:600;"><i class="fa-solid fa-chart-pie" style="margin-left: 8px; font-size: 1.5rem; color:#ddd;"></i> אין הוצאות בחודש זה.</div>';
         }
+
+        const exportScope = document.getElementById('exportScope');
+        const excelExportModal = document.getElementById('excel-export-modal');
+        const closeExcelExportModalBtn = document.getElementById('closeExcelExportModalBtn');
+
+        function closeExcelExportModal() {
+            excelExportModal.style.display = 'none';
+            excelExportModal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('no-scroll');
+        }
+
+        /* ──────── Category Picker (collapsible dropdown) ──────── */
+        (function () {
+            const picker    = document.getElementById('catPicker');
+            const trigger   = document.getElementById('catPickerTrigger');
+            const panel     = document.getElementById('catPickerPanel');
+            const textEl    = document.getElementById('catPickerText');
+            const rows      = panel.querySelectorAll('.cat-picker__row');
+            const allCbs    = picker.querySelectorAll('.export-cat-cb');
+            const cbMap     = {};
+            allCbs.forEach(cb => { cbMap[cb.value] = cb; });
+
+            function isOpen() { return panel.classList.contains('is-open'); }
+
+            function open() {
+                panel.classList.add('is-open');
+                trigger.classList.add('is-open');
+            }
+
+            function close() {
+                panel.classList.remove('is-open');
+                trigger.classList.remove('is-open');
+            }
+
+            function syncRow(row) {
+                const id = row.dataset.catId;
+                const cb = cbMap[id];
+                const icon = row.querySelector('.cat-picker__icon');
+                if (!cb) return;
+                if (cb.checked) {
+                    icon.className = 'cat-picker__icon cat-picker__icon--on';
+                    icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+                } else {
+                    icon.className = 'cat-picker__icon cat-picker__icon--off';
+                    icon.innerHTML = '';
+                }
+            }
+
+            function updateText() {
+                const total = allCbs.length;
+                const names = [];
+                allCbs.forEach(cb => {
+                    if (cb.checked) {
+                        const row = panel.querySelector('[data-cat-id="' + cb.value + '"]');
+                        const nameEl = row ? row.querySelector('.cat-picker__name') : null;
+                        names.push(nameEl ? nameEl.textContent : '');
+                    }
+                });
+                if (names.length === 0) {
+                    textEl.textContent = 'לא נבחרו קטגוריות';
+                } else if (names.length === total) {
+                    textEl.textContent = 'כל הקטגוריות';
+                } else {
+                    textEl.textContent = names.join(', ');
+                }
+            }
+
+            function syncAll() {
+                rows.forEach(syncRow);
+                updateText();
+            }
+
+            trigger.addEventListener('click', () => { isOpen() ? close() : open(); });
+
+            document.addEventListener('click', (e) => {
+                if (!picker.contains(e.target)) close();
+            });
+
+            rows.forEach(row => {
+                row.addEventListener('click', () => {
+                    const cb = cbMap[row.dataset.catId];
+                    if (!cb) return;
+                    cb.checked = !cb.checked;
+                    syncRow(row);
+                    updateText();
+                });
+            });
+
+            document.getElementById('catPickerSelectAll').addEventListener('click', () => {
+                allCbs.forEach(cb => { cb.checked = true; });
+                syncAll();
+            });
+
+            document.getElementById('catPickerClearAll').addEventListener('click', () => {
+                allCbs.forEach(cb => { cb.checked = false; });
+                syncAll();
+            });
+
+            document.getElementById('excelExportForm').addEventListener('reset', () => {
+                setTimeout(() => {
+                    allCbs.forEach(cb => { cb.checked = true; });
+                    syncAll();
+                    close();
+                }, 0);
+            });
+
+            syncAll();
+        })();
+
+        closeExcelExportModalBtn.addEventListener('click', closeExcelExportModal);
+        excelExportModal.addEventListener('click', (event) => {
+            if (event.target === excelExportModal) closeExcelExportModal();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && excelExportModal.style.display === 'block') closeExcelExportModal();
+        });
     </script>
 </body>
 </html>
