@@ -252,35 +252,36 @@ if (!in_array($action, ['create', 'update', 'delete', 'sql'], true)) {
 }
 
 // ===== אכיפת תוקף של 5 דקות על הצעת הפעולה =====
-// הגנה בעומק מעבר לבדיקת הלקוח: אם חותמת הזמן חסרה, ישנה (>5 דק')
-// או עתידית לא-סבירה (>2 דק' קדימה עקב clock drift) — נדחה את הבקשה.
+// הבדיקה הראשית היא בלקוח (הכפתור ננעל אוטומטית אחרי 5 דקות).
+// כאן הגנה בעומק:
+//  - אם חותמת הזמן חסרה (למשל JS ישן ב-cache) — רק נרשום לוג, לא נחסום.
+//  - אם היא ישנה מ-5 דקות — נחסום.
+//  - אם עתידית יותר מ-2 דקות (clock drift לא סביר) — נחסום.
 $ACTION_PROPOSAL_TTL_MS = 5 * 60 * 1000;
 $CLOCK_SKEW_TOLERANCE_MS = 2 * 60 * 1000;
 $nowMs = (int) round(microtime(true) * 1000);
 if ($proposedAtMs <= 0) {
-    admin_ai_agent_exec_respond([
-        'status' => 'error',
-        'message' => 'הצעת הפעולה חסרת חותמת זמן. רענן את הדף ובקש מהסוכן להציע מחדש.',
-        'reason' => 'missing_proposal_timestamp',
-    ], 200);
-}
-$ageMs = $nowMs - $proposedAtMs;
-if ($ageMs > $ACTION_PROPOSAL_TTL_MS) {
-    $ageSec = (int) round($ageMs / 1000);
-    admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent ACTION EXPIRED action=' . $action . ' age_sec=' . $ageSec . ' chat=' . $chatId);
-    admin_ai_agent_exec_respond([
-        'status' => 'error',
-        'message' => 'תוקף ההצעה פג (מעל 5 דקות). בקש מהסוכן להציע את הפעולה מחדש.',
-        'reason' => 'proposal_expired',
-        'age_seconds' => $ageSec,
-    ], 200);
-}
-if ($ageMs < -$CLOCK_SKEW_TOLERANCE_MS) {
-    admin_ai_agent_exec_respond([
-        'status' => 'error',
-        'message' => 'חותמת זמן לא תקינה בהצעה. רענן את הדף ונסה שוב.',
-        'reason' => 'future_proposal_timestamp',
-    ], 200);
+    admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent ACTION NO_TIMESTAMP action=' . $action . ' chat=' . $chatId . ' — stale client cache?');
+    // אנו לא חוסמים — הלקוח תמיד אמור לשלוח חותמת, אם חסרה זה כנראה JS ישן.
+} else {
+    $ageMs = $nowMs - $proposedAtMs;
+    if ($ageMs > $ACTION_PROPOSAL_TTL_MS) {
+        $ageSec = (int) round($ageMs / 1000);
+        admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent ACTION EXPIRED action=' . $action . ' age_sec=' . $ageSec . ' chat=' . $chatId);
+        admin_ai_agent_exec_respond([
+            'status' => 'error',
+            'message' => 'תוקף ההצעה פג (מעל 5 דקות). בקש מהסוכן להציע את הפעולה מחדש.',
+            'reason' => 'proposal_expired',
+            'age_seconds' => $ageSec,
+        ], 200);
+    }
+    if ($ageMs < -$CLOCK_SKEW_TOLERANCE_MS) {
+        admin_ai_agent_exec_respond([
+            'status' => 'error',
+            'message' => 'חותמת זמן לא תקינה בהצעה. רענן את הדף ונסה שוב.',
+            'reason' => 'future_proposal_timestamp',
+        ], 200);
+    }
 }
 
 // ===== SQL גולמי (DML/DDL) =====

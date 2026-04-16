@@ -160,18 +160,33 @@ if (!function_exists('admin_ai_chat_get_schema_json')) {
     }
 }
 
+if (!function_exists('admin_ai_chat_asset_version')) {
+    /**
+     * מחזיר חתימת גרסה לקובץ סטטי לצורך cache-busting אוטומטי בלייב.
+     * מתבסס על filemtime כך שכל עדכון קובץ מאלץ טעינה מחדש בדפדפן.
+     */
+    function admin_ai_chat_asset_version(string $relativePath): string
+    {
+        $full = dirname(__DIR__, 2) . '/' . ltrim($relativePath, '/');
+        $mtime = @filemtime($full);
+        return (string) ($mtime > 0 ? $mtime : time());
+    }
+}
+
 if (!function_exists('admin_ai_chat_render_assets')) {
     function admin_ai_chat_render_assets(): void
     {
         $token = admin_ai_chat_get_api_token();
         $schemaJson = admin_ai_chat_get_schema_json();
+        $cssVer = admin_ai_chat_asset_version('admin/features/ai_chat/assets/admin-ai-chat.css');
+        $jsVer = admin_ai_chat_asset_version('admin/features/ai_chat/assets/admin-ai-chat.js');
         echo '<script>window.ADMIN_AI_CHAT_BASE_URL = ' . json_encode(BASE_URL, JSON_UNESCAPED_UNICODE) . ';';
         echo 'window.ADMIN_AI_CHAT_ASSISTANT_NAME = ' . json_encode(ADMIN_AI_CHAT_ASSISTANT_NAME, JSON_UNESCAPED_UNICODE) . ';';
         echo 'window.ADMIN_AI_CHAT_API_TOKEN = ' . json_encode($token, JSON_UNESCAPED_UNICODE) . ';';
         echo 'window.ADMIN_AI_CHAT_SCHEMA = ' . $schemaJson . ';</script>';
         echo '<script>window.ADMIN_AI_CHAT_USER_INITIALS = ' . json_encode(admin_ai_chat_user_initials(), JSON_UNESCAPED_UNICODE) . ';</script>';
-        echo '<link rel="stylesheet" href="' . BASE_URL . 'admin/features/ai_chat/assets/admin-ai-chat.css">';
-        echo '<script src="' . BASE_URL . 'admin/features/ai_chat/assets/admin-ai-chat.js" defer></script>';
+        echo '<link rel="stylesheet" href="' . BASE_URL . 'admin/features/ai_chat/assets/admin-ai-chat.css?v=' . $cssVer . '">';
+        echo '<script src="' . BASE_URL . 'admin/features/ai_chat/assets/admin-ai-chat.js?v=' . $jsVer . '" defer></script>';
     }
 }
 
@@ -180,11 +195,15 @@ if (!function_exists('admin_ai_chat_render_lazy_loader')) {
     {
         $token = admin_ai_chat_get_api_token();
         $schemaJson = admin_ai_chat_get_schema_json();
+        $loaderVer = admin_ai_chat_asset_version('admin/features/ai_chat/assets/admin-ai-chat-loader.js');
+        $cssVer = admin_ai_chat_asset_version('admin/features/ai_chat/assets/admin-ai-chat.css');
+        $jsVer = admin_ai_chat_asset_version('admin/features/ai_chat/assets/admin-ai-chat.js');
         echo '<script>window.ADMIN_AI_CHAT_BASE_URL = ' . json_encode(BASE_URL, JSON_UNESCAPED_UNICODE) . ';';
         echo 'window.ADMIN_AI_CHAT_ASSISTANT_NAME = ' . json_encode(ADMIN_AI_CHAT_ASSISTANT_NAME, JSON_UNESCAPED_UNICODE) . ';';
         echo 'window.ADMIN_AI_CHAT_API_TOKEN = ' . json_encode($token, JSON_UNESCAPED_UNICODE) . ';';
-        echo 'window.ADMIN_AI_CHAT_SCHEMA = ' . $schemaJson . ';</script>';
+        echo 'window.ADMIN_AI_CHAT_SCHEMA = ' . $schemaJson . ';';
+        echo 'window.ADMIN_AI_CHAT_ASSET_VER = ' . json_encode(['css' => $cssVer, 'js' => $jsVer], JSON_UNESCAPED_UNICODE) . ';</script>';
         echo '<script>window.ADMIN_AI_CHAT_USER_INITIALS = ' . json_encode(admin_ai_chat_user_initials(), JSON_UNESCAPED_UNICODE) . ';</script>';
-        echo '<script src="' . BASE_URL . 'admin/features/ai_chat/assets/admin-ai-chat-loader.js" defer></script>';
+        echo '<script src="' . BASE_URL . 'admin/features/ai_chat/assets/admin-ai-chat-loader.js?v=' . $loaderVer . '" defer></script>';
     }
 }

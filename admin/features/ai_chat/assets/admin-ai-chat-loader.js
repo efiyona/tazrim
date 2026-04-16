@@ -47,15 +47,20 @@
     }
   }
 
+  function assetVer(kind) {
+    const v = (window.ADMIN_AI_CHAT_ASSET_VER || {})[kind];
+    return v ? "?v=" + encodeURIComponent(v) : "?v=" + Date.now();
+  }
+
   async function loadModule() {
     const base = baseUrl();
-    loadCss(base + "admin/features/ai_chat/assets/admin-ai-chat.css");
+    loadCss(base + "admin/features/ai_chat/assets/admin-ai-chat.css" + assetVer("css"));
     const shellUrl = base + "admin/features/ai_chat/chat_shell.php";
     const res = await fetch(shellUrl, { credentials: "same-origin", cache: "no-store" });
     if (!res.ok) throw new Error("shell");
     const html = await res.text();
     injectShell(html);
-    await loadScript(base + "admin/features/ai_chat/assets/admin-ai-chat.js");
+    await loadScript(base + "admin/features/ai_chat/assets/admin-ai-chat.js" + assetVer("js"));
     if (typeof window.AdminAIChatBootstrap !== "function") {
       throw new Error("bootstrap_fn");
     }
