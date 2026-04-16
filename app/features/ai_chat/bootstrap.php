@@ -10,7 +10,23 @@ if (!function_exists('selectOne')) {
 }
 
 if (!defined('AI_CHAT_ASSISTANT_NAME')) {
-    define('AI_CHAT_ASSISTANT_NAME', 'עוזר התזרים');
+    define('AI_CHAT_ASSISTANT_NAME', 'התזרים החכם');
+}
+
+if (!function_exists('ai_chat_user_initials')) {
+    function ai_chat_user_initials(): string
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $firstName = trim((string) ($_SESSION['first_name'] ?? ''));
+        $lastName = trim((string) ($_SESSION['last_name'] ?? ''));
+        $firstInitial = $firstName !== '' ? mb_substr($firstName, 0, 1, 'UTF-8') : 'מ';
+        $lastInitial = $lastName !== '' ? mb_substr($lastName, 0, 1, 'UTF-8') : 'נ';
+
+        return $firstInitial . $lastInitial;
+    }
 }
 
 if (!function_exists('ai_chat_get_context')) {
@@ -49,7 +65,8 @@ if (!function_exists('ai_chat_render_modal')) {
     function ai_chat_render_modal(): void
     {
         $an = AI_CHAT_ASSISTANT_NAME;
-        echo '<div id="aiChatModal" class="ai-chat-modal" aria-hidden="true" data-ai-chat-assistant="' . htmlspecialchars($an, ENT_QUOTES, 'UTF-8') . '">';
+        $userInitials = ai_chat_user_initials();
+        echo '<div id="aiChatModal" class="ai-chat-modal" aria-hidden="true" data-ai-chat-assistant="' . htmlspecialchars($an, ENT_QUOTES, 'UTF-8') . '" data-ai-chat-user-initials="' . htmlspecialchars($userInitials, ENT_QUOTES, 'UTF-8') . '">';
         echo '  <div class="ai-chat-backdrop" data-ai-chat-close="1"></div>';
         echo '  <section class="ai-chat-panel" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">';
         echo '    <header class="ai-chat-header">';
@@ -78,6 +95,7 @@ if (!function_exists('ai_chat_render_modal')) {
         echo '        </div>';
         echo '      </aside>';
         echo '      <main class="ai-chat-main">';
+        echo '        <div class="ai-chat-chat-title ai-chat-chat-title--hidden" id="aiChatCurrentTitle" aria-live="polite"></div>';
         echo '        <div class="ai-chat-messages" id="aiChatMessages" aria-live="polite"></div>';
         echo '        <div class="ai-chat-composer" id="aiChatComposer">';
         echo '          <div class="ai-chat-topic-strip" id="aiChatTopicStrip" role="group" aria-label="סוג השיחה">';
@@ -86,8 +104,8 @@ if (!function_exists('ai_chat_render_modal')) {
         echo '            <button type="button" class="shopping-tab-chip" data-topic="system" title="מסכים וניווט במערכת">המערכת</button>';
         echo '          </div>';
         echo '          <form id="aiChatForm" class="ai-chat-form">';
-        echo '            <input type="text" id="aiChatInput" class="ai-chat-input" maxlength="1500" autocomplete="off" placeholder="שאלה קצרה — Enter לשליחה" enterkeyhint="send">';
-        echo '            <button type="submit" class="ai-chat-send" id="aiChatSendBtn"><i class="fa-solid fa-paper-plane"></i></button>';
+        echo '            <input type="text" id="aiChatInput" class="ai-chat-input" maxlength="1500" autocomplete="off" placeholder="מה תרצו לשאול?" enterkeyhint="send">';
+        echo '            <button type="submit" class="ai-chat-send" id="aiChatSendBtn" aria-label="שליחת הודעה"><i class="fa-solid fa-paper-plane"></i></button>';
         echo '          </form>';
         echo '        </div>';
         echo '      </main>';
@@ -102,6 +120,7 @@ if (!function_exists('ai_chat_render_assets')) {
     {
         echo '<script>window.AI_CHAT_BASE_URL = ' . json_encode(BASE_URL, JSON_UNESCAPED_UNICODE) . ';';
         echo 'window.AI_CHAT_ASSISTANT_NAME = ' . json_encode(AI_CHAT_ASSISTANT_NAME, JSON_UNESCAPED_UNICODE) . ';</script>';
+        echo '<script>window.AI_CHAT_USER_INITIALS = ' . json_encode(ai_chat_user_initials(), JSON_UNESCAPED_UNICODE) . ';</script>';
         echo '<link rel="stylesheet" href="' . BASE_URL . 'app/features/ai_chat/assets/ai-chat.css">';
         echo '<script src="' . BASE_URL . 'app/features/ai_chat/assets/ai-chat.js" defer></script>';
     }
@@ -113,6 +132,7 @@ if (!function_exists('ai_chat_render_lazy_loader')) {
     {
         echo '<script>window.AI_CHAT_BASE_URL = ' . json_encode(BASE_URL, JSON_UNESCAPED_UNICODE) . ';';
         echo 'window.AI_CHAT_ASSISTANT_NAME = ' . json_encode(AI_CHAT_ASSISTANT_NAME, JSON_UNESCAPED_UNICODE) . ';</script>';
+        echo '<script>window.AI_CHAT_USER_INITIALS = ' . json_encode(ai_chat_user_initials(), JSON_UNESCAPED_UNICODE) . ';</script>';
         echo '<script src="' . BASE_URL . 'app/features/ai_chat/assets/ai-chat-loader.js" defer></script>';
     }
 }

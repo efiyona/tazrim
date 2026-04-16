@@ -117,9 +117,15 @@ require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
         </ul>
     </div>
    <?php if ($target_modal_id): ?>
-    <div class="detached-plus-wrapper">
-        <div class="plus-btn-detached" onclick="openDynamicModal('<?php echo $target_modal_id; ?>')">
-            <i class="fa-solid fa-plus"></i>
+    <?php $is_shopping_fab = $current_page === 'shopping.php'; ?>
+    <div class="detached-plus-wrapper <?php echo $is_shopping_fab ? 'detached-plus-wrapper--danger' : ''; ?>">
+        <div
+            class="plus-btn-detached <?php echo $is_shopping_fab ? 'plus-btn-detached--danger' : ''; ?>"
+            <?php if (!$is_shopping_fab): ?>onclick="openDynamicModal('<?php echo $target_modal_id; ?>')"<?php endif; ?>
+            aria-label="<?php echo $is_shopping_fab ? 'אפשרויות מחיקה' : 'הוספה'; ?>"
+            title="<?php echo $is_shopping_fab ? 'אפשרויות מחיקה' : 'הוספה'; ?>"
+        >
+            <i class="fa-solid <?php echo $is_shopping_fab ? 'fa-trash-can' : 'fa-plus'; ?>"></i>
         </div>
     </div>
     <?php endif; ?>

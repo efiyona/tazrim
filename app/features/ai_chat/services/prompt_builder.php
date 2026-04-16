@@ -59,7 +59,7 @@ if (!function_exists('ai_chat_build_system_instruction')) {
                 . "לא בכל משפט ולא באופן חוזר מדי.\n\n";
         }
 
-        $assistantName = defined('AI_CHAT_ASSISTANT_NAME') ? AI_CHAT_ASSISTANT_NAME : 'עוזר התזרים';
+        $assistantName = defined('AI_CHAT_ASSISTANT_NAME') ? AI_CHAT_ASSISTANT_NAME : 'התזרים החכם';
         $common = "שמך הוא {$assistantName}. תפקידך לסייע למשתמשים במערכת \"התזרים\" בלבד.\n"
             . $personal
             . "מותר לענות רק על שימוש במערכת, נתונים פיננסיים של הבית (כשנשלחו), או הכוונה פיננסית זהירה לפי נתונים.\n"

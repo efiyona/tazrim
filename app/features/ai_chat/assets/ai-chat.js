@@ -8,6 +8,7 @@
   const state = {
     open: false,
     activeChatId: null,
+    currentChatTitle: "",
     topic: "system",
     topicLocked: false,
     draftNeedsTopic: true,
@@ -30,7 +31,34 @@
     if (fromDom && fromDom.trim() !== "") {
       return fromDom.trim();
     }
-    return "עוזר התזרים";
+    return "התזרים החכם";
+  }
+
+  function userInitials() {
+    if (typeof window.AI_CHAT_USER_INITIALS === "string" && window.AI_CHAT_USER_INITIALS.trim() !== "") {
+      return window.AI_CHAT_USER_INITIALS.trim();
+    }
+    const modal = qs("aiChatModal");
+    const fromDom = modal && modal.getAttribute("data-ai-chat-user-initials");
+    if (fromDom && fromDom.trim() !== "") {
+      return fromDom.trim();
+    }
+    return "מנ";
+  }
+
+  function messageAvatarHtml(role) {
+    if (role === "user") {
+      return (
+        '<div class="ai-chat-message-avatar ai-chat-message-avatar--user" aria-hidden="true">' +
+        '<span class="ai-chat-message-avatar-label">' + escapeHtml(userInitials()) + "</span>" +
+        "</div>"
+      );
+    }
+    return (
+      '<div class="ai-chat-message-avatar ai-chat-message-avatar--assistant" aria-hidden="true">' +
+      '<span class="ai-chat-message-avatar-label">AI</span>' +
+      "</div>"
+    );
   }
 
   function isMobileLayout() {
@@ -141,6 +169,20 @@
     );
   }
 
+  function normalizeChatTitle(raw) {
+    const clean = (raw || "").replace(/\s+/g, " ").trim();
+    return clean ? clean.slice(0, 70) : "";
+  }
+
+  function setCurrentChatTitle(title) {
+    const titleEl = qs("aiChatCurrentTitle");
+    if (!titleEl) return;
+    const safeTitle = normalizeChatTitle(title);
+    state.currentChatTitle = safeTitle;
+    titleEl.textContent = safeTitle;
+    titleEl.classList.toggle("ai-chat-chat-title--hidden", safeTitle === "");
+  }
+
   function topicGateHtml() {
     return (
       '<div class="ai-chat-topic-gate">' +
@@ -193,6 +235,7 @@
     if (messagesEl) {
       messagesEl.innerHTML = '<div class="ai-chat-empty">בשמחה — שאלו כאן.</div>';
     }
+    setCurrentChatTitle("");
     renderTopicStrip();
     setComposerVisible(true);
     const input = qs("aiChatInput");
@@ -214,13 +257,16 @@
       innerContent = '<div class="ai-chat-bubble-inner">' + formatUserHtml(text) + "</div>";
     }
     const html =
-      `<article class="ai-chat-bubble ${cls}"${idAttr}>` +
+      `<article class="ai-chat-bubble-row ai-chat-bubble-row--${cls}">` +
+      messageAvatarHtml(role) +
+      `<section class="ai-chat-bubble ${cls}"${idAttr}>` +
       `<div class="ai-chat-bubble-meta">${escapeHtml(metaLabel)}</div>` +
       innerContent +
+      `</section>` +
       `</article>`;
     wrap.insertAdjacentHTML("beforeend", html);
     wrap.scrollTop = wrap.scrollHeight;
-    return wrap.lastElementChild;
+    return wrap.lastElementChild ? wrap.lastElementChild.querySelector(".ai-chat-bubble") : null;
   }
 
   function updateBubbleStreamingAssistant(el, text, opts = {}) {
@@ -302,6 +348,9 @@
       data.items.forEach((item) => {
         const title = escapeHtml(item.title || "שיחה");
         const isActive = Number(item.id) === Number(state.activeChatId);
+        if (isActive) {
+          setCurrentChatTitle(item.title || "");
+        }
         const html = `<article class="ai-chat-history-item ${isActive ? "active" : ""}">
             <button type="button" class="ai-chat-history-open" data-chat-id="${item.id}">
               <strong>${title}</strong><span></span>
@@ -332,7 +381,7 @@
 
   /**
    * @param {number} chatId
-   * @param {{ messages: Array, scope_snapshot: string }} payload
+   * @param {{ title?: string, messages: Array, scope_snapshot: string }} payload
    */
   function applyChatPayload(chatId, payload) {
     const messagesEl = qs("aiChatMessages");
@@ -347,9 +396,11 @@
     setComposerVisible(true);
     const msgs = payload.messages || [];
     if (msgs.length === 0) {
+      setCurrentChatTitle("");
       messagesEl.innerHTML = '<div class="ai-chat-empty">התחילו לשאול שאלה.</div>';
       return;
     }
+    setCurrentChatTitle(payload.title || "");
     msgs.forEach((m) => {
       if (m.role === "assistant") {
         addMessageBubble("assistant", m.content, { loading: false });
@@ -388,6 +439,7 @@
     try {
       const data = await fetchJson(apiBase + "get_chat.php?chat_id=" + encodeURIComponent(id));
       state.chatPayloadCache[id] = {
+        title: data.chat.title || "",
         messages: data.messages || [],
         scope_snapshot: data.chat.scope_snapshot || "{}",
       };
@@ -417,6 +469,7 @@
 
   function startDraftChat() {
     state.activeChatId = null;
+    state.currentChatTitle = "";
     state.topic = "system";
     state.topicLocked = false;
     state.draftNeedsTopic = true;
@@ -424,6 +477,7 @@
     if (messagesEl) {
       messagesEl.innerHTML = topicGateHtml();
     }
+    setCurrentChatTitle("");
     renderTopicStrip();
     setComposerVisible(false);
     setHistoryDrawerOpen(false);
@@ -465,6 +519,9 @@
     const text = input.value.trim();
     if (!text) return;
     input.value = "";
+    if (!state.currentChatTitle) {
+      setCurrentChatTitle(text);
+    }
 
     const userBubble = addMessageBubble("user", text);
     if (userBubble) userBubble.classList.add("pop-in");

@@ -4392,9 +4392,23 @@ body.page-auth {
     transition: 0.4s ease;
 }
 
+.plus-btn-detached--danger {
+    background: var(--error);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(245, 101, 101, 0.24);
+}
+
+.plus-btn-detached--danger i {
+    color: #fff;
+}
+
 .detached-plus-wrapper.open .plus-btn-detached {
     transform: rotate(45deg); /* הופך ל-X אלגנטי */
     background: var(--error); /* צבע אדום מסמן "סגירה" */
+}
+
+.detached-plus-wrapper--danger.open .plus-btn-detached {
+    transform: scale(0.96);
 }
 
 /* =========================================
@@ -4551,15 +4565,29 @@ body.page-auth {
     background-color: #fecaca !important;
 }
 
+.submenu-action-btn.submenu-action-btn--disabled {
+    opacity: 0.55;
+    pointer-events: none;
+    box-shadow: none;
+}
+
 /* אפקט לחיצה (כיווץ קל) לכפתור הפלוס עצמו */
 .plus-btn-detached:active {
     transform: scale(0.92);
     box-shadow: 0 4px 10px rgba(35, 114, 39, 0.1);
 }
 
+.plus-btn-detached--danger:active {
+    box-shadow: 0 4px 10px rgba(245, 101, 101, 0.2);
+}
+
 /* כדי שהפלוס יישאר בצורת X כשהוא פתוח ולוחצים עליו שוב */
 .detached-plus-wrapper.open .plus-btn-detached:active {
     transform: scale(0.85) rotate(45deg);
+}
+
+.detached-plus-wrapper--danger.open .plus-btn-detached:active {
+    transform: scale(0.9);
 }
 
 /* אפקט לחיצה על פריטי הבר התחתון (מגע) */

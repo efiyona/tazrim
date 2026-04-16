@@ -479,6 +479,15 @@ $is_setup_needed = ($cats_count == 0);
             });
         }
 
+        function clearCurrentShoppingList() {
+            const selectedStoreId = window.shoppingSelectedStoreId;
+            if (!selectedStoreId) {
+                tazrimAlert({ title: 'אין רשימה פעילה', message: 'בחרו קודם רשימה כדי למחוק את המוצרים שבה.' });
+                return;
+            }
+            clearShoppingCategory(selectedStoreId);
+        }
+
         function clearShoppingCategory(categoryId, event) {
             if (event) event.stopPropagation();
             tazrimConfirm({
@@ -505,37 +514,31 @@ $is_setup_needed = ($cats_count == 0);
             });
         }
 
-function updatePlusMenuUI() {
-    const plusWrapper = document.querySelector('.detached-plus-wrapper');
-    if (!plusWrapper) return;
-    const submenu = plusWrapper.querySelector('.submenu-popup-container');
-    if (!submenu) return;
+        function renderShoppingDeleteMenu() {
+            const plusWrapper = document.querySelector('.detached-plus-wrapper');
+            if (!plusWrapper) return;
+            let submenu = plusWrapper.querySelector('.submenu-popup-container');
+            if (!submenu) {
+                submenu = document.createElement('div');
+                submenu.className = 'submenu-popup-container';
+                plusWrapper.appendChild(submenu);
+            }
+            const hasSelectedStore = !!window.shoppingSelectedStoreId;
 
-    // האם יש מוצרים פעילים במסך?
-    const hasActiveItems = $('.active-row').not('.pending-delete').length > 0;
-    
-    // התיקון כאן: חיפוש לפי הקלאס החדש (danger-solid-btn)
-    const existingTrashBtn = submenu.querySelector('.danger-solid-btn'); 
+            submenu.innerHTML = `
+                <a href="javascript:void(0);" onclick="clearCurrentShoppingList()" class="submenu-action-btn danger-solid-btn ${hasSelectedStore ? '' : 'submenu-action-btn--disabled'}">
+                    <i class="fa-solid fa-trash"></i> מחיקת הרשימה
+                </a>
+                <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn danger-solid-btn">
+                    <i class="fa-solid fa-trash-can"></i> מחיקת כל הרשימות
+                </a>
+            `;
+            plusWrapper.style.display = 'flex';
+        }
 
-    // נוסיף או נסיר את פח האשפה בהתאם, בזמן אמת!
-    if (hasActiveItems && !existingTrashBtn) {
-        submenu.insertAdjacentHTML('afterbegin', `
-            <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn danger-solid-btn">
-                <i class="fa-solid fa-trash-can"></i> נקה את כל הרשימה
-            </a>
-        `);
-    } else if (!hasActiveItems && existingTrashBtn) {
-        existingTrashBtn.remove();
-    }
-
-    // נבדוק האם יש בכלל כפתורים בתוך הפלוס (או שהוא נשאר ריק לגמרי)
-    const hasAnyButtons = submenu.querySelectorAll('.submenu-action-btn').length > 0;
-    if (!hasAnyButtons) {
-        plusWrapper.style.display = 'none';
-    } else {
-        plusWrapper.style.display = 'flex';
-    }
-}
+        function updatePlusMenuUI() {
+            renderShoppingDeleteMenu();
+        }
 
         // --- מערכת רשימת הקניות הרגילה ---
         $(document).ready(function() {
@@ -787,12 +790,12 @@ function updatePlusMenuUI() {
                     if (data.status !== 'success') return;
 
                     if (data.active_categories.length === 0) {
-                        $('#shopping-tabs-bar').hide();
-                        $('#shopping-store-tabs').empty();
+                        $('#shopping-tabs-bar').show();
+                        shoppingEnsureAddTabOnly();
                         $('#shopping-lists-container').html(
                             '<div style="text-align:center; padding: 40px; color:#888;" id="empty-state-msg">' +
                                 '<i class="fa-solid fa-basket-shopping fa-2x" style="margin-bottom: 10px; color:#ddd;"></i><br>' +
-                                'הרשימה ריקה! לחצו על ה- + למטה כדי להתחיל.</div>'
+                                'הרשימה ריקה. אפשר להוסיף חנות חדשה מהלשוניות למעלה.</div>'
                         );
                         window.shoppingSelectedStoreId = null;
                     } else {
@@ -834,45 +837,7 @@ function updatePlusMenuUI() {
                                 plusWrapper.classList.toggle('open');
                             };
                         }
-                        let submenu = plusWrapper.querySelector('.submenu-popup-container');
-                        if (!submenu) {
-                            submenu = document.createElement('div');
-                            submenu.className = 'submenu-popup-container';
-                            plusWrapper.appendChild(submenu);
-                        }
-                        submenu.innerHTML = '';
-                        if (data.active_categories && data.active_categories.length > 0) {
-                            submenu.innerHTML += `
-                        <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn danger-solid-btn">
-                            <i class="fa-solid fa-trash-can"></i> נקה את כל הרשימה
-                        </a>
-                    `;
-                        }
-                        if (data.empty_categories && data.empty_categories.length > 0) {
-                            data.empty_categories.forEach(function (cat) {
-                                const iconClass = cat.icon ? cat.icon : 'fa-cart-plus';
-                                const nm = JSON.stringify(cat.name || '');
-                                submenu.innerHTML +=
-                                    '<a href="javascript:void(0);" onclick="handleEmptyCategoryClick(' +
-                                    cat.id +
-                                    ', ' +
-                                    nm +
-                                    ", '" +
-                                    iconClass +
-                                    '\', this)" class="submenu-action-btn" id="plus-cat-' +
-                                    cat.id +
-                                    '"><i class="fa-solid ' +
-                                    iconClass +
-                                    '"></i> ' +
-                                    shoppingEscapeHtml(cat.name || '') +
-                                    '</a>';
-                            });
-                        }
-                        if (data.active_categories.length === 0 && data.empty_categories.length === 0) {
-                            plusWrapper.style.display = 'none';
-                        } else {
-                            plusWrapper.style.display = 'flex';
-                        }
+                        renderShoppingDeleteMenu();
                     }
                 } catch (e) {
                     console.error('שגיאה בטעינת הרשימה:', e);
