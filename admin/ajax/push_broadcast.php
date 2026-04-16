@@ -32,6 +32,11 @@ if ($target !== 'all' && $target !== 'homes') {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'יעד שידור לא תקין.'], 400);
 }
 
+$delivery = isset($body['delivery']) ? (string) $body['delivery'] : 'push';
+if (!in_array($delivery, ['push', 'bell', 'both'], true)) {
+    $delivery = 'push';
+}
+
 require_once ROOT_PATH . '/app/functions/push_functions.php';
 
 global $conn;
@@ -82,16 +87,32 @@ if ($target === 'all') {
     $homeIds = $ids;
 }
 
+/** קישור מלא לתוכן HTML של התראת פעמון */
+$bellHref = $link;
+if ($bellHref !== '' && $bellHref !== '/' && !preg_match('#^https?://#i', $bellHref)) {
+    $bellHref = rtrim((string) (defined('BASE_URL') ? BASE_URL : ''), '/') . '/' . ltrim($bellHref, '/');
+}
+$bellMessage = nl2br(htmlspecialchars($bodyText, ENT_QUOTES, 'UTF-8'));
+if ($link !== '' && $link !== '/') {
+    $bellMessage .= '<br><a href="' . htmlspecialchars($bellHref, ENT_QUOTES, 'UTF-8') . '">מעבר לעמוד</a>';
+}
+
 $sent_count = 0;
 foreach ($homeIds as $hid) {
-    sendPushToEntireHome($hid, $title, $bodyText, $link, 'system');
+    if ($delivery === 'push' || $delivery === 'both') {
+        sendPushToEntireHome($hid, $title, $bodyText, $link, 'system');
+    }
+    if ($delivery === 'bell' || $delivery === 'both') {
+        addNotification($hid, $title, $bellMessage, 'info', null);
+    }
     $sent_count++;
 }
 
+$channelDesc = $delivery === 'bell' ? 'התראות פעמון' : ($delivery === 'both' ? 'Push ופעמון' : 'Push');
 if ($target === 'all') {
-    $msg = 'ההודעה נשלחה בהצלחה לכל הבתים במערכת (' . $sent_count . ' בתים).';
+    $msg = 'ההודעה נשלחה (' . $channelDesc . ') לכל הבתים במערכת (' . $sent_count . ' בתים).';
 } else {
-    $msg = 'ההודעה נשלחה בהצלחה ל-' . $sent_count . ' בתים נבחרים.';
+    $msg = 'ההודעה נשלחה (' . $channelDesc . ') ל-' . $sent_count . ' בתים נבחרים.';
 }
 
 tazrim_admin_json_response([

@@ -15,7 +15,7 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
 >
     <div class="mb-6">
         <h2 class="text-xl font-bold text-gray-800">הודעת מערכת — שידור פוש</h2>
-        <p class="text-sm text-gray-600 mt-1">שליחת התראת Push לפי העדפת מערכת (notify_system). ניתן לשלוח לכל הבתים או רק לבתים שתבחרו.</p>
+        <p class="text-sm text-gray-600 mt-1">שליחה לפי העדפת מערכת (notify_system) ל־Push, או התראה בפעמון באפליקציה, או שניהם. ניתן לשלוח לכל הבתים או רק לבתים שתבחרו.</p>
     </div>
 
     <div id="push-flash" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-semibold border" role="status"></div>
@@ -37,6 +37,33 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
                         <span>
                             <span class="font-semibold text-gray-900">בתים נבחרים</span>
                             <span class="block text-sm text-gray-600">רק בית או מספר בתים שתבחרו מהרשימה</span>
+                        </span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <fieldset class="mb-6 border border-gray-100 rounded-lg p-4 bg-gray-50">
+                <legend class="text-sm font-bold text-gray-800 px-1">סוג התראה</legend>
+                <div class="space-y-3 mt-2">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="radio" name="pb_delivery" value="push" class="mt-1" checked>
+                        <span>
+                            <span class="font-semibold text-gray-900">התראת Push בלבד</span>
+                            <span class="block text-sm text-gray-600">מכשיר / דפדפן, לפי מנוי והעדפת notify_system</span>
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="radio" name="pb_delivery" value="bell" class="mt-1">
+                        <span>
+                            <span class="font-semibold text-gray-900">פעמון באפליקציה בלבד</span>
+                            <span class="block text-sm text-gray-600">התראה ברשימת הפעמון (ללא Push)</span>
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="radio" name="pb_delivery" value="both" class="mt-1">
+                        <span>
+                            <span class="font-semibold text-gray-900">גם Push וגם פעמון</span>
+                            <span class="block text-sm text-gray-600">שני הערוצים לכל בית שנבחר</span>
                         </span>
                     </label>
                 </div>
@@ -128,6 +155,11 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
     function getTarget() {
         var r = form.querySelector('input[name="pb_target"]:checked');
         return r ? r.value : 'all';
+    }
+
+    function getDelivery() {
+        var r = form.querySelector('input[name="pb_delivery"]:checked');
+        return r ? r.value : 'push';
     }
 
     function syncHomesPanel() {
@@ -256,10 +288,13 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
             }
             homesEmptyHint.classList.add('hidden');
         }
+        var delivery = getDelivery();
+        var deliveryLabel =
+            delivery === 'bell' ? 'התראות פעמון בלבד' : delivery === 'both' ? 'Push ופעמון' : 'התראת Push בלבד';
         var confirmMsg =
             target === 'all'
-                ? 'לשלוח התראת פוש לכל הבתים במערכת? לא ניתן לבטל.'
-                : 'לשלוח התראת פוש ל-' + selectedHomes.size + ' בתים נבחרים? לא ניתן לבטל.';
+                ? 'לשלוח (' + deliveryLabel + ') לכל הבתים במערכת? לא ניתן לבטל.'
+                : 'לשלוח (' + deliveryLabel + ') ל-' + selectedHomes.size + ' בתים נבחרים? לא ניתן לבטל.';
 
         function doSendPush() {
             var payload = {
@@ -267,6 +302,7 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
                 title: title,
                 body: body,
                 link: link,
+                delivery: delivery,
                 target: target === 'homes' ? 'homes' : 'all'
             };
             if (target === 'homes') {
@@ -290,6 +326,8 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
                         if (linkInput) linkInput.value = '/';
                         syncLinkInput();
                         form.querySelector('input[name="pb_target"][value="all"]').checked = true;
+                        var dPush = form.querySelector('input[name="pb_delivery"][value="push"]');
+                        if (dPush) dPush.checked = true;
                         selectedHomes.clear();
                         renderSelected();
                         syncHomesPanel();

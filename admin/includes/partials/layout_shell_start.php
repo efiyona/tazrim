@@ -211,26 +211,28 @@ function admin_nav_link_class(bool $active): string
                    title="האתר">
                     <i class="fa-solid fa-house"></i>
                 </a>
-                <div class="relative min-w-0" x-data="{ open: false }" @click.outside="open = false">
+                <div class="relative min-w-0" id="admin-profile-menu-root">
                     <button
                         type="button"
-                        @click="open = !open"
+                        id="admin-profile-menu-btn"
                         class="cursor-pointer font-bold w-9 h-9 sm:w-10 sm:h-10 bg-blue-200 text-blue-700 flex items-center justify-center rounded-full hover:bg-blue-300 text-sm shrink-0"
                         aria-expanded="false"
-                        :aria-expanded="open"
+                        aria-haspopup="true"
+                        aria-controls="admin-profile-menu-panel"
                     >
                         <?php echo htmlspecialchars($initials, ENT_QUOTES, 'UTF-8'); ?>
                     </button>
                     <div
-                        x-show="open"
-                        x-transition
-                        class="absolute top-full mt-2 end-0 w-[min(13rem,calc(100vw-1.5rem))] bg-white py-2 shadow-lg border border-gray-100 rounded-lg z-[60] text-right"
+                        id="admin-profile-menu-panel"
+                        class="hidden absolute top-full mt-2 end-0 w-[min(13rem,calc(100vw-1.5rem))] bg-white py-2 shadow-lg border border-gray-100 rounded-lg z-[60] text-right"
+                        role="menu"
+                        aria-hidden="true"
                     >
                         <?php if ($u && !empty($u['email'])): ?>
                             <div class="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 truncate"><?php echo htmlspecialchars($u['email'], ENT_QUOTES, 'UTF-8'); ?></div>
                         <?php endif; ?>
-                        <a href="<?php echo htmlspecialchars(BASE_URL . 'pages/settings/user_profile.php', ENT_QUOTES, 'UTF-8'); ?>" class="block px-4 py-2 text-gray-600 hover:bg-gray-100 hover:text-blue-600">החשבון שלי</a>
-                        <a href="<?php echo htmlspecialchars(BASE_URL . 'logout.php', ENT_QUOTES, 'UTF-8'); ?>" class="block px-4 py-2 text-gray-600 hover:bg-gray-100 hover:text-red-600">התנתקות</a>
+                        <a href="<?php echo htmlspecialchars(BASE_URL . 'pages/settings/user_profile.php', ENT_QUOTES, 'UTF-8'); ?>" class="block px-4 py-2 text-gray-600 hover:bg-gray-100 hover:text-blue-600" role="menuitem">החשבון שלי</a>
+                        <a href="<?php echo htmlspecialchars(BASE_URL . 'logout.php', ENT_QUOTES, 'UTF-8'); ?>" class="block px-4 py-2 text-gray-600 hover:bg-gray-100 hover:text-red-600" role="menuitem">התנתקות</a>
                     </div>
                 </div>
             </div>
