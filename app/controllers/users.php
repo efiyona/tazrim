@@ -1,6 +1,7 @@
 <?php
 include(ROOT_PATH . "/app/database/db.php");
 require_once ROOT_PATH . '/app/helpers/phone_uniqueness.php';
+require_once ROOT_PATH . '/app/functions/push_functions.php';
 
 $errors = array();
 // משתנים לשמירת הנתונים בטופס במקרה של שגיאה
@@ -143,11 +144,41 @@ if (isset($_POST['register_btn'])) {
             update('users', $user_id, ['home_id' => $target_home_id]);
 
             // ==========================================
+            // 3.5 התראה למנהלי מערכת על משתמש חדש
+            // ==========================================
+            $admin_res = mysqli_query($conn, "SELECT id FROM users WHERE role = 'program_admin'");
+            $admin_panel_url = BASE_URL . 'admin/dashboard.php';
+            $full_name = trim($first_name . ' ' . $last_name);
+            if ($full_name === '') {
+                $full_name = $email;
+            }
+
+            $notif_title = 'משתמש חדש נרשם למערכת';
+            $message_html = "<span class='notif-bold'>" . htmlspecialchars($full_name, ENT_QUOTES, 'UTF-8') . "</span> נרשמ/ה למערכת";
+            if (trim((string) $email) !== '') {
+                $message_html .= " — " . htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+            }
+
+            $push_body = $full_name . ' נרשמ/ה עכשיו למערכת';
+            if (trim((string) $email) !== '') {
+                $push_body .= ' (' . $email . ')';
+            }
+
+            if ($admin_res) {
+                while ($admin = mysqli_fetch_assoc($admin_res)) {
+                    $admin_id = (int) ($admin['id'] ?? 0);
+                    if ($admin_id <= 0) {
+                        continue;
+                    }
+                    addNotification(0, $notif_title, $message_html, 'info', $admin_id);
+                    sendPushNotification($admin_id, $notif_title, $push_body, $admin_panel_url, 'system');
+                }
+            }
+
+            // ==========================================
             // 4. שליחת התראת Push לשאר בני הבית (רק בהצטרפות)
             // ==========================================
             if ($home_action === 'join') {
-                include_once(ROOT_PATH . '/app/functions/push_functions.php');
-                
                 $push_title = "שותף חדש בבית! 🏠";
                 $push_body = "$first_name הצטרף הרגע לניהול 'התזרים' של הבית. ברוך הבא!";
                 $push_url = BASE_URL;
