@@ -5,6 +5,8 @@
  */
 $u = tazrim_admin_current_user_row();
 $registry = tazrim_admin_registry();
+$navItems = tazrim_admin_nav_items();
+$sidebarMetrics = tazrim_admin_sidebar_metrics();
 $navCtx = $admin_nav_context ?? null;
 if ($navCtx === null) {
     $script = basename($_SERVER['SCRIPT_NAME'] ?? '');
@@ -24,6 +26,10 @@ $a2 = $ln !== '' ? mb_substr($ln, 0, 1, 'UTF-8') : 'נ';
 $initials = $a1 . $a2;
 
 $base = rtrim(BASE_URL, '/') . '/';
+$isTableContext = isset($registry[$navCtx]) && !empty($registry[$navCtx]['table']);
+$searchPlaceholder = $isTableContext
+    ? 'חיפוש ב' . ($registry[$navCtx]['label'] ?? 'טבלה') . '...'
+    : 'חיפוש בפאנל...';
 
 function admin_nav_link_class(bool $active): string
 {
@@ -56,28 +62,45 @@ function admin_nav_link_class(bool $active): string
             </div>
             <div class="px-3 py-3 flex-1 overflow-y-auto">
                 <ul class="space-y-0.5">
-                    <li>
-                        <a href="<?php echo htmlspecialchars($base . 'admin/dashboard.php', ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo admin_nav_link_class($navCtx === 'dashboard'); ?>"
-                           @click="sidemenu = false">
-                            <i class="fa-solid fa-gauge-high w-6 text-center opacity-50"></i>
-                            לוח בקרה
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo htmlspecialchars($base . 'admin/push_broadcast.php', ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo admin_nav_link_class($navCtx === 'push_broadcast'); ?>"
-                           @click="sidemenu = false">
-                            <i class="fa-solid fa-bullhorn w-6 text-center opacity-50"></i>
-                            שידור פוש
-                        </a>
-                    </li>
-                    <?php foreach ($registry as $key => $cfg): ?>
-                        <li>
-                            <a href="<?php echo htmlspecialchars($base . 'admin/table.php?t=' . urlencode($key), ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo admin_nav_link_class($navCtx === $key); ?>"
-                               @click="sidemenu = false">
-                                <i class="fa-solid fa-table w-6 text-center opacity-50"></i>
-                                <?php echo htmlspecialchars($cfg['label'] ?? $key, ENT_QUOTES, 'UTF-8'); ?>
-                            </a>
-                        </li>
+                    <?php foreach ($navItems as $item): ?>
+                        <?php $isActive = tazrim_admin_nav_item_is_active($item, $navCtx); ?>
+                        <?php if (($item['type'] ?? 'link') === 'group'): ?>
+                            <li x-data="{ open: <?php echo $isActive ? 'true' : 'false'; ?> }" class="admin-nav-group">
+                                <button type="button" class="<?php echo admin_nav_link_class($isActive); ?> w-full justify-between admin-nav-toggle"
+                                    data-nav-label="<?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    @click="open = !open"
+                                    :aria-expanded="open ? 'true' : 'false'">
+                                    <span class="flex items-center gap-3 min-w-0">
+                                        <i class="fa-solid <?php echo htmlspecialchars($item['icon'] ?? 'fa-folder-tree', ENT_QUOTES, 'UTF-8'); ?> w-6 text-center opacity-50"></i>
+                                        <span class="truncate"><?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
+                                    </span>
+                                    <i class="fa-solid fa-chevron-down text-xs transition-transform" :class="open ? 'rotate-180' : ''"></i>
+                                </button>
+                                <ul x-show="open" class="mt-1 me-3 border-r border-gray-200 pr-2">
+                                    <?php foreach (($item['children'] ?? []) as $child): ?>
+                                        <li class="admin-nav-leaf">
+                                            <a href="<?php echo htmlspecialchars($child['href'] ?? '#', ENT_QUOTES, 'UTF-8'); ?>"
+                                               class="<?php echo admin_nav_link_class($navCtx === ($child['key'] ?? '')); ?> admin-nav-link"
+                                               data-nav-label="<?php echo htmlspecialchars($child['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                               @click="sidemenu = false">
+                                                <i class="fa-solid <?php echo htmlspecialchars($child['icon'] ?? 'fa-table', ENT_QUOTES, 'UTF-8'); ?> w-6 text-center opacity-50"></i>
+                                                <?php echo htmlspecialchars($child['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                                            </a>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </li>
+                        <?php else: ?>
+                            <li>
+                                <a href="<?php echo htmlspecialchars($item['href'] ?? '#', ENT_QUOTES, 'UTF-8'); ?>"
+                                   class="<?php echo admin_nav_link_class($isActive); ?> admin-nav-link"
+                                   data-nav-label="<?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                   @click="sidemenu = false">
+                                    <i class="fa-solid <?php echo htmlspecialchars($item['icon'] ?? 'fa-table', ENT_QUOTES, 'UTF-8'); ?> w-6 text-center opacity-50"></i>
+                                    <?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                                </a>
+                            </li>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </ul>
             </div>
@@ -91,34 +114,70 @@ function admin_nav_link_class(bool $active): string
         </div>
         <div class="px-3 py-3">
             <ul class="space-y-0.5">
-                <li>
-                    <a href="<?php echo htmlspecialchars($base . 'admin/dashboard.php', ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo admin_nav_link_class($navCtx === 'dashboard'); ?>">
-                        <i class="fa-solid fa-gauge-high w-6 text-center opacity-50"></i>
-                        לוח בקרה
-                    </a>
-                </li>
-                <li>
-                    <a href="<?php echo htmlspecialchars($base . 'admin/push_broadcast.php', ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo admin_nav_link_class($navCtx === 'push_broadcast'); ?>">
-                        <i class="fa-solid fa-bullhorn w-6 text-center opacity-50"></i>
-                        שידור פוש
-                    </a>
-                </li>
-                <?php foreach ($registry as $key => $cfg): ?>
-                    <li>
-                        <a href="<?php echo htmlspecialchars($base . 'admin/table.php?t=' . urlencode($key), ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo admin_nav_link_class($navCtx === $key); ?>">
-                            <i class="fa-solid fa-table w-6 text-center opacity-50"></i>
-                            <?php echo htmlspecialchars($cfg['label'] ?? $key, ENT_QUOTES, 'UTF-8'); ?>
-                        </a>
-                    </li>
+                <?php foreach ($navItems as $item): ?>
+                    <?php $isActive = tazrim_admin_nav_item_is_active($item, $navCtx); ?>
+                    <?php if (($item['type'] ?? 'link') === 'group'): ?>
+                        <li x-data="{ open: <?php echo $isActive ? 'true' : 'false'; ?> }" class="admin-nav-group">
+                            <button type="button" class="<?php echo admin_nav_link_class($isActive); ?> w-full justify-between admin-nav-toggle"
+                                data-nav-label="<?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                @click="open = !open"
+                                :aria-expanded="open ? 'true' : 'false'">
+                                <span class="flex items-center gap-3 min-w-0">
+                                    <i class="fa-solid <?php echo htmlspecialchars($item['icon'] ?? 'fa-folder-tree', ENT_QUOTES, 'UTF-8'); ?> w-6 text-center opacity-50"></i>
+                                    <span class="truncate"><?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
+                                </span>
+                                <i class="fa-solid fa-chevron-down text-xs transition-transform" :class="open ? 'rotate-180' : ''"></i>
+                            </button>
+                            <ul x-show="open" class="mt-1 me-3 border-r border-gray-200 pr-2">
+                                <?php foreach (($item['children'] ?? []) as $child): ?>
+                                    <li class="admin-nav-leaf">
+                                        <a href="<?php echo htmlspecialchars($child['href'] ?? '#', ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo admin_nav_link_class($navCtx === ($child['key'] ?? '')); ?> admin-nav-link" data-nav-label="<?php echo htmlspecialchars($child['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                                            <i class="fa-solid <?php echo htmlspecialchars($child['icon'] ?? 'fa-table', ENT_QUOTES, 'UTF-8'); ?> w-6 text-center opacity-50"></i>
+                                            <?php echo htmlspecialchars($child['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </li>
+                    <?php else: ?>
+                        <li>
+                            <a href="<?php echo htmlspecialchars($item['href'] ?? '#', ENT_QUOTES, 'UTF-8'); ?>" class="<?php echo admin_nav_link_class($isActive); ?> admin-nav-link" data-nav-label="<?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                                <i class="fa-solid <?php echo htmlspecialchars($item['icon'] ?? 'fa-table', ENT_QUOTES, 'UTF-8'); ?> w-6 text-center opacity-50"></i>
+                                <?php echo htmlspecialchars($item['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             </ul>
 
-            <div class="bg-amber-100 border border-amber-200 mb-6 p-4 rounded-lg mt-8">
-                <h2 class="text-gray-800 text-sm font-bold leading-tight">מערכת התזרים</h2>
-                <p class="text-gray-700 text-sm mt-1 mb-3">ניהול טבלאות ונתוני המערכת.</p>
-                <a href="<?php echo htmlspecialchars(BASE_URL . 'index.php', ENT_QUOTES, 'UTF-8'); ?>"
-                   class="inline-flex items-center justify-center w-full text-center bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 text-white font-semibold py-2 px-4 rounded-lg text-sm">
-                    חזרה לאתר
+            <div class="bg-slate-900 text-white mb-6 p-4 rounded-2xl mt-8 shadow-lg">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-sm font-bold leading-tight">תמונת מצב מהירה</h2>
+                        <p class="text-xs text-slate-300 mt-1">נתונים חשובים בלי לעזוב את התפריט.</p>
+                    </div>
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 text-lg">
+                        <i class="fa-solid fa-chart-simple"></i>
+                    </span>
+                </div>
+                <div class="grid grid-cols-1 gap-2 mt-4">
+                    <div class="admin-sidebar-stat">
+                        <span>משתמשים</span>
+                        <strong><?php echo number_format((int) ($sidebarMetrics['users_total'] ?? 0)); ?></strong>
+                    </div>
+                    <div class="admin-sidebar-stat">
+                        <span>בתים</span>
+                        <strong><?php echo number_format((int) ($sidebarMetrics['homes_total'] ?? 0)); ?></strong>
+                    </div>
+                    <div class="admin-sidebar-stat admin-sidebar-stat--pending">
+                        <span>דיווחים ממתינים</span>
+                        <strong><?php echo number_format((int) ($sidebarMetrics['pending_reports'] ?? 0)); ?></strong>
+                    </div>
+                </div>
+                <a href="<?php echo htmlspecialchars(BASE_URL . 'admin/dashboard.php', ENT_QUOTES, 'UTF-8'); ?>"
+                   class="inline-flex items-center justify-center gap-2 w-full mt-4 text-center bg-white text-slate-900 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-white/50 font-semibold py-2 px-4 rounded-xl text-sm">
+                    <i class="fa-solid fa-arrow-left-long"></i>
+                    מעבר לדשבורד
                 </a>
             </div>
         </div>
@@ -129,11 +188,12 @@ function admin_nav_link_class(bool $active): string
             <div class="flex items-center min-w-0 flex-1 gap-2">
                 <input
                     type="search"
+                    id="admin-topbar-search"
                     class="bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white border border-transparent focus:border-gray-300 rounded-lg py-2 px-4 w-full max-w-md hidden md:block placeholder-gray-500 ms-0"
-                    placeholder="חיפוש…"
-                    disabled
-                    aria-disabled="true"
-                    title="בקרוב"
+                    placeholder="<?php echo htmlspecialchars($searchPlaceholder, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-context="<?php echo $isTableContext ? 'table' : 'panel'; ?>"
+                    data-table-label="<?php echo htmlspecialchars($registry[$navCtx]['label'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                    autocomplete="off"
                 >
                 <button
                     type="button"
@@ -147,7 +207,7 @@ function admin_nav_link_class(bool $active): string
             </div>
             <div class="flex items-center gap-1 sm:gap-2 shrink-0">
                 <a href="<?php echo htmlspecialchars(BASE_URL . 'index.php', ENT_QUOTES, 'UTF-8'); ?>"
-                   class="hidden sm:inline-flex text-gray-500 p-2 rounded-full hover:text-blue-600 hover:bg-gray-200"
+                   class="inline-flex text-gray-500 p-2 rounded-full hover:text-blue-600 hover:bg-gray-200"
                    title="האתר">
                     <i class="fa-solid fa-house"></i>
                 </a>
@@ -170,7 +230,6 @@ function admin_nav_link_class(bool $active): string
                             <div class="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 truncate"><?php echo htmlspecialchars($u['email'], ENT_QUOTES, 'UTF-8'); ?></div>
                         <?php endif; ?>
                         <a href="<?php echo htmlspecialchars(BASE_URL . 'pages/settings/user_profile.php', ENT_QUOTES, 'UTF-8'); ?>" class="block px-4 py-2 text-gray-600 hover:bg-gray-100 hover:text-blue-600">החשבון שלי</a>
-                        <a href="<?php echo htmlspecialchars(BASE_URL . 'index.php', ENT_QUOTES, 'UTF-8'); ?>" class="block px-4 py-2 text-gray-600 hover:bg-gray-100 hover:text-blue-600">חזרה לאתר</a>
                         <a href="<?php echo htmlspecialchars(BASE_URL . 'logout.php', ENT_QUOTES, 'UTF-8'); ?>" class="block px-4 py-2 text-gray-600 hover:bg-gray-100 hover:text-red-600">התנתקות</a>
                     </div>
                 </div>

@@ -20,6 +20,8 @@ if ($perPage < 1 || $perPage > 200) {
 $sqlTable = $config['table'];
 $listCols = $config['list_columns'] ?? ['id'];
 $orderBy = $config['order_by'] ?? 'id DESC';
+$searchCols = tazrim_admin_searchable_columns($config);
+$q = trim((string) ($_GET['q'] ?? ''));
 
 global $conn;
 
@@ -33,20 +35,54 @@ if (!preg_match('/^[a-zA-Z0-9_ ,]+$/', $orderBy)) {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'תצורת מיון לא תקינה.'], 500);
 }
 
-$countRes = mysqli_query($conn, "SELECT COUNT(*) AS c FROM `" . mysqli_real_escape_string($conn, $sqlTable) . "`");
-if (!$countRes) {
-    tazrim_admin_json_response(['status' => 'error', 'message' => 'שגיאת מסד נתונים.'], 500);
+$escTable = mysqli_real_escape_string($conn, $sqlTable);
+$whereSql = '1=1';
+$params = [];
+$types = '';
+if ($q !== '' && $searchCols !== []) {
+    $parts = [];
+    foreach ($searchCols as $column) {
+        $parts[] = 'CAST(`' . $column . '` AS CHAR) LIKE ?';
+        $params[] = '%' . $q . '%';
+        $types .= 's';
+    }
+    $whereSql = '(' . implode(' OR ', $parts) . ')';
+}
+
+$countSql = "SELECT COUNT(*) AS c FROM `$escTable` WHERE $whereSql";
+if ($params !== []) {
+    $countStmt = $conn->prepare($countSql);
+    if (!$countStmt) {
+        tazrim_admin_json_response(['status' => 'error', 'message' => 'שגיאת מסד נתונים.'], 500);
+    }
+    $countStmt->bind_param($types, ...$params);
+    $countStmt->execute();
+    $countRes = $countStmt->get_result();
+} else {
+    $countRes = mysqli_query($conn, $countSql);
+    if (!$countRes) {
+        tazrim_admin_json_response(['status' => 'error', 'message' => 'שגיאת מסד נתונים.'], 500);
+    }
 }
 $total = (int) mysqli_fetch_assoc($countRes)['c'];
 $offset = ($page - 1) * $perPage;
 
 $colSql = '`' . implode('`,`', $listCols) . '`';
-$escTable = mysqli_real_escape_string($conn, $sqlTable);
-$sql = "SELECT $colSql FROM `$escTable` ORDER BY $orderBy LIMIT " . (int) $perPage . " OFFSET " . (int) $offset;
+$sql = "SELECT $colSql FROM `$escTable` WHERE $whereSql ORDER BY $orderBy LIMIT " . (int) $perPage . " OFFSET " . (int) $offset;
 
-$result = mysqli_query($conn, $sql);
-if (!$result) {
-    tazrim_admin_json_response(['status' => 'error', 'message' => 'שגיאת שאילתה.'], 500);
+if ($params !== []) {
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        tazrim_admin_json_response(['status' => 'error', 'message' => 'שגיאת מסד נתונים.'], 500);
+    }
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    $result = mysqli_query($conn, $sql);
+    if (!$result) {
+        tazrim_admin_json_response(['status' => 'error', 'message' => 'שגיאת שאילתה.'], 500);
+    }
 }
 
 $rows = [];
@@ -54,7 +90,17 @@ while ($row = mysqli_fetch_assoc($result)) {
     if ($sqlTable === 'homes' && isset($row['initial_balance'])) {
         $row['initial_balance'] = decryptBalance($row['initial_balance']);
     }
+    foreach ($listCols as $column) {
+        $row[$column] = tazrim_admin_list_display_value($config, $column, $row);
+    }
     $rows[] = $row;
+}
+
+if (isset($stmt)) {
+    $stmt->close();
+}
+if (isset($countStmt)) {
+    $countStmt->close();
 }
 
 tazrim_admin_json_response([

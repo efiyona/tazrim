@@ -12,6 +12,7 @@ return [
     'info_messages' => [
         'table' => 'info_messages',
         'label' => 'הסבר מערכת',
+        'nav_icon' => 'fa-circle-info',
         'list_columns' => ['id', 'msg_key', 'title'],
         'per_page' => 20,
         'order_by' => 'id DESC',
@@ -25,6 +26,7 @@ return [
     'ios_shortcut_links' => [
         'table' => 'ios_shortcut_links',
         'label' => 'קיצורי דרך iOS',
+        'nav_icon' => 'fa-mobile-screen-button',
         'list_columns' => ['id', 'title', 'sort_order', 'is_active'],
         'per_page' => 25,
         'order_by' => 'sort_order ASC, id ASC',
@@ -39,6 +41,7 @@ return [
     'homes' => [
         'table' => 'homes',
         'label' => 'בתים',
+        'nav_icon' => 'fa-house-user',
         'list_columns' => ['id', 'name', 'join_code', 'created_at'],
         'per_page' => 20,
         'order_by' => 'id DESC',
@@ -64,6 +67,7 @@ return [
     'users' => [
         'table' => 'users',
         'label' => 'משתמשים',
+        'nav_icon' => 'fa-users',
         'list_columns' => ['id', 'email', 'first_name', 'last_name', 'role', 'home_id'],
         'per_page' => 25,
         'order_by' => 'id DESC',
@@ -102,16 +106,33 @@ return [
     'tos_agreements' => [
         'table' => 'tos_agreements',
         'label' => 'הסכמות תקנון',
+        'nav_icon' => 'fa-file-circle-check',
+        'nav_group' => 'legal',
         'list_columns' => ['id', 'user_id', 'tos_version', 'accepted_at', 'ip_address'],
         'per_page' => 30,
         'order_by' => 'accepted_at DESC',
         'list_only' => true,
         'allow_delete' => false,
-        'fields' => [],
+        'fields' => [
+            'user_id' => [
+                'type' => 'fk_lookup',
+                'label' => 'משתמש',
+                'fk' => [
+                    'table' => 'users',
+                    'value_column' => 'id',
+                    'label_template' => '{first_name} {last_name} ({email})',
+                    'search_columns' => ['first_name', 'last_name', 'email', 'nickname'],
+                    'order_by' => 'last_name ASC, first_name ASC',
+                    'optional' => false,
+                ],
+            ],
+        ],
     ],
     'tos_terms' => [
         'table' => 'tos_terms',
         'label' => 'נוסחי תקנון',
+        'nav_icon' => 'fa-file-lines',
+        'nav_group' => 'legal',
         'list_columns' => ['id', 'version', 'last_updated_label', 'is_current', 'created_at'],
         'per_page' => 20,
         'order_by' => 'id DESC',
@@ -126,10 +147,11 @@ return [
     'feedback_reports' => [
         'table' => 'feedback_reports',
         'label' => 'דיווחי באג/פיצר',
+        'nav_icon' => 'fa-bug',
         'list_columns' => ['id', 'created_at', 'kind', 'status', 'user_id', 'home_id', 'title', 'context_screen'],
         'per_page' => 30,
         'order_by' => 'created_at DESC, id DESC',
-        'allow_delete' => false,
+        'allow_delete' => true,
         'fields' => [
             'user_id' => [
                 'type' => 'fk_lookup',

@@ -22,8 +22,15 @@
     var bulkBar = document.getElementById('admin-bulk-bar');
     var bulkBtn = document.getElementById('admin-bulk-delete-btn');
     var bulkCountEl = document.getElementById('admin-bulk-count');
+    var topbarSearch = document.getElementById('admin-topbar-search');
+    var modalEl = document.getElementById('admin-entity-modal');
+    var formFields = document.getElementById('admin-form-fields');
+    var modalTitle = document.getElementById('admin-entity-modal-title');
+    var modalCloseBtn = document.getElementById('admin-modal-close-btn');
+    var cancelBtn = document.getElementById('admin-cancel-btn');
+    var modalShouldOpen = root.getAttribute('data-modal-open') === '1';
 
-    var state = { page: 1, total: 0, perPage: 20, columns: [] };
+    var state = { page: 1, total: 0, perPage: 20, columns: [], q: '' };
 
     function confirmDelete(message, title) {
         if (typeof window.tazrimConfirm === 'function') {
@@ -54,6 +61,109 @@
         return baseUrl.replace(/\/?$/, '/') + path.replace(/^\//, '');
     }
 
+    function debounce(fn, ms) {
+        var t = null;
+        return function () {
+            var args = arguments;
+            clearTimeout(t);
+            t = setTimeout(function () {
+                fn.apply(null, args);
+            }, ms);
+        };
+    }
+
+    function closeModal() {
+        if (!modalEl) return;
+        modalEl.classList.add('hidden');
+        modalEl.setAttribute('aria-hidden', 'true');
+        if (formFields) formFields.innerHTML = '';
+        if (modalTitle) modalTitle.textContent = '';
+        if (delBtn) delBtn.classList.add('hidden');
+        editId = 0;
+        window.history.replaceState({}, '', apiUrl('admin/table.php?t=' + encodeURIComponent(tableKey)));
+    }
+
+    function openModal() {
+        if (!modalEl) return;
+        modalEl.classList.remove('hidden');
+        modalEl.setAttribute('aria-hidden', 'false');
+    }
+
+    function loadForm(mode, id) {
+        if (!modalEl || !formFields) return Promise.resolve();
+        openModal();
+        formFields.innerHTML = '<div class="admin-form-loading">טוען טופס...</div>';
+        if (modalTitle) {
+            modalTitle.textContent = mode === 'update' ? 'טוען עריכה...' : 'טוען הוספה...';
+        }
+        var url = apiUrl('admin/ajax/crud/form.php?t=' + encodeURIComponent(tableKey));
+        if (mode === 'update' && id) {
+            url += '&id=' + encodeURIComponent(String(id));
+        }
+        return fetch(url, { credentials: 'same-origin' })
+            .then(function (r) {
+                return r.json();
+            })
+            .then(function (data) {
+                if (data.status !== 'ok') {
+                    showFlash(false, data.message || 'שגיאה בטעינת הטופס');
+                    closeModal();
+                    return;
+                }
+                editId = data.mode === 'update' ? parseInt(data.id, 10) || 0 : 0;
+                if (modalTitle) modalTitle.textContent = data.title || '';
+                formFields.innerHTML = data.fields_html || '';
+                if (delBtn) delBtn.classList.toggle('hidden', !data.allow_delete);
+                if (typeof window.tazrimAdminInitFkLookups === 'function') {
+                    window.tazrimAdminInitFkLookups(formFields);
+                }
+                var newUrl = apiUrl(
+                    'admin/table.php?t=' +
+                        encodeURIComponent(tableKey) +
+                        (editId > 0 ? '&id=' + encodeURIComponent(String(editId)) : '&create=1')
+                );
+                window.history.replaceState({}, '', newUrl);
+            })
+            .catch(function () {
+                showFlash(false, 'שגיאת תקשורת');
+                closeModal();
+            });
+    }
+
+    function deleteOne(id, options) {
+        options = options || {};
+        return confirmDelete('למחוק רשומה זו? פעולה בלתי הפיכה.', 'מחיקת רשומה').then(function (ok) {
+            if (!ok) return false;
+            return fetch(apiUrl('admin/ajax/crud/delete.php'), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    csrf_token: csrf,
+                    t: tableKey,
+                    id: id,
+                }),
+            })
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (data.status === 'ok') {
+                        showFlash(true, 'הרשומה נמחקה.');
+                        loadList();
+                        closeModal();
+                        return true;
+                    }
+                    showFlash(false, data.message || 'שגיאה במחיקה');
+                    return false;
+                })
+                .catch(function () {
+                    showFlash(false, 'שגיאת תקשורת');
+                    return false;
+                });
+        });
+    }
+
     function buildFormDataObject() {
         var data = {};
         if (!form) return data;
@@ -61,6 +171,12 @@
         inputs.forEach(function (el) {
             var name = el.name;
             if (!name) return;
+            if (el.type === 'radio') {
+                if (el.checked) {
+                    data[name] = el.value;
+                }
+                return;
+            }
             if (el.type === 'checkbox') {
                 data[name] = el.checked ? '1' : '0';
             } else {
@@ -181,10 +297,23 @@
                 tdAct.className = 'admin-row-actions';
                 var editLink = document.createElement('a');
                 editLink.href = apiUrl('admin/table.php?t=' + encodeURIComponent(tableKey) + '&id=' + encodeURIComponent(row.id));
-                editLink.className =
-                    'inline-flex items-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold text-sm py-1.5 px-3 no-underline';
-                editLink.textContent = 'עריכה';
+                editLink.className = 'admin-action-btn admin-action-btn--edit';
+                editLink.innerHTML = '<i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>עריכה</span>';
+                editLink.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    loadForm('update', parseInt(row.id, 10));
+                });
                 tdAct.appendChild(editLink);
+                if (allowDelete) {
+                    var rowDeleteBtn = document.createElement('button');
+                    rowDeleteBtn.type = 'button';
+                    rowDeleteBtn.className = 'admin-action-btn admin-action-btn--delete';
+                    rowDeleteBtn.innerHTML = '<i class="fa-solid fa-trash" aria-hidden="true"></i><span>מחיקה</span>';
+                    rowDeleteBtn.addEventListener('click', function () {
+                        deleteOne(parseInt(row.id, 10), { redirect: false });
+                    });
+                    tdAct.appendChild(rowDeleteBtn);
+                }
                 tr.appendChild(tdAct);
             }
             tbody.appendChild(tr);
@@ -194,11 +323,13 @@
 
     function loadList() {
         var url =
-            apiUrl('admin/ajax/list.php') +
+            apiUrl('admin/ajax/crud/list.php') +
             '?t=' +
             encodeURIComponent(tableKey) +
             '&page=' +
-            encodeURIComponent(String(state.page));
+            encodeURIComponent(String(state.page)) +
+            '&q=' +
+            encodeURIComponent(state.q || '');
         fetch(url, { credentials: 'same-origin' })
             .then(function (r) {
                 return r.json();
@@ -233,7 +364,7 @@
             if (saveBtn) {
                 saveBtn.disabled = true;
             }
-            fetch(apiUrl('admin/ajax/save.php'), {
+            fetch(apiUrl('admin/ajax/crud/save.php'), {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
@@ -246,10 +377,7 @@
                     if (data.status === 'ok') {
                         showFlash(true, 'נשמר בהצלחה.');
                         loadList();
-                        if (editId <= 0 && data.id) {
-                            window.location.href =
-                                apiUrl('admin/table.php?t=' + encodeURIComponent(tableKey) + '&id=' + encodeURIComponent(String(data.id)));
-                        }
+                        closeModal();
                     } else {
                         showFlash(false, data.message || 'שגיאה בשמירה');
                     }
@@ -273,7 +401,7 @@
             confirmDelete('למחוק ' + ids.length + ' רשומות? פעולה בלתי הפיכה.', 'מחיקה מרובת').then(function (ok) {
                 if (!ok) return;
                 bulkBtn.disabled = true;
-                fetch(apiUrl('admin/ajax/delete_bulk.php'), {
+                fetch(apiUrl('admin/ajax/crud/delete_bulk.php'), {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
@@ -304,39 +432,53 @@
         });
     }
 
-    if (delBtn && allowDelete && editId > 0) {
+    if (delBtn && allowDelete) {
         delBtn.addEventListener('click', function () {
-            confirmDelete('למחוק רשומה זו? פעולה בלתי הפיכה.', 'מחיקת רשומה').then(function (ok) {
-                if (!ok) return;
-                delBtn.disabled = true;
-                fetch(apiUrl('admin/ajax/delete.php'), {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        csrf_token: csrf,
-                        t: tableKey,
-                        id: editId,
-                    }),
-                })
-                    .then(function (r) {
-                        return r.json();
-                    })
-                    .then(function (data) {
-                        if (data.status === 'ok') {
-                            window.location.href = apiUrl('admin/table.php?t=' + encodeURIComponent(tableKey));
-                        } else {
-                            showFlash(false, data.message || 'שגיאה במחיקה');
-                        }
-                    })
-                    .catch(function () {
-                        showFlash(false, 'שגיאת תקשורת');
-                    })
-                    .finally(function () {
-                        delBtn.disabled = false;
-                    });
+            if (editId <= 0) return;
+            delBtn.disabled = true;
+            deleteOne(editId, { redirect: false }).finally(function () {
+                delBtn.disabled = false;
             });
         });
+    }
+
+    if (modalCloseBtn) {
+        modalCloseBtn.addEventListener('click', closeModal);
+    }
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeModal);
+    }
+
+    if (modalEl) {
+        modalEl.addEventListener('click', function (e) {
+            if (e.target && e.target.classList.contains('admin-modal__backdrop')) {
+                closeModal();
+            }
+        });
+    }
+
+    var createLink = root.querySelector('a[href*="create=1"]');
+    if (createLink) {
+        createLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            loadForm('create', 0);
+        });
+    }
+
+    if (topbarSearch) {
+        topbarSearch.addEventListener(
+            'input',
+            debounce(function () {
+                state.q = topbarSearch.value.trim();
+                state.page = 1;
+                loadList();
+            }, 250)
+        );
+    }
+
+    if (modalShouldOpen && !listOnly) {
+        loadForm(editId > 0 ? 'update' : 'create', editId);
     }
 
     loadList();

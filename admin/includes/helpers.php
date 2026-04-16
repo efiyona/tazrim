@@ -27,6 +27,89 @@ function tazrim_admin_registry(): array
     return $reg;
 }
 
+function tazrim_admin_nav_group_defs(): array
+{
+    return [
+        'legal' => [
+            'label' => 'תקנון והסכמות',
+            'icon' => 'fa-file-contract',
+        ],
+    ];
+}
+
+function tazrim_admin_nav_items(): array
+{
+    $registry = tazrim_admin_registry();
+    $groupDefs = tazrim_admin_nav_group_defs();
+    $items = [
+        [
+            'type' => 'link',
+            'key' => 'dashboard',
+            'label' => 'לוח בקרה',
+            'icon' => 'fa-gauge-high',
+            'href' => BASE_URL . 'admin/dashboard.php',
+        ],
+        [
+            'type' => 'link',
+            'key' => 'push_broadcast',
+            'label' => 'שידור פוש',
+            'icon' => 'fa-bullhorn',
+            'href' => BASE_URL . 'admin/push_broadcast.php',
+        ],
+    ];
+    $groupOrder = [];
+    $groupChildren = [];
+
+    foreach ($registry as $key => $cfg) {
+        if (empty($cfg['table'])) {
+            continue;
+        }
+        $item = [
+            'type' => 'link',
+            'key' => $key,
+            'label' => $cfg['label'] ?? $key,
+            'icon' => $cfg['nav_icon'] ?? 'fa-table',
+            'href' => BASE_URL . 'admin/table.php?t=' . urlencode($key),
+        ];
+        $groupKey = isset($cfg['nav_group']) ? trim((string) $cfg['nav_group']) : '';
+        if ($groupKey !== '') {
+            if (!isset($groupChildren[$groupKey])) {
+                $groupChildren[$groupKey] = [];
+                $groupOrder[] = $groupKey;
+            }
+            $groupChildren[$groupKey][] = $item;
+            continue;
+        }
+        $items[] = $item;
+    }
+
+    foreach ($groupOrder as $groupKey) {
+        $def = $groupDefs[$groupKey] ?? [];
+        $items[] = [
+            'type' => 'group',
+            'key' => $groupKey,
+            'label' => $def['label'] ?? $groupKey,
+            'icon' => $def['icon'] ?? 'fa-folder-tree',
+            'children' => $groupChildren[$groupKey] ?? [],
+        ];
+    }
+
+    return $items;
+}
+
+function tazrim_admin_nav_item_is_active(array $item, string $navCtx): bool
+{
+    if (($item['type'] ?? 'link') === 'group') {
+        foreach (($item['children'] ?? []) as $child) {
+            if (($child['key'] ?? '') === $navCtx) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return ($item['key'] ?? '') === $navCtx;
+}
+
 function tazrim_admin_get_table_config(string $key): ?array
 {
     $reg = tazrim_admin_registry();
@@ -83,6 +166,7 @@ function tazrim_admin_fk_format_label(string $template, array $row): string
  */
 function tazrim_admin_fk_lookup_resolve_label(array $fk, $id): string
 {
+    static $cache = [];
     $id = (int) $id;
     if ($id <= 0) {
         return '';
@@ -96,6 +180,10 @@ function tazrim_admin_fk_lookup_resolve_label(array $fk, $id): string
         return '';
     }
     $template = isset($fk['label_template']) ? (string) $fk['label_template'] : '{' . $valueCol . '}';
+    $cacheKey = md5(json_encode([$table, $valueCol, $template, $id], JSON_UNESCAPED_UNICODE));
+    if (isset($cache[$cacheKey])) {
+        return $cache[$cacheKey];
+    }
     $row = selectOne($table, [$valueCol => $id]);
     if (!$row) {
         return '';
@@ -103,7 +191,109 @@ function tazrim_admin_fk_lookup_resolve_label(array $fk, $id): string
     if ($table === 'homes' && isset($row['initial_balance'])) {
         $row['initial_balance'] = decryptBalance($row['initial_balance']);
     }
-    return tazrim_admin_fk_format_label($template, $row);
+    $cache[$cacheKey] = tazrim_admin_fk_format_label($template, $row);
+    return $cache[$cacheKey];
+}
+
+function tazrim_admin_searchable_columns(array $config): array
+{
+    $searchCols = isset($config['search_columns']) && is_array($config['search_columns'])
+        ? $config['search_columns']
+        : ($config['list_columns'] ?? ['id']);
+    $clean = [];
+    foreach ($searchCols as $column) {
+        $column = (string) $column;
+        if (preg_match('/^[a-zA-Z0-9_]+$/', $column)) {
+            $clean[] = $column;
+        }
+    }
+    return array_values(array_unique($clean));
+}
+
+function tazrim_admin_list_display_value(array $config, string $column, array $row): string
+{
+    $raw = $row[$column] ?? '';
+    if ($raw === null) {
+        return '';
+    }
+    $fieldDef = $config['fields'][$column] ?? null;
+    if (is_array($fieldDef) && ($fieldDef['type'] ?? '') === 'checkbox') {
+        return (string) ((int) $raw === 1 ? 'כן' : 'לא');
+    }
+    if (is_array($fieldDef) && ($fieldDef['type'] ?? '') === 'fk_lookup' && !empty($fieldDef['fk'])) {
+        $label = tazrim_admin_fk_lookup_resolve_label($fieldDef['fk'], $raw);
+        if ($label !== '') {
+            return $label;
+        }
+    }
+    if (is_scalar($raw)) {
+        return (string) $raw;
+    }
+    return json_encode($raw, JSON_UNESCAPED_UNICODE);
+}
+
+function tazrim_admin_field_value(array $fieldDef, $row, string $name)
+{
+    if (($fieldDef['type'] ?? '') === 'password_new') {
+        return '';
+    }
+    if ($row && array_key_exists($name, $row)) {
+        $v = $row[$name];
+        if ($v === null) {
+            return '';
+        }
+        if (($fieldDef['type'] ?? '') === 'checkbox') {
+            return (int) $v ? '1' : '0';
+        }
+        return (string) $v;
+    }
+    if (($fieldDef['type'] ?? '') === 'checkbox') {
+        return '1';
+    }
+    return '';
+}
+
+function tazrim_admin_sidebar_metrics(): array
+{
+    global $conn;
+    $queries = [
+        'users_total' => 'SELECT COUNT(*) AS c FROM `users`',
+        'homes_total' => 'SELECT COUNT(*) AS c FROM `homes`',
+        'pending_reports' => "SELECT COUNT(*) AS c FROM `feedback_reports` WHERE `status` IN ('new', 'in_review')",
+    ];
+    $out = [];
+    foreach ($queries as $key => $sql) {
+        $res = mysqli_query($conn, $sql);
+        $out[$key] = $res ? (int) mysqli_fetch_assoc($res)['c'] : 0;
+    }
+    return $out;
+}
+
+function tazrim_admin_asset_href(string $relativePath): string
+{
+    $relativePath = ltrim($relativePath, '/');
+    $href = rtrim(BASE_URL, '/') . '/' . $relativePath;
+    $fullPath = rtrim(ROOT_PATH, '/') . '/' . $relativePath;
+    if (is_file($fullPath)) {
+        $mtime = @filemtime($fullPath);
+        if ($mtime) {
+            $href .= '?v=' . rawurlencode((string) $mtime);
+        }
+    }
+    return $href;
+}
+
+function tazrim_admin_push_link_options(): array
+{
+    return [
+        '/' => 'דף הבית',
+        '/pages/reports.php' => 'דוחות ותובנות',
+        '/pages/shopping.php' => 'רשימת קניות',
+        '/pages/settings/manage_home.php' => 'ניהול בית',
+        '/pages/settings/user_profile.php' => 'הפרופיל שלי',
+        '/pages/accept_tos.php' => 'תקנון והסכמות',
+        '/pages/welcome.php' => 'ברוכים הבאים',
+    ];
 }
 
 function tazrim_admin_allowed_field_keys(array $config): array

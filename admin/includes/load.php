@@ -23,3 +23,4 @@ if (!isset($_SESSION['id']) && isset($_COOKIE['remember_token'])) {
 
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/helpers.php';
+require_once dirname(__DIR__) . '/includes/crud.php';

@@ -4,6 +4,7 @@ require_once dirname(__FILE__) . '/includes/init.php';
 $pageTitle = 'שידור פוש גלובלי';
 $admin_nav_context = 'push_broadcast';
 $csrf = tazrim_admin_csrf_token();
+$pushLinkOptions = tazrim_admin_push_link_options();
 
 require dirname(__FILE__) . '/includes/partials/head.php';
 require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
@@ -67,9 +68,18 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
             </div>
             <div class="mb-6">
                 <label for="pb_link" class="block font-semibold text-gray-800 mb-2">קישור בלחיצה (אופציונלי)</label>
-                <input type="text" id="pb_link" name="link" value="/"
-                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
-                    placeholder="/ או נתיב באתר">
+                <div class="space-y-3">
+                    <select id="pb_link_preset" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
+                        <option value="custom">קישור מותאם אישית</option>
+                        <?php foreach ($pushLinkOptions as $url => $label): ?>
+                            <option value="<?php echo htmlspecialchars($url, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="text" id="pb_link" name="link" value="/"
+                        class="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+                        placeholder="/ או נתיב באתר">
+                    <p class="text-xs text-gray-500">אפשר לבחור עמוד קיים מהרשימה או להשאיר "קישור מותאם אישית" ולהזין נתיב ידני.</p>
+                </div>
             </div>
             <button type="submit" id="pb_submit"
                 class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 shadow-sm transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed">
@@ -88,6 +98,8 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
     var form = document.getElementById('push-broadcast-form');
     var btn = document.getElementById('pb_submit');
     var flash = document.getElementById('push-flash');
+    var linkPreset = document.getElementById('pb_link_preset');
+    var linkInput = document.getElementById('pb_link');
     var homesPanel = document.getElementById('pb_homes_panel');
     var homeSearch = document.getElementById('pb_home_search');
     var suggestions = document.getElementById('pb_home_suggestions');
@@ -128,9 +140,22 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
         }
     }
 
+    function syncLinkInput() {
+        if (!linkPreset || !linkInput) return;
+        var isCustom = linkPreset.value === 'custom';
+        linkInput.readOnly = !isCustom;
+        linkInput.classList.toggle('bg-gray-100', !isCustom);
+        if (!isCustom) {
+            linkInput.value = linkPreset.value;
+        }
+    }
+
     targetRadios.forEach(function (el) {
         el.addEventListener('change', syncHomesPanel);
     });
+    if (linkPreset) {
+        linkPreset.addEventListener('change', syncLinkInput);
+    }
 
     function renderSelected() {
         selectedWrap.innerHTML = '';
@@ -218,7 +243,7 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
         var target = getTarget();
         var title = (document.getElementById('pb_title').value || '').trim();
         var body = (document.getElementById('pb_body').value || '').trim();
-        var link = (document.getElementById('pb_link').value || '').trim() || '/';
+        var link = (linkInput.value || '').trim() || '/';
         if (!title || !body) {
             showFlash(false, 'נא למלא כותרת ותוכן.');
             return;
@@ -261,8 +286,9 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
                     if (data.status === 'ok') {
                         showFlash(true, data.message || 'נשלח.');
                         form.reset();
-                        var linkInput = document.getElementById('pb_link');
+                        if (linkPreset) linkPreset.value = 'custom';
                         if (linkInput) linkInput.value = '/';
+                        syncLinkInput();
                         form.querySelector('input[name="pb_target"][value="all"]').checked = true;
                         selectedHomes.clear();
                         renderSelected();
@@ -293,6 +319,7 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
             doSendPush();
         }
     });
+    syncLinkInput();
 })();
 </script>
 <?php
