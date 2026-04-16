@@ -8,6 +8,8 @@ require_once __DIR__ . '/../services/agent_schema.php';
 header('Content-Type: text/event-stream; charset=utf-8');
 header('X-Accel-Buffering: no');
 
+@ini_set('display_errors', '0');
+@ini_set('html_errors', '0');
 @ini_set('output_buffering', 'off');
 @ini_set('zlib.output_compression', '0');
 while (ob_get_level() > 0) {
@@ -15,11 +17,51 @@ while (ob_get_level() > 0) {
 }
 ob_implicit_flush(true);
 
+// חותמת עבור register_shutdown_function — אם ה-done לא נשלח עד הסוף, נשלח error+done עם פרטים.
+$GLOBALS['admin_ai_chat_stream_state'] = [
+    'done_emitted' => false,
+    'chat_id' => 0,
+    'last_gemini_error' => '',
+];
+
+register_shutdown_function(function () {
+    $state = $GLOBALS['admin_ai_chat_stream_state'] ?? [];
+    if (!empty($state['done_emitted'])) return;
+
+    $err = error_get_last();
+    $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR];
+    $isFatal = is_array($err) && in_array($err['type'] ?? 0, $fatalTypes, true);
+
+    $detail = $isFatal
+        ? 'PHP fatal: ' . (string) ($err['message'] ?? 'unknown') . ' @ ' . (string) ($err['file'] ?? '?') . ':' . (int) ($err['line'] ?? 0)
+        : 'stream ended without done event';
+    if (!empty($state['last_gemini_error'])) {
+        $detail .= ' | last_gemini_error: ' . $state['last_gemini_error'];
+    }
+
+    // הימנע משבירת SSE שכבר באמצע
+    echo "event: error\ndata: " . json_encode([
+        'message' => $isFatal ? 'שגיאת שרת בלתי-צפויה במהלך העיבוד' : 'השידור הסתיים ללא סיום תקין',
+        'detail' => $detail,
+        'code' => $isFatal ? 'php_fatal' : 'stream_incomplete',
+    ], JSON_UNESCAPED_UNICODE) . "\n\n";
+    echo "event: done\ndata: " . json_encode(['chat_id' => (int) ($state['chat_id'] ?? 0), 'fallback' => true, 'error' => true], JSON_UNESCAPED_UNICODE) . "\n\n";
+    @flush();
+});
+
 function admin_ai_chat_sse_event(string $event, array $payload): void
 {
     echo "event: {$event}\n";
     echo 'data: ' . json_encode($payload, JSON_UNESCAPED_UNICODE) . "\n\n";
     @flush();
+    if ($event === 'done') {
+        if (isset($GLOBALS['admin_ai_chat_stream_state']) && is_array($GLOBALS['admin_ai_chat_stream_state'])) {
+            $GLOBALS['admin_ai_chat_stream_state']['done_emitted'] = true;
+            if (isset($payload['chat_id'])) {
+                $GLOBALS['admin_ai_chat_stream_state']['chat_id'] = (int) $payload['chat_id'];
+            }
+        }
+    }
 }
 
 function admin_ai_chat_strip_json_fences(string $raw): string
@@ -46,10 +88,21 @@ function admin_ai_chat_backoff_usleep(int $attempt): void
     usleep(($baseMs + $jitterMs) * 1000);
 }
 
+function admin_ai_chat_gemini_record_error(string $info): void
+{
+    if (isset($GLOBALS['admin_ai_chat_stream_state']) && is_array($GLOBALS['admin_ai_chat_stream_state'])) {
+        $trim = function_exists('mb_substr') ? mb_substr($info, 0, 260, 'UTF-8') : substr($info, 0, 260);
+        $GLOBALS['admin_ai_chat_stream_state']['last_gemini_error'] = $trim;
+    }
+}
+
 function admin_ai_chat_gemini_generate_text(string $apiKey, string $model, array $body): ?string
 {
     $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
     $maxAttempts = 3;
+    $lastHttp = 0;
+    $lastSnippet = '';
+    $lastCurlErr = '';
     for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -60,24 +113,42 @@ function admin_ai_chat_gemini_generate_text(string $apiKey, string $model, array
         curl_setopt($ch, CURLOPT_TIMEOUT, 40);
         $raw = curl_exec($ch);
         $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
         curl_close($ch);
+
+        $lastHttp = $http;
+        $lastCurlErr = (string) $curlErr;
+        if (is_string($raw) && $raw !== '') {
+            $lastSnippet = function_exists('mb_substr') ? mb_substr($raw, 0, 220, 'UTF-8') : substr($raw, 0, 220);
+        }
 
         if ($raw !== false && $http === 200) {
             $decoded = json_decode($raw, true);
             if (!is_array($decoded)) {
+                admin_ai_chat_gemini_record_error("model={$model} non_json_response http=200");
                 return null;
             }
             $text = (string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? '');
-
-            return $text !== '' ? $text : null;
+            if ($text === '') {
+                // יתכן blockReason / finishReason חריג
+                $block = (string) ($decoded['promptFeedback']['blockReason'] ?? '');
+                $finish = (string) ($decoded['candidates'][0]['finishReason'] ?? '');
+                admin_ai_chat_gemini_record_error("model={$model} empty_text block={$block} finish={$finish}");
+                return null;
+            }
+            return $text;
         }
 
         if (!admin_ai_chat_should_retry_http_code($http) || $attempt >= $maxAttempts) {
+            $snip = preg_replace('/\s+/', ' ', (string) $lastSnippet);
+            admin_ai_chat_gemini_record_error("model={$model} http={$lastHttp} curl_err={$lastCurlErr} body=" . (string) $snip);
             return null;
         }
         admin_ai_chat_backoff_usleep($attempt);
     }
 
+    $snip = preg_replace('/\s+/', ' ', (string) $lastSnippet);
+    admin_ai_chat_gemini_record_error("model={$model} exhausted http={$lastHttp} curl_err={$lastCurlErr} body=" . (string) $snip);
     return null;
 }
 
@@ -364,6 +435,10 @@ if (!is_array($payload)) {
 $message = trim((string) ($payload['message'] ?? ''));
 $chatId = (int) ($payload['chat_id'] ?? 0);
 $scopeSnapshot = '{}';
+// עדכון ה-shutdown handler כך שיוכל לשלוח done עם ה-chat_id הנכון
+if (isset($GLOBALS['admin_ai_chat_stream_state']) && is_array($GLOBALS['admin_ai_chat_stream_state'])) {
+    $GLOBALS['admin_ai_chat_stream_state']['chat_id'] = $chatId;
+}
 
 if ($chatId > 0) {
     $prefetchedChat = admin_ai_chat_repo_get($conn, $chatId, $userId);
@@ -615,12 +690,26 @@ while (true) {
 }
 
 if ($agentError !== '' && $finalText === '') {
-    $fallbackText = 'לא הצלחתי להשיב כרגע. נסו שוב בעוד רגע.';
+    $lastGeminiErr = (string) ($GLOBALS['admin_ai_chat_stream_state']['last_gemini_error'] ?? '');
+    $reasonHuman = $agentError === 'gemini_unreachable'
+        ? 'המודל לא הגיב (ייתכן timeout, בעיית רשת, או חריגת מכסה).'
+        : $agentError;
+    $fallbackText = "לא הצלחתי להשיב כרגע.\n\nסיבה: {$reasonHuman}";
+    if ($lastGeminiErr !== '') {
+        $fallbackText .= "\nפרטים טכניים: {$lastGeminiErr}";
+    }
+    $fallbackText .= "\n\nנסו שוב בעוד רגע. אם החוזר שוב — בדקו את ai_api_logs לפרטים.";
     admin_ai_chat_repo_add_message($conn, $chatId, 'assistant', $fallbackText, $usedModel !== '' ? $usedModel : 'fallback');
+    admin_ai_chat_sse_event('error', [
+        'message' => 'תשובה לא התקבלה מהמודל',
+        'detail' => $lastGeminiErr !== '' ? $lastGeminiErr : $agentError,
+        'code' => $agentError,
+    ]);
     admin_ai_chat_sse_event('token', ['text' => $fallbackText]);
     admin_ai_chat_sse_event('done', ['chat_id' => $chatId, 'fallback' => true]);
-    $statusText = mysqli_real_escape_string($conn, 'Admin AI Chat Failed: ' . $agentError);
-    mysqli_query($conn, "INSERT INTO ai_api_logs (home_id, user_id, action_type) VALUES ({$homeId}, {$userId}, '{$statusText}')");
+    $logLine = 'Admin AI Chat Failed: ' . $agentError . ' | ' . $lastGeminiErr;
+    $statusText = mysqli_real_escape_string($conn, $logLine);
+    @mysqli_query($conn, "INSERT INTO ai_api_logs (home_id, user_id, action_type) VALUES ({$homeId}, {$userId}, '{$statusText}')");
     exit;
 }
 

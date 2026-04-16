@@ -1161,7 +1161,12 @@
       });
 
       if (!response.ok || !response.body) {
-        throw new Error("stream_failed");
+        let extra = "HTTP " + response.status + " " + response.statusText;
+        try {
+          const t = await response.text();
+          if (t) extra += " · " + t.replace(/\s+/g, " ").slice(0, 240);
+        } catch (_e) { /* ignore */ }
+        throw new Error(extra);
       }
 
       const reader = response.body.getReader();
@@ -1226,7 +1231,12 @@
           streamPreamble = payload.preamble || "";
         } else if (eventName === "error") {
           streamDeepPass = false;
-          assistantText = "אירעה שגיאה בקבלת תשובה.";
+          const msg = (payload && payload.message) ? String(payload.message) : "אירעה שגיאה בקבלת תשובה.";
+          const detail = (payload && payload.detail) ? String(payload.detail) : "";
+          const code = (payload && payload.code) ? String(payload.code) : "";
+          // שומרים אך לא מציגים עדיין — כדי לא לדחוק טקסט שה-token אחריו עוד יחליף.
+          // אם לא יגיע token, זה יישאר כ-assistantText הסופי.
+          assistantText = msg + (detail ? "\n\nפרטים: " + detail : "") + (code ? "\n(קוד: " + code + ")" : "");
           updateBubbleStreamingAssistant(assistantBubble, assistantText, { clearThinking: true });
         } else if (eventName === "done") {
           streamHasDoneEvent = true;
@@ -1269,14 +1279,18 @@
         await loadHistory();
       } else {
         if (!streamHasDoneEvent && assistantText === "") {
-          assistantText = "לא התקבלה תשובה מלאה. נסו שוב.";
+          assistantText = "לא התקבלה תשובה מלאה — השידור הסתיים בלי סיום תקין.\n\nסיבות אפשריות: שגיאת PHP בשרת, חריגה מזמן ריצה, או המודל החזיר תשובה ריקה.\nבדקו ב-ai_api_logs לפרטים, או נסו שוב עם ניסוח אחר.";
+        } else if (!streamHasDoneEvent && assistantText !== "") {
+          assistantText += "\n\n⚠️ השידור לא הסתיים בצורה תקינה — ייתכן שהתשובה חלקית.";
         }
         finalizeAssistantBubble(assistantBubble, assistantText, { deepPass: streamDeepPass });
         invalidateChatCache(state.activeChatId);
         await loadHistory();
       }
     } catch (err) {
-      finalizeAssistantBubble(assistantBubble, "לא הצלחתי להשיב כרגע. נסו שוב בעוד רגע.");
+      const errMsg = (err && err.message) ? String(err.message) : "unknown_error";
+      const human = "לא הצלחתי להשיב כרגע.\n\nפרטים טכניים: " + errMsg + "\nנסו שוב בעוד רגע.";
+      finalizeAssistantBubble(assistantBubble, human);
     } finally {
       setSending(false);
     }
