@@ -7,6 +7,7 @@ declare(strict_types=1);
  * פעולות נתמכות:
  *  - create/update/delete — CRUD מבוקר על טבלאות ב-whitelist עם typed fields
  *  - sql — SQL גולמי שהמנהל סיפק (DML או DDL) — עוקף את ה-whitelist
+ *  - push_broadcast — שידור Push/פעמון כמו בעמוד push_broadcast (title, body, target, delivery, link, home_ids)
  *
  * אבטחה:
  *  1. api_token מוזרק לקליינט רק ל-program_admin דרך bootstrap.php
@@ -141,7 +142,7 @@ $GLOBALS['admin_ai_agent_exec_chat_context'] = [
     'sql' => $rawSql,
 ];
 
-if (!in_array($action, ['create', 'update', 'delete', 'sql'], true)) {
+if (!in_array($action, ['create', 'update', 'delete', 'sql', 'push_broadcast'], true)) {
     admin_ai_agent_exec_respond(['status' => 'error', 'message' => 'invalid_action', 'action' => $action], 400);
 }
 

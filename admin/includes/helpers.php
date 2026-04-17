@@ -311,6 +311,117 @@ function tazrim_admin_push_link_options(): array
     ];
 }
 
+/**
+ * ביצוע שידור פוש / פעמון — לוגיקה משותפת ל־ajax/push_broadcast ולסוכן AI.
+ *
+ * @param array $body כמו גוף JSON של ajax: title, body, link?, target?, delivery?, home_ids?
+ * @return array{ok:bool,message:string,homes_count?:int,http_code?:int}
+ */
+function tazrim_admin_push_broadcast_execute(mysqli $conn, array $body): array
+{
+    $title = trim((string) ($body['title'] ?? ''));
+    $bodyText = trim((string) ($body['body'] ?? ''));
+    $link = trim((string) ($body['link'] ?? '/'));
+    if ($link === '') {
+        $link = '/';
+    }
+
+    if ($title === '' || $bodyText === '') {
+        return ['ok' => false, 'message' => 'שדות כותרת ותוכן הם חובה.', 'http_code' => 400];
+    }
+
+    $target = isset($body['target']) ? (string) $body['target'] : 'all';
+    if ($target !== 'all' && $target !== 'homes') {
+        return ['ok' => false, 'message' => 'יעד שידור לא תקין.', 'http_code' => 400];
+    }
+
+    $delivery = isset($body['delivery']) ? (string) $body['delivery'] : 'push';
+    if (!in_array($delivery, ['push', 'bell', 'both'], true)) {
+        $delivery = 'push';
+    }
+
+    require_once ROOT_PATH . '/app/functions/push_functions.php';
+
+    $homeIds = [];
+
+    if ($target === 'all') {
+        $homes_result = mysqli_query($conn, 'SELECT id FROM homes');
+        if (!$homes_result) {
+            return ['ok' => false, 'message' => 'שגיאת מסד נתונים.', 'http_code' => 500];
+        }
+        while ($home = mysqli_fetch_assoc($homes_result)) {
+            $homeIds[] = (int) $home['id'];
+        }
+    } else {
+        $rawIds = $body['home_ids'] ?? [];
+        if (!is_array($rawIds)) {
+            return ['ok' => false, 'message' => 'רשימת בתים לא תקינה.', 'http_code' => 400];
+        }
+        $ids = [];
+        foreach ($rawIds as $rid) {
+            $n = (int) $rid;
+            if ($n > 0) {
+                $ids[$n] = true;
+            }
+        }
+        $ids = array_keys($ids);
+        sort($ids, SORT_NUMERIC);
+        if ($ids === []) {
+            return ['ok' => false, 'message' => 'נא לבחור לפחות בית אחד.', 'http_code' => 400];
+        }
+        if (count($ids) > 500) {
+            return ['ok' => false, 'message' => 'יותר מדי בתים בבת אחת.', 'http_code' => 400];
+        }
+        $inList = implode(',', array_map('intval', $ids));
+        $chk = mysqli_query($conn, "SELECT id FROM homes WHERE id IN ($inList)");
+        if (!$chk) {
+            return ['ok' => false, 'message' => 'שגיאת מסד נתונים.', 'http_code' => 500];
+        }
+        $found = [];
+        while ($row = mysqli_fetch_assoc($chk)) {
+            $found[] = (int) $row['id'];
+        }
+        sort($found, SORT_NUMERIC);
+        if ($found !== $ids) {
+            return ['ok' => false, 'message' => 'אחד או יותר מזהי הבתים אינם קיימים במערכת.', 'http_code' => 400];
+        }
+        $homeIds = $ids;
+    }
+
+    $bellHref = $link;
+    if ($bellHref !== '' && $bellHref !== '/' && !preg_match('#^https?://#i', $bellHref)) {
+        $bellHref = rtrim((string) (defined('BASE_URL') ? BASE_URL : ''), '/') . '/' . ltrim($bellHref, '/');
+    }
+    $bellMessage = nl2br(htmlspecialchars($bodyText, ENT_QUOTES, 'UTF-8'));
+    if ($link !== '' && $link !== '/') {
+        $bellMessage .= '<br><a href="' . htmlspecialchars($bellHref, ENT_QUOTES, 'UTF-8') . '">מעבר לעמוד</a>';
+    }
+
+    $sent_count = 0;
+    foreach ($homeIds as $hid) {
+        if ($delivery === 'push' || $delivery === 'both') {
+            sendPushToEntireHome($hid, $title, $bodyText, $link, 'system');
+        }
+        if ($delivery === 'bell' || $delivery === 'both') {
+            addNotification($hid, $title, $bellMessage, 'info', null);
+        }
+        $sent_count++;
+    }
+
+    $channelDesc = $delivery === 'bell' ? 'התראות פעמון' : ($delivery === 'both' ? 'Push ופעמון' : 'Push');
+    if ($target === 'all') {
+        $msg = 'ההודעה נשלחה (' . $channelDesc . ') לכל הבתים במערכת (' . $sent_count . ' בתים).';
+    } else {
+        $msg = 'ההודעה נשלחה (' . $channelDesc . ') ל-' . $sent_count . ' בתים נבחרים.';
+    }
+
+    return [
+        'ok' => true,
+        'message' => $msg,
+        'homes_count' => $sent_count,
+    ];
+}
+
 function tazrim_admin_allowed_field_keys(array $config): array
 {
     $fields = $config['fields'] ?? [];

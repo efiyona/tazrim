@@ -320,8 +320,38 @@ function admin_ai_chat_validate_leaf_action_shape(array $action, bool $allowPlac
 {
     $act = strtolower((string) ($action['action'] ?? ''));
     $table = (string) ($action['table'] ?? '');
-    if (!in_array($act, ['create', 'update', 'delete', 'sql'], true)) {
+    if (!in_array($act, ['create', 'update', 'delete', 'sql', 'push_broadcast'], true)) {
         return ['ok' => false, 'error' => 'invalid_action_type'];
+    }
+    if ($act === 'push_broadcast') {
+        $title = trim((string) ($action['title'] ?? ''));
+        $bodyText = trim((string) ($action['body'] ?? ''));
+        if ($title === '' || $bodyText === '') {
+            return ['ok' => false, 'error' => 'push_broadcast_missing_title_or_body'];
+        }
+        $desc = trim((string) ($action['description'] ?? ''));
+        if ($desc === '') {
+            return ['ok' => false, 'error' => 'missing_description_for_push_broadcast'];
+        }
+        $target = strtolower((string) ($action['target'] ?? 'all'));
+        if ($target !== 'all' && $target !== 'homes') {
+            return ['ok' => false, 'error' => 'push_broadcast_invalid_target'];
+        }
+        $delivery = strtolower((string) ($action['delivery'] ?? 'push'));
+        if (!in_array($delivery, ['push', 'bell', 'both'], true)) {
+            return ['ok' => false, 'error' => 'push_broadcast_invalid_delivery'];
+        }
+        if ($target === 'homes') {
+            $ids = $action['home_ids'] ?? null;
+            if (!is_array($ids) || count($ids) === 0) {
+                return ['ok' => false, 'error' => 'push_broadcast_homes_target_needs_home_ids'];
+            }
+            if (count($ids) > 500) {
+                return ['ok' => false, 'error' => 'push_broadcast_too_many_homes'];
+            }
+        }
+
+        return ['ok' => true];
     }
     if ($act === 'sql') {
         $sql = trim((string) ($action['sql'] ?? ''));
@@ -881,6 +911,26 @@ if ($emittedQuestions !== null) {
     if (isset($finalAction['verification'])) {
         $actionPayload['verification'] = $finalAction['verification'];
     }
+    if (($finalAction['action'] ?? '') === 'push_broadcast') {
+        if (isset($finalAction['title'])) {
+            $actionPayload['title'] = (string) $finalAction['title'];
+        }
+        if (isset($finalAction['body'])) {
+            $actionPayload['body'] = (string) $finalAction['body'];
+        }
+        if (isset($finalAction['link'])) {
+            $actionPayload['link'] = (string) $finalAction['link'];
+        }
+        if (isset($finalAction['target'])) {
+            $actionPayload['target'] = (string) $finalAction['target'];
+        }
+        if (isset($finalAction['delivery'])) {
+            $actionPayload['delivery'] = (string) $finalAction['delivery'];
+        }
+        if (isset($finalAction['home_ids']) && is_array($finalAction['home_ids'])) {
+            $actionPayload['home_ids'] = $finalAction['home_ids'];
+        }
+    }
     $proposedAtMs = (int) round(microtime(true) * 1000);
     $actionPayload['proposedAt'] = $proposedAtMs;
 
@@ -931,7 +981,7 @@ $agentTag = '';
 if ($finalAction !== null) {
     $at = (string) ($finalAction['action'] ?? '');
     $tb = (string) ($finalAction['table'] ?? '');
-    $agentTag = ' action=' . $at . ':' . ($tb !== '' ? $tb : (($at === 'sequence') ? 'multi' : ''));
+    $agentTag = ' action=' . $at . ':' . ($tb !== '' ? $tb : (($at === 'sequence') ? 'multi' : (($at === 'push_broadcast') ? 'push' : '')));
 }
 $qTag = ($dataQueryCount > 0) ? ' dq=' . $dataQueryCount : '';
 $vTag = ($validatorRetryCount > 0) ? ' vret=' . $validatorRetryCount : '';

@@ -117,7 +117,7 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
         $rawSql = (string) ($payload['sql'] ?? '');
         $proposedAtMs = isset($payload['proposed_at']) ? (int) $payload['proposed_at'] : 0;
 
-        if (!in_array($action, ['create', 'update', 'delete', 'sql'], true)) {
+        if (!in_array($action, ['create', 'update', 'delete', 'sql', 'push_broadcast'], true)) {
             return ['http' => 400, 'payload' => ['status' => 'error', 'message' => 'invalid_action', 'action' => $action]];
         }
 
@@ -152,6 +152,86 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                     ],
                 ];
             }
+        }
+
+        if ($action === 'push_broadcast') {
+            if (!function_exists('tazrim_admin_push_broadcast_execute')) {
+                require_once dirname(__DIR__, 3) . '/includes/helpers.php';
+            }
+            $title = trim((string) ($payload['title'] ?? ''));
+            $bodyText = trim((string) ($payload['body'] ?? ''));
+            $link = trim((string) ($payload['link'] ?? '/'));
+            if ($link === '') {
+                $link = '/';
+            }
+            $target = strtolower((string) ($payload['target'] ?? 'all'));
+            if ($target !== 'all' && $target !== 'homes') {
+                return [
+                    'http' => 400,
+                    'payload' => [
+                        'status' => 'error',
+                        'message' => 'יעד שידור לא תקין (צפוי all או homes).',
+                        'action' => 'push_broadcast',
+                    ],
+                ];
+            }
+            $delivery = strtolower((string) ($payload['delivery'] ?? 'push'));
+            if (!in_array($delivery, ['push', 'bell', 'both'], true)) {
+                return [
+                    'http' => 400,
+                    'payload' => [
+                        'status' => 'error',
+                        'message' => 'סוג משלוח לא תקין (צפוי push, bell או both).',
+                        'action' => 'push_broadcast',
+                    ],
+                ];
+            }
+            $homeIds = [];
+            if (isset($payload['home_ids']) && is_array($payload['home_ids'])) {
+                foreach ($payload['home_ids'] as $rid) {
+                    $n = (int) $rid;
+                    if ($n > 0) {
+                        $homeIds[] = $n;
+                    }
+                }
+            }
+
+            admin_ai_agent_exec_log(
+                $conn,
+                $homeId,
+                $userId,
+                'Admin AI Agent PUSH_BROADCAST target=' . $target . ' delivery=' . $delivery . ' homes=' . count($homeIds) . ' chat=' . $chatId
+            );
+
+            $exec = tazrim_admin_push_broadcast_execute($conn, [
+                'title' => $title,
+                'body' => $bodyText,
+                'link' => $link,
+                'target' => $target,
+                'delivery' => $delivery,
+                'home_ids' => $homeIds,
+            ]);
+
+            if (!$exec['ok']) {
+                return [
+                    'http' => 200,
+                    'payload' => [
+                        'status' => 'error',
+                        'message' => $exec['message'],
+                        'action' => 'push_broadcast',
+                    ],
+                ];
+            }
+
+            return [
+                'http' => 200,
+                'payload' => [
+                    'status' => 'success',
+                    'action' => 'push_broadcast',
+                    'message' => $exec['message'],
+                    'homes_count' => (int) ($exec['homes_count'] ?? 0),
+                ],
+            ];
         }
 
         if ($action === 'sql') {
@@ -452,6 +532,9 @@ if (!function_exists('admin_ai_agent_exec_persist_chat_execution')) {
                 }
                 $payload['sql'] = $sqlSnippet;
             }
+        }
+        if (($payload['action'] ?? '') === 'push_broadcast' && isset($result['homes_count'])) {
+            $payload['homes_count'] = (int) $result['homes_count'];
         }
         $summary = '[[EXECUTION_RESULT]]' . json_encode($payload, JSON_UNESCAPED_UNICODE) . '[[/EXECUTION_RESULT]]';
         @admin_ai_chat_repo_add_message($conn, $chatId, 'assistant', $summary, 'agent-execute');

@@ -134,6 +134,8 @@
     create: { icon: "fa-plus", label: "יצירה" },
     update: { icon: "fa-pen", label: "עדכון" },
     delete: { icon: "fa-trash", label: "מחיקה" },
+    sql: { icon: "fa-terminal", label: "SQL" },
+    push_broadcast: { icon: "fa-bell", label: "שידור התראה" },
   };
 
   function classifyInlineToken(raw) {
@@ -566,6 +568,7 @@
       case "update": return "עדכון";
       case "delete": return "מחיקה";
       case "sql": return "SQL";
+      case "push_broadcast": return "שידור התראה";
       default: return action || "פעולה";
     }
   }
@@ -576,6 +579,7 @@
       case "update": return "עדכן";
       case "delete": return "מחק";
       case "sql": return "הרץ SQL";
+      case "push_broadcast": return "שלח התראה";
       default: return "בצע פעולה";
     }
   }
@@ -673,6 +677,15 @@
     if (leaf.data) body.data = leaf.data;
     if (leaf.sql) body.sql = leaf.sql;
     if (leaf.kind) body.kind = leaf.kind;
+    const act = (leaf.action || "").toLowerCase();
+    if (act === "push_broadcast") {
+      if (leaf.title != null) body.title = leaf.title;
+      if (leaf.body != null) body.body = leaf.body;
+      if (leaf.link != null) body.link = leaf.link;
+      if (leaf.target != null) body.target = leaf.target;
+      if (leaf.delivery != null) body.delivery = leaf.delivery;
+      if (leaf.home_ids && Array.isArray(leaf.home_ids)) body.home_ids = leaf.home_ids;
+    }
     return body;
   }
 
@@ -865,10 +878,14 @@
       const stTable = step.table || "";
       const stDesc = step.description || "";
       const isSql = stAct === "sql";
+      const isPush = stAct === "push_broadcast";
       const sqlText = step.sql || "";
       const sqlVerb = isSql && sqlText ? (sqlText.match(/^\s*([A-Za-z]+)/) || [])[1] : "";
       const sqlVerbU = (sqlVerb || "").toUpperCase();
-      const dangerous = stAct === "delete" || (isSql && ["DROP", "TRUNCATE", "DELETE", "ALTER"].includes(sqlVerbU));
+      const dangerous =
+        stAct === "delete" ||
+        (isSql && ["DROP", "TRUNCATE", "DELETE", "ALTER"].includes(sqlVerbU)) ||
+        (isPush && (step.target || "all") === "all");
       const canRun =
         !hist &&
         !cancelled &&
@@ -887,6 +904,8 @@
       html += '<span class="admin-ai-chat-action-badge">' + escapeHtml(actionLabelHebrew(step.action)) + "</span>";
       if (isSql) {
         html += '<span class="admin-ai-chat-action-table">SQL · <code>' + escapeHtml(sqlVerbU || "?") + "</code></span>";
+      } else if (isPush) {
+        html += '<span class="admin-ai-chat-action-table">Push / פעמון</span>';
       } else {
         html += '<span class="admin-ai-chat-action-table">טבלה: <code>' + escapeHtml(stTable) + "</code></span>";
       }
@@ -896,6 +915,30 @@
       }
       if (isSql && sqlText) {
         html += '<div class="admin-ai-chat-action-sql"><pre class="admin-ai-chat-action-sql-code"><code>' + escapeHtml(sqlText) + "</code></pre></div>";
+      }
+      if (isPush) {
+        const tgt = (step.target || "all") === "homes" ? "בתים נבחרים" : "כל המשתמשים";
+        const del = (step.delivery || "push") === "push" ? "Push" : (step.delivery === "bell" ? "פעמון" : "Push+פעמון");
+        html +=
+          '<div class="admin-ai-chat-action-push-preview">' +
+          '<div class="admin-ai-chat-action-push-line"><span class="admin-ai-chat-action-push-k">כותרת</span> ' +
+          escapeHtml(String(step.title || "")) +
+          "</div>" +
+          '<div class="admin-ai-chat-action-push-line"><span class="admin-ai-chat-action-push-k">תוכן</span> ' +
+          escapeHtml(String(step.body || "")) +
+          "</div>" +
+          '<div class="admin-ai-chat-action-push-line"><span class="admin-ai-chat-action-push-k">יעד</span> ' +
+          escapeHtml(tgt) +
+          (step.target === "homes" && step.home_ids && step.home_ids.length
+            ? " · ids: <code>" + escapeHtml(step.home_ids.join(", ")) + "</code>"
+            : "") +
+          "</div>" +
+          '<div class="admin-ai-chat-action-push-line"><span class="admin-ai-chat-action-push-k">ערוץ</span> ' +
+          escapeHtml(del) +
+          "</div>" +
+          '<div class="admin-ai-chat-action-push-line"><span class="admin-ai-chat-action-push-k">קישור</span> <code>' +
+          escapeHtml(String(step.link || "/")) +
+          "</code></div></div>";
       }
       const previewData = resolveSequencePlaceholders(step.data || {}, seqSt.results.map((r) => ({ id: r && r.id != null ? r.id : null })));
       html += renderActionDataList(previewData);
@@ -1051,6 +1094,14 @@
     if (raw.id !== undefined && raw.id !== null && raw.id !== "") {
       resolved.id = resolveSequencePlaceholders(raw.id, refs);
     }
+    if ((raw.action || "").toLowerCase() === "push_broadcast") {
+      resolved.title = raw.title;
+      resolved.body = raw.body;
+      resolved.link = raw.link != null ? raw.link : "/";
+      resolved.target = raw.target != null ? raw.target : "all";
+      resolved.delivery = raw.delivery != null ? raw.delivery : "push";
+      resolved.home_ids = raw.home_ids ? resolveSequencePlaceholders(raw.home_ids, refs) : undefined;
+    }
     const unresolved = JSON.stringify(resolved).indexOf("{{step:") !== -1;
     if (unresolved) {
       seqSt.failedStep = stepIndex;
@@ -1152,10 +1203,14 @@
     const sqlKind = (actionPayload.kind || "").toLowerCase();
     const actionType = action.toLowerCase();
     const isSql = actionType === "sql";
+    const isPushBroadcast = actionType === "push_broadcast";
     const sqlVerb = isSql && sqlText ? (sqlText.match(/^\s*([A-Za-z]+)/) || [])[1] : "";
     const sqlVerbUpper = (sqlVerb || "").toUpperCase();
     const dangerousSqlVerbs = ["DROP", "TRUNCATE", "DELETE", "ALTER"];
-    const dangerous = actionType === "delete" || (isSql && dangerousSqlVerbs.includes(sqlVerbUpper));
+    const dangerous =
+      actionType === "delete" ||
+      (isSql && dangerousSqlVerbs.includes(sqlVerbUpper)) ||
+      (isPushBroadcast && (actionPayload.target || "all") === "all");
 
     let preambleHtml = "";
     if (o.preamble) {
@@ -1172,6 +1227,8 @@
         html += ' · פקודה: <code>' + escapeHtml(sqlVerbUpper) + '</code>';
       }
       html += "</span>";
+    } else if (isPushBroadcast) {
+      html += '<span class="admin-ai-chat-action-table">שידור מערכת (Push / פעמון)</span>';
     } else {
       html += '<span class="admin-ai-chat-action-table">טבלה: <code>' + escapeHtml(table) + "</code>";
       if (rowId) html += ' · ID: <code>' + escapeHtml(String(rowId)) + "</code>";
@@ -1186,6 +1243,35 @@
       html += '<div class="admin-ai-chat-action-sql-label"><i class="fa-solid fa-terminal"></i> משפט SQL שיורץ</div>';
       html += '<pre class="admin-ai-chat-action-sql-code"><code>' + escapeHtml(sqlText) + '</code></pre>';
       html += "</div>";
+    }
+    if (isPushBroadcast) {
+      const pbTitle = actionPayload.title != null ? String(actionPayload.title) : "";
+      const pbBody = actionPayload.body != null ? String(actionPayload.body) : "";
+      const pbLink = actionPayload.link != null ? String(actionPayload.link) : "/";
+      const pbTarget = (actionPayload.target || "all") === "homes" ? "בתים נבחרים" : "כל המשתמשים";
+      const pbDel = (actionPayload.delivery || "push") === "push" ? "Push" : (actionPayload.delivery === "bell" ? "פעמון" : "Push+פעמון");
+      const ids = actionPayload.home_ids;
+      html +=
+        '<div class="admin-ai-chat-action-push-preview">' +
+        '<div class="admin-ai-chat-action-push-line"><span class="admin-ai-chat-action-push-k">כותרת</span> ' +
+        escapeHtml(pbTitle) +
+        "</div>" +
+        '<div class="admin-ai-chat-action-push-line"><span class="admin-ai-chat-action-push-k">תוכן</span> ' +
+        escapeHtml(pbBody) +
+        "</div>" +
+        '<div class="admin-ai-chat-action-push-line"><span class="admin-ai-chat-action-push-k">יעד</span> ' +
+        escapeHtml(pbTarget);
+      if (actionPayload.target === "homes" && ids && ids.length) {
+        html += ' · <code>' + escapeHtml(ids.join(", ")) + "</code>";
+      }
+      html +=
+        "</div>" +
+        '<div class="admin-ai-chat-action-push-line"><span class="admin-ai-chat-action-push-k">ערוץ</span> ' +
+        escapeHtml(pbDel) +
+        "</div>" +
+        '<div class="admin-ai-chat-action-push-line"><span class="admin-ai-chat-action-push-k">קישור</span> <code>' +
+        escapeHtml(pbLink) +
+        "</code></div></div>";
     }
     html += renderActionDataList(data);
     if (actionType === "update" && actionPayload.before_row && data && typeof data === "object") {
@@ -1398,6 +1484,12 @@
           data: actionPayload.data,
           sql: actionPayload.sql,
           kind: actionPayload.kind,
+          title: actionPayload.title,
+          body: actionPayload.body,
+          link: actionPayload.link,
+          target: actionPayload.target,
+          delivery: actionPayload.delivery,
+          home_ids: actionPayload.home_ids,
         },
         actionPayload.proposedAt,
         state.activeChatId
@@ -1579,6 +1671,9 @@
               const verb = executionResult.verb ? " " + executionResult.verb : "";
               const aff = executionResult.affected != null ? " · הושפעו " + executionResult.affected + " שורות" : "";
               summary = "SQL הורץ" + verb + aff + ". " + (executionResult.message || "");
+            } else if (executionResult.action === "push_broadcast") {
+              const hc = executionResult.homes_count != null ? " · בתים: " + executionResult.homes_count : "";
+              summary = "שידור התראה בוצע" + hc + ". " + (executionResult.message || "");
             } else {
               summary = "הפעולה בוצעה (" + (executionResult.action || "") + " ב-" + (executionResult.table || "") + (executionResult.id ? " · id=" + executionResult.id : "") + "). " + (executionResult.message || "");
             }

@@ -1937,3 +1937,33 @@
     background: transparent;
     padding: 0;
 }
+
+/* תצוגת תצוגה מקדימה לשידור Push (כמו push_broadcast) */
+.admin-ai-chat-action-card--push_broadcast {
+    border-color: rgba(139, 92, 246, 0.35);
+}
+
+.admin-ai-chat-action-push-preview {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    text-align: right;
+}
+
+.admin-ai-chat-action-push-line {
+    margin-bottom: 6px;
+}
+
+.admin-ai-chat-action-push-line:last-child {
+    margin-bottom: 0;
+}
+
+.admin-ai-chat-action-push-k {
+    font-weight: 700;
+    color: #6d28d9;
+    margin-inline-end: 6px;
+}
