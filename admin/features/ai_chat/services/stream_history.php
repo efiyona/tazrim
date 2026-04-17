@@ -36,12 +36,12 @@ if (!function_exists('admin_ai_chat_redact_action_payload_for_model')) {
 
 if (!function_exists('admin_ai_chat_enrich_proposed_action_with_snapshots')) {
     /**
-     * מוסיף before_row ל-update (פעולה בודדת או שלבים ב-sequence עם id מספרי).
+     * מוסיף before_row לפני ולידטור/UI: update/delete (פעולה בודדת או שלבים ב-sequence עם id מספרי).
      */
     function admin_ai_chat_enrich_proposed_action_with_snapshots(mysqli $conn, array $action): array
     {
         $act = strtolower((string) ($action['action'] ?? ''));
-        if ($act === 'update') {
+        if ($act === 'update' || $act === 'delete') {
             $table = (string) ($action['table'] ?? '');
             $id = (int) ($action['id'] ?? 0);
             if ($table !== '' && $id > 0) {
@@ -55,7 +55,8 @@ if (!function_exists('admin_ai_chat_enrich_proposed_action_with_snapshots')) {
                 if (!is_array($step)) {
                     continue;
                 }
-                if (strtolower((string) ($step['action'] ?? '')) !== 'update') {
+                $st = strtolower((string) ($step['action'] ?? ''));
+                if ($st !== 'update' && $st !== 'delete') {
                     continue;
                 }
                 $table = (string) ($step['table'] ?? '');

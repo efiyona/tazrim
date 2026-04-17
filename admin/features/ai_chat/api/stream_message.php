@@ -761,11 +761,13 @@ while (true) {
         }
 
         admin_ai_chat_sse_event('validating', ['hint' => 'מאמת את הפעולה…']);
-        $validation = admin_ai_chat_run_validator($apiKey, $message, $historyText, $action);
+        // העשרת before_row לפני הוולידטור — כדי שייבדק שה-id באמת מתאים לישות שהמנהל התכוון אליה (לא רק לפי טקסט ב-description).
+        $actionForValidation = admin_ai_chat_enrich_proposed_action_with_snapshots($conn, $action);
+        $validation = admin_ai_chat_run_validator($apiKey, $message, $historyText, $actionForValidation);
 
         if ($validation['approved']) {
             $finalText = admin_ai_chat_strip_action_block($rawText);
-            $finalAction = admin_ai_chat_enrich_proposed_action_with_snapshots($conn, $action);
+            $finalAction = $actionForValidation;
             $finalValidation = $validation;
             break;
         }
