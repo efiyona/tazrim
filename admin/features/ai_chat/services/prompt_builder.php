@@ -185,7 +185,8 @@ if (!function_exists('admin_ai_chat_build_agent_instructions')) {
             . "- הפניה למזהה שנוצר בשלב קודם: מחרוזת בדיוק `\"{{step:N}}\"` כאשר N הוא אינדקס השלב **הקודם** (0 = תוצאת השלב הראשון). מותר ב-`data`, ב-`id`, ובכל שדה שמצפה למספר.\n"
             . "- **אסור** להפנות לשלב עתידי או נוכחי: רק `{{step:0}}`…`{{step:N-1}}` בתוך השלב N.\n"
             . "- דוגמה: אחרי `create` ב-`homes` המזהה החדש ייכנס ל-`{{step:0}}`; אחרי `create` ב-`users` — `{{step:1}}`.\n"
-            . "- עדיף `sequence` מאשר שלושה בלוקי ACTION נפרדים (שאסורים). פעולה אחת עם שלבים = אישור ולידטור אחד על הרצף כולו.\n\n"
+            . "- עדיף `sequence` מאשר שלושה בלוקי ACTION נפרדים (שאסורים). פעולה אחת עם שלבים = אישור ולידטור אחד על הרצף כולו.\n"
+            . "- **אופציונלי — `verification`**: אחרי שהרצף מסתיים, המערכת יכולה לאמת אוטומטית מול המסד. אם יש לך מטרה ברורה לבדיקה (למשל \"המשתמש חייב להיות עם email X\"), הוסף בשורש ה-sequence מערך `verification` של אובייקטים: `{\"table\":\"users\",\"id\":5,\"expect\":{\"email\":\"x@y.com\"}}` (עד 8 בדיקות, שדות ב-`expect` חייבים להיות קריאים בטבלה). השתמש בזהירות — רק כשהבדיקה פשוטה ומדויקת.\n\n"
             . "#### פעולת SQL גולמית (`action: \"sql\"`) — DML או DDL\n"
             . "**אתה כן מסוגל לבצע שינויי סכמה.** אל תסרב לבקשת שינוי סכמה בטענה ש\"לא ניתן\" או ש\"הממשק לא תומך\" — הוא כן תומך, דרך `action:\"sql\"`. הוולידציה נעשית בבקאנד וכפתור האישור מוצג למנהל לפני הרצה בפועל.\n\n"
             . "**מתי להשתמש:**\n"
@@ -324,7 +325,10 @@ if (!function_exists('admin_ai_chat_build_deep_system_layer_suffix')) {
 }
 
 if (!function_exists('admin_ai_chat_format_client_page_context')) {
-    function admin_ai_chat_format_client_page_context(string $path, string $title): string
+    /**
+     * @param array<string, mixed>|null $entity אופציונלי: למשל type, id, label — ממולא בצד הלקוח (ADMIN_AI_PAGE_ENTITY)
+     */
+    function admin_ai_chat_format_client_page_context(string $path, string $title, ?array $entity = null): string
     {
         $path = trim($path);
         $title = trim(strip_tags($title));
@@ -335,14 +339,44 @@ if (!function_exists('admin_ai_chat_format_client_page_context')) {
             $path = substr($path, 0, 240);
             $title = substr($title, 0, 200);
         }
-        if ($path === '' && $title === '') {
+
+        $entityLine = '';
+        if (is_array($entity) && $entity !== []) {
+            $parts = [];
+            if (!empty($entity['type'])) {
+                $t = trim((string) $entity['type']);
+                if ($t !== '') {
+                    $parts[] = 'סוג ישות: ' . $t;
+                }
+            }
+            if (array_key_exists('id', $entity) && $entity['id'] !== '' && $entity['id'] !== null) {
+                $parts[] = 'מזהה: ' . trim((string) $entity['id']);
+            }
+            if (!empty($entity['label'])) {
+                $lb = trim((string) $entity['label']);
+                if (function_exists('mb_substr')) {
+                    $lb = mb_substr($lb, 0, 200, 'UTF-8');
+                } else {
+                    $lb = substr($lb, 0, 200);
+                }
+                if ($lb !== '') {
+                    $parts[] = 'תווית: ' . $lb;
+                }
+            }
+            if ($parts !== []) {
+                $entityLine = '- ישות נבחרת בממשק: ' . implode(' · ', $parts) . "\n";
+            }
+        }
+
+        if ($path === '' && $title === '' && $entityLine === '') {
             return '';
         }
 
         return "### מסך נוכחי בדפדפן (נשלח מהממשק)\n"
             . ($path !== '' ? "- נתיב: {$path}\n" : '')
             . ($title !== '' ? "- כותרת הדף: {$title}\n" : '')
-            . "אם השאלה נוגעת למסך הזה — התמקד בו; אם לא — התעלם מהנתיב.\n";
+            . $entityLine
+            . "אם השאלה נוגעת למסך או לישות הזו — התמקד בהם; אם לא — התעלם מהנתיב.\n";
     }
 }
 

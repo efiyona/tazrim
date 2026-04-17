@@ -19,6 +19,8 @@
     pendingQuestions: null,
   };
 
+  let streamAbortController = null;
+
   function qs(id) {
     return document.getElementById(id);
   }
@@ -76,6 +78,41 @@
 
   function escapeHtml(str) {
     return (str || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function fieldValuesDifferForDiff(beforeVal, afterVal) {
+    const b = beforeVal == null ? "" : String(beforeVal).trim();
+    const a = afterVal == null ? "" : String(afterVal).trim();
+    return b !== a;
+  }
+
+  /** טבלת לפני/אחרי לעדכון — רק שדות שב־data ושערכם שונה מ־before_row */
+  function renderUpdateDiffTable(beforeRow, data) {
+    if (!data || typeof data !== "object") return "";
+    const keys = Object.keys(data);
+    if (!keys.length) return "";
+    const br = beforeRow && typeof beforeRow === "object" ? beforeRow : {};
+    const rowsHtml = [];
+    keys.forEach((k) => {
+      if (!fieldValuesDifferForDiff(br[k], data[k])) return;
+      rowsHtml.push(
+        "<tr><td><code>" +
+          escapeHtml(k) +
+          "</code></td><td>" +
+          escapeHtml(String(br[k] != null ? br[k] : "—")) +
+          "</td><td>" +
+          escapeHtml(String(data[k] != null ? data[k] : "—")) +
+          "</td></tr>"
+      );
+    });
+    if (!rowsHtml.length) return "";
+    return (
+      '<div class="admin-ai-chat-update-diff-wrap">' +
+      '<div class="admin-ai-chat-update-diff-title">השוואה לפני אישור (שדות משתנים)</div>' +
+      '<table class="admin-ai-chat-update-diff-table"><thead><tr><th>שדה</th><th>לפני</th><th>אחרי</th></tr></thead><tbody>' +
+      rowsHtml.join("") +
+      "</tbody></table></div>"
+    );
   }
 
   function markdownBoldToHtml(escapedPlain) {
@@ -240,9 +277,15 @@
   function setSending(v) {
     state.sending = v;
     const btn = qs("adminAiChatSendBtn");
-    if (!btn) return;
-    btn.disabled = v;
-    btn.innerHTML = v ? '<i class="fa-solid fa-spinner fa-spin"></i>' : '<i class="fa-solid fa-paper-plane"></i>';
+    const stopBtn = qs("adminAiChatStopBtn");
+    if (btn) {
+      btn.disabled = v;
+      btn.innerHTML = v ? '<i class="fa-solid fa-spinner fa-spin"></i>' : '<i class="fa-solid fa-paper-plane"></i>';
+    }
+    if (stopBtn) {
+      stopBtn.hidden = !v;
+      stopBtn.disabled = !v;
+    }
   }
 
   function typingIndicatorHtml() {
@@ -322,7 +365,7 @@
           ? '<button type="button" class="admin-ai-chat-fork-msg-btn" data-admin-ai-chat-fork="1" data-fork-payload="' +
             escapeHtml(encodeURIComponent(forkPayload)) +
             '" title="שיחה חדשה עם ניסוח זה (בלי היסטוריית השיחה)" aria-label="שיחה חדשה עם ניסוח זה (בלי היסטוריה)">' +
-            '<i class="fa-solid fa-comment-plus" aria-hidden="true"></i></button>'
+            '<i class="fa-solid fa-clone" aria-hidden="true"></i></button>'
           : "";
       innerContent =
         '<div class="admin-ai-chat-bubble-meta-row">' +
@@ -673,6 +716,64 @@
     }
   }
 
+  function formatSequenceVerificationMessage(vr) {
+    if (!vr || vr.status !== "success") {
+      return "אימות מול המסד לא הצליח.";
+    }
+    if (vr.ok) {
+      return "אימות אוטומטי: המצב במסד תואם את הבדיקות שהוגדרו.";
+    }
+    const lines = [];
+    (vr.checks || []).forEach((c) => {
+      if (c && c.ok) return;
+      const mm = c && c.mismatches ? c.mismatches : {};
+      const parts = Object.keys(mm).map((col) => {
+        const cell = mm[col];
+        if (cell && Object.prototype.hasOwnProperty.call(cell, "expected")) {
+          return (
+            col +
+            ": צפוי " +
+            JSON.stringify(cell.expected) +
+            ", בפועל " +
+            JSON.stringify(cell.actual)
+          );
+        }
+        return col + ": " + (cell && cell.reason ? String(cell.reason) : "סטיה");
+      });
+      lines.push(
+        "• " +
+          String((c && c.table) || "?") +
+          " id=" +
+          String(c && c.id != null ? c.id : "?") +
+          (parts.length ? " — " + parts.join("; ") : "")
+      );
+    });
+    return "אימות אוטומטי: נמצאו סטיות.\n" + (lines.length ? lines.join("\n") : String(vr.message || ""));
+  }
+
+  async function postSequenceVerification(resolvedVerification) {
+    const token = window.ADMIN_AI_CHAT_API_TOKEN || "";
+    if (!token) {
+      return { status: "error", message: "missing_api_token" };
+    }
+    try {
+      const res = await fetch(apiBase + "verify_sequence.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ api_token: token, verification: resolvedVerification }),
+        credentials: "same-origin",
+      });
+      const data = await res.json();
+      if (!data || typeof data !== "object") {
+        return { status: "error", message: "bad_response" };
+      }
+      if (!data.status) data.status = res.ok ? "success" : "error";
+      return data;
+    } catch (err) {
+      return { status: "error", message: err && err.message ? String(err.message) : "network" };
+    }
+  }
+
   function renderSequenceActionCards(bubbleEl, actionPayload, opts) {
     const o = opts || {};
     const inner = bubbleEl && bubbleEl.querySelector(".admin-ai-chat-bubble-inner");
@@ -798,6 +899,9 @@
       }
       const previewData = resolveSequencePlaceholders(step.data || {}, seqSt.results.map((r) => ({ id: r && r.id != null ? r.id : null })));
       html += renderActionDataList(previewData);
+      if (stAct === "update" && step.before_row && previewData && typeof previewData === "object") {
+        html += renderUpdateDiffTable(step.before_row, previewData);
+      }
       if (step.id != null && step.id !== "") {
         const rid = resolveSequencePlaceholders(step.id, seqSt.results.map((r) => ({ id: r && r.id != null ? r.id : null })));
         html +=
@@ -982,9 +1086,16 @@
           executed: true,
           executionResult: { status: "success", message: "כל השלבים הושלמו" },
         });
+        let verifyLine = "";
+        if (actionPayload.verification) {
+          const refs = seqSt.results.map((r) => ({ id: r && r.id != null ? r.id : null }));
+          const resolvedVer = resolveSequencePlaceholders(actionPayload.verification, refs);
+          const vr = await postSequenceVerification(resolvedVer);
+          verifyLine = "\n\n" + formatSequenceVerificationMessage(vr);
+        }
         addMessageBubble(
           "assistant",
-          "רצף הפעולות הושלם בהצלחה (" + steps.length + " שלבים). " + (result.message || ""),
+          "רצף הפעולות הושלם בהצלחה (" + steps.length + " שלבים). " + (result.message || "") + verifyLine,
           { loading: false }
         );
         invalidateChatCache(state.activeChatId);
@@ -1077,6 +1188,9 @@
       html += "</div>";
     }
     html += renderActionDataList(data);
+    if (actionType === "update" && actionPayload.before_row && data && typeof data === "object") {
+      html += renderUpdateDiffTable(actionPayload.before_row, data);
+    }
     if (validation && validation.analysis) {
       const confidence = validation.confidence || "medium";
       html += '<div class="admin-ai-chat-action-validation admin-ai-chat-action-validation--' + escapeHtml(confidence) + '">';
@@ -1603,13 +1717,18 @@
           path: typeof window.location.pathname === "string" ? window.location.pathname : "",
           title: (document.title || "").slice(0, 240),
         };
+        if (window.ADMIN_AI_PAGE_ENTITY && typeof window.ADMIN_AI_PAGE_ENTITY === "object") {
+          streamPayload.page_context.entity = window.ADMIN_AI_PAGE_ENTITY;
+        }
       } catch (e) {
         /* ignore */
       }
+      streamAbortController = new AbortController();
       const response = await fetch(apiBase + "stream_message.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(streamPayload),
+        signal: streamAbortController.signal,
       });
 
       if (!response.ok || !response.body) {
@@ -1740,10 +1859,16 @@
         await loadHistory();
       }
     } catch (err) {
-      const errMsg = (err && err.message) ? String(err.message) : "unknown_error";
-      const human = "לא הצלחתי להשיב כרגע.\n\nפרטים טכניים: " + errMsg + "\nנסו שוב בעוד רגע.";
-      finalizeAssistantBubble(assistantBubble, human);
+      const errName = err && err.name ? String(err.name) : "";
+      if (errName === "AbortError") {
+        finalizeAssistantBubble(assistantBubble, "הופסק על ידך — השליחה והחשיבה בוטלו.", { deepPass: false });
+      } else {
+        const errMsg = (err && err.message) ? String(err.message) : "unknown_error";
+        const human = "לא הצלחתי להשיב כרגע.\n\nפרטים טכניים: " + errMsg + "\nנסו שוב בעוד רגע.";
+        finalizeAssistantBubble(assistantBubble, human);
+      }
     } finally {
+      streamAbortController = null;
       setSending(false);
     }
   }
@@ -1805,6 +1930,18 @@
     });
 
     form.addEventListener("submit", handleSend);
+    const stopBtn = qs("adminAiChatStopBtn");
+    if (stopBtn) {
+      stopBtn.addEventListener("click", () => {
+        if (streamAbortController) {
+          try {
+            streamAbortController.abort();
+          } catch (e) {
+            /* ignore */
+          }
+        }
+      });
+    }
     messages.addEventListener("click", (e) => {
       const forkBtn = e.target && e.target.closest ? e.target.closest("[data-admin-ai-chat-fork]") : null;
       if (!forkBtn) return;

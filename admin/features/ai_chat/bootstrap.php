@@ -106,6 +106,7 @@ if (!function_exists('admin_ai_chat_render_modal')) {
         echo '        <div class="admin-ai-chat-composer" id="adminAiChatComposer">';
         echo '          <form id="adminAiChatForm" class="admin-ai-chat-form">';
         echo '            <input type="text" id="adminAiChatInput" class="admin-ai-chat-input" maxlength="1500" autocomplete="off" placeholder="מה תרצו לשאול?" enterkeyhint="send">';
+        echo '            <button type="button" class="admin-ai-chat-stop" id="adminAiChatStopBtn" hidden aria-label="עצירת שליחה והפסקת חשיבה"><i class="fa-solid fa-stop" aria-hidden="true"></i></button>';
         echo '            <button type="submit" class="admin-ai-chat-send" id="adminAiChatSendBtn" aria-label="שליחת הודעה"><i class="fa-solid fa-paper-plane"></i></button>';
         echo '          </form>';
         echo '        </div>';
@@ -185,6 +186,7 @@ if (!function_exists('admin_ai_chat_render_assets')) {
         echo 'window.ADMIN_AI_CHAT_API_TOKEN = ' . json_encode($token, JSON_UNESCAPED_UNICODE) . ';';
         echo 'window.ADMIN_AI_CHAT_SCHEMA = ' . $schemaJson . ';</script>';
         echo '<script>window.ADMIN_AI_CHAT_USER_INITIALS = ' . json_encode(admin_ai_chat_user_initials(), JSON_UNESCAPED_UNICODE) . ';</script>';
+        echo '<script>if(typeof window.ADMIN_AI_PAGE_ENTITY==="undefined"){window.ADMIN_AI_PAGE_ENTITY=null;}</script>';
         echo '<link rel="stylesheet" href="' . BASE_URL . 'admin/features/ai_chat/assets/admin-ai-chat.css?v=' . $cssVer . '">';
         echo '<script src="' . BASE_URL . 'admin/features/ai_chat/assets/admin-ai-chat.js?v=' . $jsVer . '" defer></script>';
     }
@@ -204,6 +206,7 @@ if (!function_exists('admin_ai_chat_render_lazy_loader')) {
         echo 'window.ADMIN_AI_CHAT_SCHEMA = ' . $schemaJson . ';';
         echo 'window.ADMIN_AI_CHAT_ASSET_VER = ' . json_encode(['css' => $cssVer, 'js' => $jsVer], JSON_UNESCAPED_UNICODE) . ';</script>';
         echo '<script>window.ADMIN_AI_CHAT_USER_INITIALS = ' . json_encode(admin_ai_chat_user_initials(), JSON_UNESCAPED_UNICODE) . ';</script>';
+        echo '<script>if(typeof window.ADMIN_AI_PAGE_ENTITY==="undefined"){window.ADMIN_AI_PAGE_ENTITY=null;}</script>';
         echo '<script src="' . BASE_URL . 'admin/features/ai_chat/assets/admin-ai-chat-loader.js?v=' . $loaderVer . '" defer></script>';
     }
 }

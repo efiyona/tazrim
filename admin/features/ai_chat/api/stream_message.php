@@ -159,6 +159,8 @@ function admin_ai_chat_gemini_generate_text(string $apiKey, string $model, array
     return null;
 }
 
+require_once __DIR__ . '/../services/stream_history.php';
+
 function admin_ai_chat_route_decision(string $apiKey, string $message): array
 {
     $default = ['needs_deep' => false, 'reason_code' => 'simple', 'user_hint' => ''];
@@ -435,6 +437,13 @@ function admin_ai_chat_validate_action_shape(array $action): array
                 return ['ok' => false, 'error' => 'sequence_step_' . $idx . ':' . ($leaf['error'] ?? 'invalid')];
             }
         }
+        if (array_key_exists('verification', $action)) {
+            $vr = admin_ai_chat_validate_sequence_verification($action['verification']);
+            if (!$vr['ok']) {
+                return $vr;
+            }
+        }
+
         return ['ok' => true];
     }
     return admin_ai_chat_validate_leaf_action_shape($action, false);
@@ -580,7 +589,14 @@ admin_ai_chat_repo_touch($conn, $chatId, $scopeSnapshot);
 admin_ai_chat_repo_add_message($conn, $chatId, 'user', $message);
 admin_ai_chat_repo_update_title_if_default($conn, $chatId, $message);
 
-$historyRows = admin_ai_chat_repo_get_messages($conn, $chatId, $userId, 20);
+$apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
+if ($apiKey === '') {
+    admin_ai_chat_sse_event('error', ['message' => 'gemini_key_missing']);
+    exit;
+}
+
+$historyRows = admin_ai_chat_repo_get_messages($conn, $chatId, $userId, 48);
+$historyRows = admin_ai_chat_try_compress_history_rows($conn, $apiKey, $historyRows);
 $history = [];
 $historyText = [];
 foreach ($historyRows as $row) {
@@ -593,6 +609,7 @@ foreach ($historyRows as $row) {
     if ($contentForModel === '') {
         continue;
     }
+    $contentForModel = admin_ai_chat_redact_action_payload_for_model($contentForModel);
     $history[] = [
         'role' => $role,
         'parts' => [['text' => $contentForModel]],
@@ -603,17 +620,15 @@ foreach ($historyRows as $row) {
 $pageCtx = $payload['page_context'] ?? null;
 $pagePath = '';
 $pageTitle = '';
+$pageEntity = null;
 if (is_array($pageCtx)) {
     $pagePath = trim((string) ($pageCtx['path'] ?? ''));
     $pageTitle = trim((string) ($pageCtx['title'] ?? ''));
+    if (isset($pageCtx['entity']) && is_array($pageCtx['entity'])) {
+        $pageEntity = $pageCtx['entity'];
+    }
 }
-$pageBlock = admin_ai_chat_format_client_page_context($pagePath, $pageTitle);
-
-$apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
-if ($apiKey === '') {
-    admin_ai_chat_sse_event('error', ['message' => 'gemini_key_missing']);
-    exit;
-}
+$pageBlock = admin_ai_chat_format_client_page_context($pagePath, $pageTitle, $pageEntity);
 
 $route = admin_ai_chat_route_decision($apiKey, $message);
 $needsDeep = !empty($route['needs_deep']);
@@ -750,7 +765,7 @@ while (true) {
 
         if ($validation['approved']) {
             $finalText = admin_ai_chat_strip_action_block($rawText);
-            $finalAction = $action;
+            $finalAction = admin_ai_chat_enrich_proposed_action_with_snapshots($conn, $action);
             $finalValidation = $validation;
             break;
         }
@@ -857,6 +872,12 @@ if ($emittedQuestions !== null) {
     }
     if (($finalAction['action'] ?? '') === 'sequence' && isset($finalAction['steps']) && is_array($finalAction['steps'])) {
         $actionPayload['steps'] = $finalAction['steps'];
+    }
+    if (isset($finalAction['before_row']) && is_array($finalAction['before_row'])) {
+        $actionPayload['before_row'] = $finalAction['before_row'];
+    }
+    if (isset($finalAction['verification'])) {
+        $actionPayload['verification'] = $finalAction['verification'];
     }
     admin_ai_chat_sse_event('action', $actionPayload);
 

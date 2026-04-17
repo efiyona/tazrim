@@ -962,6 +962,76 @@
     cursor: not-allowed;
 }
 
+.admin-ai-chat-stop {
+    min-width: 46px;
+    height: 46px;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 999px;
+    background: #fff;
+    color: #444;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-ai-chat-stop:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+@media (hover: hover) {
+    .admin-ai-chat-stop:hover:not(:disabled) {
+        background: rgba(224, 122, 95, 0.08);
+        border-color: rgba(224, 122, 95, 0.45);
+        color: var(--admin-ai-chat-coral-dark);
+    }
+}
+
+.admin-ai-chat-update-diff-wrap {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.admin-ai-chat-update-diff-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.admin-ai-chat-update-diff-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    text-align: right;
+}
+
+.admin-ai-chat-update-diff-table th,
+.admin-ai-chat-update-diff-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    vertical-align: top;
+    word-break: break-word;
+}
+
+.admin-ai-chat-update-diff-table th {
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.55);
+    width: 22%;
+}
+
+.admin-ai-chat-update-diff-table td:nth-child(2),
+.admin-ai-chat-update-diff-table td:nth-child(3) {
+    width: 39%;
+}
+
 @keyframes adminAiChatFade {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -1108,6 +1178,11 @@
         min-width: 64px;
         height: 42px;
         padding: 0 16px;
+    }
+
+    .admin-ai-chat-stop {
+        min-width: 42px;
+        height: 42px;
     }
 
     .admin-ai-chat-history {
