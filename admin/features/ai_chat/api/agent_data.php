@@ -127,22 +127,33 @@ if (!function_exists('admin_ai_agent_data_build_where')) {
 if (!function_exists('admin_ai_agent_data_fetch_all')) {
     function admin_ai_agent_data_fetch_all(mysqli $conn, string $sql, string $types, array $values): array
     {
-        $stmt = $conn->prepare($sql);
+        // ב-PHP 8.1+ ברירת המחדל של mysqli_report היא לזרוק mysqli_sql_exception במקום להחזיר false.
+        // עוטפים בתחרת try/catch כדי למנוע fatal מיידי כששדה/טבלה לא קיימים במסד (schema drift).
+        try {
+            $stmt = @$conn->prepare($sql);
+        } catch (\Throwable $e) {
+            return ['error' => 'prepare_failed: ' . $e->getMessage(), 'rows' => [], 'sql' => $sql];
+        }
         if (!$stmt) {
-            return ['error' => 'prepare_failed: ' . $conn->error, 'rows' => []];
+            return ['error' => 'prepare_failed: ' . $conn->error, 'rows' => [], 'sql' => $sql];
         }
-        if ($types !== '') {
-            $stmt->bind_param($types, ...$values);
-        }
-        if (!$stmt->execute()) {
-            $err = $stmt->error;
+        try {
+            if ($types !== '') {
+                $stmt->bind_param($types, ...$values);
+            }
+            if (!$stmt->execute()) {
+                $err = $stmt->error;
+                $stmt->close();
+                return ['error' => 'execute_failed: ' . $err, 'rows' => [], 'sql' => $sql];
+            }
+            $res = $stmt->get_result();
+            $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
             $stmt->close();
-            return ['error' => 'execute_failed: ' . $err, 'rows' => []];
+            return ['error' => null, 'rows' => $rows];
+        } catch (\Throwable $e) {
+            try { $stmt->close(); } catch (\Throwable $ie) { /* noop */ }
+            return ['error' => 'execute_failed: ' . $e->getMessage(), 'rows' => [], 'sql' => $sql];
         }
-        $res = $stmt->get_result();
-        $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
-        $stmt->close();
-        return ['error' => null, 'rows' => $rows];
     }
 }
 
@@ -359,15 +370,16 @@ if (!function_exists('admin_ai_agent_data_describe')) {
                 'type' => $def['type'] ?? 'string',
                 'desc' => $def['desc'] ?? '',
                 'readonly' => !empty($def['readonly']),
+                'encrypted' => !empty($def['encrypted']),
+                'nullable' => !empty($def['nullable']),
                 'enum' => $def['enum'] ?? null,
             ];
         }
         return admin_ai_agent_data_ok([
             'table' => $table,
-            'description' => $cfg['description'] ?? '',
+            'source' => 'INFORMATION_SCHEMA (live)',
             'can_read' => !empty($cfg['read']),
             'can_write' => !empty($cfg['write']),
-            'dangerous' => !empty($cfg['dangerous']),
             'fields' => $fields,
         ]);
     }

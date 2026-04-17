@@ -3,12 +3,25 @@ declare(strict_types=1);
 
 /**
  * סכמת טבלאות עבור סוכן ה-AI של פאנל הניהול.
- * מגדיר אילו טבלאות ושדות מותרים לקריאה/כתיבה, מה מוצפן, ומה אסור לגעת בו.
+ *
+ * **הכל חי — אין whitelist סטטי.**
+ * בכל בקשה אנחנו שולפים את רשימת הטבלאות והעמודות ישירות מ-INFORMATION_SCHEMA
+ * של MySQL. כך כל שינוי DDL (CREATE/ALTER/DROP של טבלאות או עמודות) משתקף
+ * מיד בבקשה הבאה של הסוכן — בלי עדכון קוד ובלי schema drift.
+ *
+ * הקובץ הזה מגדיר רק את המדיניות שאי-אפשר לגזור אוטומטית מהמסד:
+ *   1. שדות חסומים גלובלית (password / tokens).
+ *   2. מיפוי הצפנה ברמת אפליקציה (homes.initial_balance וכד').
+ *   3. רשימת טבלאות חסומות (אם נרצה להסתיר שירותיות).
  */
+
+// ================================================================
+//  מדיניות סטטית (לא תלויה במצב המסד)
+// ================================================================
 
 if (!function_exists('admin_ai_agent_global_blocked_fields')) {
     /**
-     * שדות שאסור לגעת בהם בכל טבלה (לכתיבה ולקריאה).
+     * שדות שאסור לגעת בהם בכל טבלה (לקריאה ולכתיבה).
      */
     function admin_ai_agent_global_blocked_fields(): array
     {
@@ -28,14 +41,118 @@ if (!function_exists('admin_ai_agent_encrypt_map')) {
     }
 }
 
+if (!function_exists('admin_ai_agent_blocked_tables')) {
+    /**
+     * טבלאות שהסוכן לא צריך לראות / לגעת בהן. ריק כברירת מחדל —
+     * אפשר להוסיף כאן שמות של טבלאות פנימיות אם נרצה להסתירן.
+     */
+    function admin_ai_agent_blocked_tables(): array
+    {
+        return [];
+    }
+}
+
+// ================================================================
+//  שליפה חיה מ-INFORMATION_SCHEMA
+// ================================================================
+
+if (!function_exists('admin_ai_agent_map_column_type')) {
+    /**
+     * ממפה MySQL DATA_TYPE (בשילוב COLUMN_TYPE) לתיוג פשוט לשימוש המודל/הלקוח.
+     */
+    function admin_ai_agent_map_column_type(string $dataType, string $columnType): string
+    {
+        $dt = strtolower($dataType);
+        $ct = strtolower($columnType);
+        switch ($dt) {
+            case 'tinyint':
+                // בדר"כ tinyint(1) משמש כ-bool במערכת
+                if (strpos($ct, 'tinyint(1)') === 0) return 'bool';
+                return 'int';
+            case 'smallint':
+            case 'mediumint':
+            case 'int':
+            case 'integer':
+            case 'bigint':
+                return 'int';
+            case 'decimal':
+            case 'numeric':
+                return 'decimal';
+            case 'float':
+            case 'double':
+            case 'real':
+                return 'float';
+            case 'char':
+            case 'varchar':
+                return 'string';
+            case 'tinytext':
+            case 'text':
+            case 'mediumtext':
+            case 'longtext':
+                return 'text';
+            case 'date':
+                return 'date';
+            case 'datetime':
+                return 'datetime';
+            case 'timestamp':
+                return 'timestamp';
+            case 'time':
+                return 'time';
+            case 'year':
+                return 'year';
+            case 'enum':
+                return 'enum';
+            case 'set':
+                return 'set';
+            case 'json':
+                return 'json';
+            case 'blob':
+            case 'tinyblob':
+            case 'mediumblob':
+            case 'longblob':
+            case 'binary':
+            case 'varbinary':
+                return 'binary';
+            default:
+                return $dt !== '' ? $dt : 'string';
+        }
+    }
+}
+
+if (!function_exists('admin_ai_agent_parse_enum_values')) {
+    /**
+     * מפענח ערכים מ-COLUMN_TYPE של עמודת enum/set, לדוגמה:
+     *   "enum('user','admin','home_admin')" => ['user','admin','home_admin']
+     */
+    function admin_ai_agent_parse_enum_values(string $columnType): array
+    {
+        if (!preg_match("/^\s*(?:enum|set)\s*\((.+)\)\s*$/i", $columnType, $m)) {
+            return [];
+        }
+        $inner = $m[1];
+        $values = [];
+        // MySQL כותב את הערכים כ-'value', עם ' כפול ('') כ-escape של גרש
+        if (preg_match_all("/'((?:[^'\\\\]|\\\\.|'')*)'/", $inner, $matches)) {
+            foreach ($matches[1] as $v) {
+                $v = str_replace("''", "'", $v);
+                $v = stripcslashes($v);
+                $values[] = $v;
+            }
+        }
+        return $values;
+    }
+}
+
 if (!function_exists('admin_ai_agent_table_registry')) {
     /**
-     * מפת הרשאות לכל טבלה:
-     *   read  => boolean (האם מותרת קריאה)
-     *   write => boolean (האם מותרת כתיבה: create/update/delete)
-     *   description => תיאור קצר בעברית
-     *   fields => מערך fieldName => ['type' => ..., 'desc' => ..., 'enum' => [], 'readonly' => bool]
-     *   dangerous => boolean (האם פעולות delete/update דורשות אישור מחמיר יותר)
+     * בונה בזמן אמת מפה של טבלאות ועמודות מה-INFORMATION_SCHEMA של המסד הנוכחי.
+     * Cache ברמת-בקשה בלבד — כל בקשת HTTP חדשה שולפת מחדש מהמסד.
+     *
+     * מחזיר: table => [
+     *   'read'  => true,
+     *   'write' => true,
+     *   'fields' => [ col => [type, desc?, enum?, readonly?, encrypted?, nullable?] ]
+     * ]
      */
     function admin_ai_agent_table_registry(): array
     {
@@ -44,244 +161,102 @@ if (!function_exists('admin_ai_agent_table_registry')) {
             return $cache;
         }
 
-        $cache = [
-            'users' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => true,
-                'description' => 'משתמשי המערכת',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'home_id' => ['type' => 'int', 'desc' => 'מזהה הבית שאליו שייך המשתמש (FK → homes.id)'],
-                    'first_name' => ['type' => 'string', 'desc' => 'שם פרטי'],
-                    'last_name' => ['type' => 'string', 'desc' => 'שם משפחה'],
-                    'nickname' => ['type' => 'string', 'desc' => 'כינוי'],
-                    'email' => ['type' => 'string', 'desc' => 'כתובת מייל (ייחודי)'],
-                    'phone' => ['type' => 'string', 'desc' => 'טלפון'],
-                    'role' => ['type' => 'enum', 'desc' => 'תפקיד', 'enum' => ['user', 'home_admin', 'admin', 'program_admin']],
-                    'theme_preference' => ['type' => 'enum', 'desc' => 'ערכת נושא', 'enum' => ['light', 'dark', 'system']],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                ],
-            ],
-            'homes' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => true,
-                'description' => 'בתים משפחתיים',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'name' => ['type' => 'string', 'desc' => 'שם הבית'],
-                    'primary_user_id' => ['type' => 'int', 'desc' => 'משתמש ראשי (FK → users.id)'],
-                    'join_code' => ['type' => 'string', 'desc' => 'קוד הצטרפות (4 תווים, ייחודי)'],
-                    'initial_balance' => ['type' => 'balance', 'desc' => 'יתרה התחלתית (מוצפן אוטומטית)'],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                ],
-            ],
-            'transactions' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => false,
-                'description' => 'פעולות פיננסיות (הכנסות/הוצאות)',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'home_id' => ['type' => 'int', 'desc' => 'הבית (FK → homes.id)'],
-                    'user_id' => ['type' => 'int', 'desc' => 'משתמש יוצר (FK → users.id)'],
-                    'amount' => ['type' => 'decimal', 'desc' => 'סכום'],
-                    'currency_code' => ['type' => 'string', 'desc' => 'קוד מטבע (ILS וכד\')'],
-                    'type' => ['type' => 'enum', 'desc' => 'סוג', 'enum' => ['income', 'expense']],
-                    'category' => ['type' => 'string', 'desc' => 'קטגוריה'],
-                    'description' => ['type' => 'string', 'desc' => 'תיאור'],
-                    'transaction_date' => ['type' => 'date', 'desc' => 'תאריך הפעולה (YYYY-MM-DD)'],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                ],
-            ],
-            'categories' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => false,
-                'description' => 'קטגוריות הכנסה/הוצאה (per home)',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'home_id' => ['type' => 'int', 'desc' => 'הבית (FK → homes.id)'],
-                    'name' => ['type' => 'string', 'desc' => 'שם הקטגוריה'],
-                    'type' => ['type' => 'enum', 'desc' => 'סוג', 'enum' => ['income', 'expense']],
-                    'icon' => ['type' => 'string', 'desc' => 'מחלקת אייקון FontAwesome (fa-...)'],
-                    'budget_limit' => ['type' => 'decimal', 'desc' => 'תקציב חודשי (ל-expense)'],
-                    'is_active' => ['type' => 'bool', 'desc' => 'פעילה (1/0)'],
-                ],
-            ],
-            'recurring_transactions' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => false,
-                'description' => 'פעולות קבועות (חודשיות)',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'home_id' => ['type' => 'int', 'desc' => 'הבית'],
-                    'user_id' => ['type' => 'int', 'desc' => 'משתמש'],
-                    'type' => ['type' => 'enum', 'desc' => 'סוג', 'enum' => ['income', 'expense']],
-                    'amount' => ['type' => 'decimal', 'desc' => 'סכום'],
-                    'currency_code' => ['type' => 'string', 'desc' => 'קוד מטבע'],
-                    'category' => ['type' => 'int', 'desc' => 'מזהה קטגוריה (FK → categories.id)'],
-                    'description' => ['type' => 'string', 'desc' => 'תיאור'],
-                    'day_of_month' => ['type' => 'int', 'desc' => 'יום בחודש (1-31)'],
-                    'last_injected_month' => ['type' => 'date', 'desc' => 'חודש אחרון שהוזרק'],
-                    'is_active' => ['type' => 'bool', 'desc' => 'פעילה'],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                ],
-            ],
-            'feedback_reports' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => false,
-                'description' => 'דיווחי באג/רעיונות ממשתמשים',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'user_id' => ['type' => 'int', 'desc' => 'משתמש מדווח'],
-                    'home_id' => ['type' => 'int', 'desc' => 'הבית'],
-                    'kind' => ['type' => 'enum', 'desc' => 'סוג', 'enum' => ['bug', 'idea']],
-                    'title' => ['type' => 'string', 'desc' => 'כותרת'],
-                    'message' => ['type' => 'text', 'desc' => 'תיאור הדיווח'],
-                    'context_screen' => ['type' => 'string', 'desc' => 'מסך/הקשר'],
-                    'status' => ['type' => 'enum', 'desc' => 'סטטוס', 'enum' => ['new', 'in_review', 'done']],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                ],
-            ],
-            'tos_terms' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => true,
-                'description' => 'נוסחי תקנון',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'version' => ['type' => 'string', 'desc' => 'גרסה (ייחודי, למשל 3.0)'],
-                    'last_updated_label' => ['type' => 'string', 'desc' => 'תווית תאריך/תקופה'],
-                    'content_html' => ['type' => 'text', 'desc' => 'תוכן התקנון (HTML)'],
-                    'is_current' => ['type' => 'bool', 'desc' => 'גרסה נוכחית (רק אחת)'],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                ],
-            ],
-            'tos_agreements' => [
-                'read' => true,
-                'write' => false,
-                'dangerous' => false,
-                'description' => 'הסכמות תקנון של משתמשים (צפייה בלבד)',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'user_id' => ['type' => 'int', 'desc' => 'משתמש', 'readonly' => true],
-                    'tos_version' => ['type' => 'string', 'desc' => 'גרסת תקנון', 'readonly' => true],
-                    'accepted_at' => ['type' => 'timestamp', 'desc' => 'תאריך הסכמה', 'readonly' => true],
-                    'ip_address' => ['type' => 'string', 'desc' => 'כתובת IP', 'readonly' => true],
-                ],
-            ],
-            'info_messages' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => false,
-                'description' => 'הודעות הסבר/עזרה במערכת',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'msg_key' => ['type' => 'string', 'desc' => 'מפתח ייחודי'],
-                    'title' => ['type' => 'string', 'desc' => 'כותרת'],
-                    'content' => ['type' => 'text', 'desc' => 'תוכן'],
-                ],
-            ],
-            'ios_shortcut_links' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => false,
-                'description' => 'קישורי קיצור דרך ל-iOS',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'title' => ['type' => 'string', 'desc' => 'כותרת'],
-                    'url' => ['type' => 'string', 'desc' => 'כתובת URL'],
-                    'sort_order' => ['type' => 'int', 'desc' => 'סדר הצגה'],
-                    'is_active' => ['type' => 'bool', 'desc' => 'פעיל'],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                ],
-            ],
-            'popup_campaigns' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => false,
-                'description' => 'קמפייני פופאפ למשתמשים',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'title' => ['type' => 'string', 'desc' => 'כותרת'],
-                    'body_html' => ['type' => 'text', 'desc' => 'תוכן HTML'],
-                    'target_scope' => ['type' => 'enum', 'desc' => 'יעד', 'enum' => ['all', 'homes', 'users']],
-                    'status' => ['type' => 'enum', 'desc' => 'סטטוס', 'enum' => ['draft', 'published']],
-                    'is_active' => ['type' => 'bool', 'desc' => 'פעיל'],
-                    'sort_order' => ['type' => 'int', 'desc' => 'סדר'],
-                    'starts_at' => ['type' => 'datetime', 'desc' => 'מתחיל בתאריך'],
-                    'ends_at' => ['type' => 'datetime', 'desc' => 'מסתיים בתאריך'],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                    'updated_at' => ['type' => 'timestamp', 'desc' => 'עודכן', 'readonly' => true],
-                ],
-            ],
-            'notifications' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => false,
-                'description' => 'התראות מערכת',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'home_id' => ['type' => 'int', 'desc' => 'בית יעד (0 = כללי)'],
-                    'user_id' => ['type' => 'int', 'desc' => 'משתמש יעד (NULL = כל הבית)'],
-                    'creator_id' => ['type' => 'int', 'desc' => 'יוצר ההתראה'],
-                    'title' => ['type' => 'string', 'desc' => 'כותרת'],
-                    'message' => ['type' => 'text', 'desc' => 'גוף הודעה'],
-                    'type' => ['type' => 'enum', 'desc' => 'סוג', 'enum' => ['info', 'warning', 'success', 'error']],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                ],
-            ],
-            'shopping_categories' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => false,
-                'description' => 'קטגוריות (חנויות) ברשימת קניות',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'home_id' => ['type' => 'int', 'desc' => 'הבית'],
-                    'name' => ['type' => 'string', 'desc' => 'שם'],
-                    'icon' => ['type' => 'string', 'desc' => 'מחלקת אייקון'],
-                    'sort_order' => ['type' => 'int', 'desc' => 'סדר'],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                ],
-            ],
-            'shopping_items' => [
-                'read' => true,
-                'write' => true,
-                'dangerous' => false,
-                'description' => 'פריטים ברשימת קניות',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'home_id' => ['type' => 'int', 'desc' => 'הבית'],
-                    'category_id' => ['type' => 'int', 'desc' => 'קטגוריה'],
-                    'item_name' => ['type' => 'string', 'desc' => 'שם הפריט'],
-                    'quantity' => ['type' => 'string', 'desc' => 'כמות'],
-                    'sort_order' => ['type' => 'int', 'desc' => 'סדר'],
-                    'created_at' => ['type' => 'timestamp', 'desc' => 'תאריך יצירה', 'readonly' => true],
-                    'updated_at' => ['type' => 'timestamp', 'desc' => 'עודכן', 'readonly' => true],
-                ],
-            ],
-            'ai_api_logs' => [
-                'read' => true,
-                'write' => false,
-                'dangerous' => false,
-                'description' => 'לוגים של קריאות AI (צפייה בלבד)',
-                'fields' => [
-                    'id' => ['type' => 'int', 'desc' => 'מזהה', 'readonly' => true],
-                    'home_id' => ['type' => 'int', 'desc' => 'בית', 'readonly' => true],
-                    'user_id' => ['type' => 'int', 'desc' => 'משתמש', 'readonly' => true],
-                    'action_type' => ['type' => 'string', 'desc' => 'תיאור הפעולה', 'readonly' => true],
-                ],
-            ],
-        ];
+        $cache = [];
+        global $conn;
+        if (!($conn instanceof mysqli)) {
+            return $cache;
+        }
+
+        $blockedTables = admin_ai_agent_blocked_tables();
+        $blockedFields = admin_ai_agent_global_blocked_fields();
+        $encryptMap    = admin_ai_agent_encrypt_map();
+
+        try {
+            $sql = "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_TYPE,
+                           IS_NULLABLE, COLUMN_COMMENT, EXTRA, COLUMN_KEY
+                    FROM   INFORMATION_SCHEMA.COLUMNS
+                    WHERE  TABLE_SCHEMA = DATABASE()
+                    ORDER BY TABLE_NAME, ORDINAL_POSITION";
+            $res = @mysqli_query($conn, $sql);
+            if (!($res instanceof mysqli_result)) {
+                return $cache;
+            }
+
+            while ($row = mysqli_fetch_assoc($res)) {
+                $table = (string) ($row['TABLE_NAME'] ?? '');
+                if ($table === '' || in_array($table, $blockedTables, true)) {
+                    continue;
+                }
+                $col = (string) ($row['COLUMN_NAME'] ?? '');
+                if ($col === '' || in_array($col, $blockedFields, true)) {
+                    continue;
+                }
+
+                if (!isset($cache[$table])) {
+                    $cache[$table] = [
+                        'read'   => true,
+                        'write'  => true,
+                        'fields' => [],
+                    ];
+                }
+
+                $dataType   = (string) ($row['DATA_TYPE']   ?? '');
+                $columnType = (string) ($row['COLUMN_TYPE'] ?? '');
+                $extra      = strtolower((string) ($row['EXTRA'] ?? ''));
+                $comment    = trim((string) ($row['COLUMN_COMMENT'] ?? ''));
+                $isNullable = strtoupper((string) ($row['IS_NULLABLE'] ?? '')) === 'YES';
+
+                $type = admin_ai_agent_map_column_type($dataType, $columnType);
+                $fieldDef = ['type' => $type];
+
+                if ($comment !== '') {
+                    $fieldDef['desc'] = $comment;
+                }
+
+                // enum/set values
+                if ($type === 'enum' || $type === 'set') {
+                    $vals = admin_ai_agent_parse_enum_values($columnType);
+                    if (!empty($vals)) {
+                        $fieldDef['enum'] = $vals;
+                    }
+                }
+
+                // readonly heuristics
+                $readonly = false;
+                if (strpos($extra, 'auto_increment') !== false) $readonly = true;
+                if (in_array($col, ['created_at', 'updated_at'], true)) $readonly = true;
+                if (strpos($extra, 'on update current_timestamp') !== false) $readonly = true;
+                if ($readonly) {
+                    $fieldDef['readonly'] = true;
+                }
+
+                // encryption flag
+                if (isset($encryptMap[$table]) && in_array($col, $encryptMap[$table], true)) {
+                    $fieldDef['encrypted'] = true;
+                    if (!isset($fieldDef['desc']) || $fieldDef['desc'] === '') {
+                        $fieldDef['desc'] = 'מוצפן אוטומטית ב-API';
+                    }
+                }
+
+                if ($isNullable) {
+                    $fieldDef['nullable'] = true;
+                }
+
+                $cache[$table]['fields'][$col] = $fieldDef;
+            }
+            mysqli_free_result($res);
+        } catch (\Throwable $e) {
+            // כישלון שליפה — נחזיר את מה שיש. השיחה לא תקרוס, פשוט יהיה
+            // פחות הקשר למודל.
+        }
 
         return $cache;
     }
 }
+
+// ================================================================
+//  גישות נוחות (Accessors)
+// ================================================================
 
 if (!function_exists('admin_ai_agent_get_table_config')) {
     function admin_ai_agent_get_table_config(string $table): ?array
@@ -294,16 +269,16 @@ if (!function_exists('admin_ai_agent_get_table_config')) {
 if (!function_exists('admin_ai_agent_can_read')) {
     function admin_ai_agent_can_read(string $table): bool
     {
-        $cfg = admin_ai_agent_get_table_config($table);
-        return $cfg !== null && !empty($cfg['read']);
+        // program_admin רואה הכל — אם הטבלה קיימת במסד וב-registry — מותר לקרוא.
+        return admin_ai_agent_get_table_config($table) !== null;
     }
 }
 
 if (!function_exists('admin_ai_agent_can_write')) {
     function admin_ai_agent_can_write(string $table): bool
     {
-        $cfg = admin_ai_agent_get_table_config($table);
-        return $cfg !== null && !empty($cfg['write']);
+        // אותו דבר לגבי כתיבה.
+        return admin_ai_agent_get_table_config($table) !== null;
     }
 }
 
@@ -379,6 +354,42 @@ if (!function_exists('admin_ai_agent_encrypt_write_payload')) {
     }
 }
 
+// ================================================================
+//  Aliases לאחור (נשמרים כדי לא לשבור קוד קיים שקורא להם)
+// ================================================================
+
+if (!function_exists('admin_ai_agent_filtered_registry')) {
+    /**
+     * Historically פילטר על registry סטטי מול live columns. כעת ה-registry עצמו
+     * הוא חי — הפונקציה משאירה את אותה חתימה לתאימות-אחורה.
+     */
+    function admin_ai_agent_filtered_registry(): array
+    {
+        return admin_ai_agent_table_registry();
+    }
+}
+
+if (!function_exists('admin_ai_agent_live_columns_map')) {
+    /**
+     * מחזיר מפה table => [col => true]. מחושב מהרישום החי.
+     */
+    function admin_ai_agent_live_columns_map(): array
+    {
+        $map = [];
+        foreach (admin_ai_agent_table_registry() as $t => $cfg) {
+            foreach (($cfg['fields'] ?? []) as $f => $_def) {
+                if (!isset($map[$t])) $map[$t] = [];
+                $map[$t][$f] = true;
+            }
+        }
+        return $map;
+    }
+}
+
+// ================================================================
+//  בניית פלט עבור JS וה-system prompt של המודל
+// ================================================================
+
 if (!function_exists('admin_ai_agent_build_schema_for_js')) {
     /**
      * מייצא את הסכמה בפורמט מצומצם לשימוש ב-JS כדי לזהות שמות טבלאות/שדות
@@ -394,19 +405,16 @@ if (!function_exists('admin_ai_agent_build_schema_for_js')) {
             $tables[] = $table;
             $names = [];
             foreach (($cfg['fields'] ?? []) as $fname => $_def) {
-                if (in_array($fname, admin_ai_agent_global_blocked_fields(), true)) {
-                    continue;
-                }
                 $names[] = $fname;
                 $fieldsSet[$fname] = true;
             }
             $fieldsByTable[$table] = $names;
         }
         return [
-            'tables' => $tables,
+            'tables'          => $tables,
             'fields_by_table' => $fieldsByTable,
-            'all_fields' => array_keys($fieldsSet),
-            'actions' => ['create', 'update', 'delete'],
+            'all_fields'      => array_keys($fieldsSet),
+            'actions'         => ['create', 'update', 'delete'],
         ];
     }
 }
@@ -414,34 +422,47 @@ if (!function_exists('admin_ai_agent_build_schema_for_js')) {
 if (!function_exists('admin_ai_agent_build_schema_summary')) {
     /**
      * בונה סיכום טקסטואלי של סכמת הטבלאות לצורך הזרקה ל-system prompt של הבינה.
+     * הסיכום נבנה כל פעם מחדש מהמסד, ומשקף את המצב הנוכחי בדיוק.
      */
     function admin_ai_agent_build_schema_summary(): string
     {
         $reg = admin_ai_agent_table_registry();
+        if (empty($reg)) {
+            return "⚠️ לא הצלחתי לשלוף את סכמת המסד כרגע (INFORMATION_SCHEMA לא זמין). "
+                 . "אם תבקש שאילתה, ייתכן שתידרש בדיקה ידנית.";
+        }
         $lines = [];
+        $lines[] = "סכמת המסד נשלפת חיה מ-INFORMATION_SCHEMA בכל בקשה "
+                 . "(כל שינוי DDL משתקף מיד). להלן המצב הנוכחי:";
+        $lines[] = '';
         foreach ($reg as $table => $cfg) {
-            $perms = [];
-            if (!empty($cfg['read'])) {
-                $perms[] = 'read';
-            }
-            if (!empty($cfg['write'])) {
-                $perms[] = 'write';
-            }
-            $permStr = $perms ? implode('+', $perms) : 'blocked';
-            $dangerous = !empty($cfg['dangerous']) ? ' [DANGEROUS]' : '';
-            $desc = $cfg['description'] ?? '';
-            $lines[] = "- **`{$table}`** ({$permStr}){$dangerous} — {$desc}";
+            $lines[] = "- **`{$table}`**:";
             foreach (($cfg['fields'] ?? []) as $fieldName => $def) {
-                $type = $def['type'] ?? 'string';
+                $type  = $def['type'] ?? 'string';
                 $fdesc = $def['desc'] ?? '';
-                $ro = !empty($def['readonly']) ? ' [readonly]' : '';
-                $enum = isset($def['enum']) && is_array($def['enum']) ? ' (' . implode('|', $def['enum']) . ')' : '';
-                $lines[] = "    - `{$fieldName}`: {$type}{$enum}{$ro} — {$fdesc}";
+                $ro    = !empty($def['readonly'])  ? ' [readonly]'  : '';
+                $enc   = !empty($def['encrypted']) ? ' [encrypted]' : '';
+                $null  = !empty($def['nullable'])  ? ''             : ' [NOT NULL]';
+                $enum  = (isset($def['enum']) && is_array($def['enum']) && $def['enum'])
+                    ? ' (' . implode('|', $def['enum']) . ')'
+                    : '';
+                $descPart = $fdesc !== '' ? ' — ' . $fdesc : '';
+                $lines[] = "    - `{$fieldName}`: {$type}{$enum}{$ro}{$enc}{$null}{$descPart}";
             }
         }
         $lines[] = '';
-        $lines[] = 'שדות גלובליים חסומים (בכל טבלה, לקריאה ולכתיבה): ' . implode(', ', admin_ai_agent_global_blocked_fields());
-        $lines[] = 'שדות מוצפנים אוטומטית: homes.initial_balance (אל תצפין ידנית — ה-API דואג)';
+        $lines[] = 'שדות גלובליים חסומים (בכל טבלה, לקריאה ולכתיבה): '
+                 . implode(', ', admin_ai_agent_global_blocked_fields());
+
+        $encMap = admin_ai_agent_encrypt_map();
+        if (!empty($encMap)) {
+            $parts = [];
+            foreach ($encMap as $t => $cols) {
+                $parts[] = $t . '.' . implode(',', $cols);
+            }
+            $lines[] = 'שדות מוצפנים אוטומטית (אל תצפין ידנית — ה-API דואג): '
+                     . implode(' · ', $parts);
+        }
 
         return implode("\n", $lines);
     }
