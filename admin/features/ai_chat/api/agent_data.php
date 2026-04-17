@@ -326,6 +326,54 @@ if (!function_exists('admin_ai_agent_data_search')) {
         }
 
         $limit = max(1, min(100, (int) ($req['limit'] ?? 20)));
+
+        // חיפוש עם כמה מילים (כל הטבלאות): לכל מילה — OR על עמודות הטקסט; בין מילים — AND.
+        // כך «שם פרטי משפחה» שמפוצל לעמודות, כתובת עם רווחים, או כמה טוקנים — מתנהגים עקבית בלי פלסטר לפי טבלה.
+        $searchMultiWordMax = 8;
+        if (preg_match('/\s/u', $term)) {
+            $rawWords = preg_split('/\s+/u', $term, -1, PREG_SPLIT_NO_EMPTY);
+            $words = [];
+            foreach ($rawWords as $w) {
+                $w = trim((string) $w);
+                if ($w !== '') {
+                    $words[] = $w;
+                }
+            }
+            $words = array_slice($words, 0, $searchMultiWordMax);
+            if (count($words) >= 2) {
+                $groupSqls = [];
+                $typesMw = '';
+                $valuesMw = [];
+                foreach ($words as $w) {
+                    $likeW = '%' . $w . '%';
+                    $wordParts = [];
+                    foreach ($searchCols as $c) {
+                        $wordParts[] = "`{$c}` LIKE ?";
+                        $typesMw .= 's';
+                        $valuesMw[] = $likeW;
+                    }
+                    $groupSqls[] = '(' . implode(' OR ', $wordParts) . ')';
+                }
+                $whereSqlMw = ' WHERE ' . implode(' AND ', $groupSqls);
+                $colsMw = admin_ai_agent_data_safe_select_list($table, $req['return_columns'] ?? []);
+                $sqlMw = "SELECT {$colsMw} FROM `{$table}`{$whereSqlMw} ORDER BY `id` DESC LIMIT {$limit}";
+                $resMw = admin_ai_agent_data_fetch_all($conn, $sqlMw, $typesMw, $valuesMw);
+                if ($resMw['error']) {
+                    return admin_ai_agent_data_error($resMw['error']);
+                }
+                $rowsMw = admin_ai_agent_data_decrypt_rows($table, $resMw['rows']);
+                $rowsMw = admin_ai_agent_sanitize_rows_for_output($rowsMw);
+
+                return admin_ai_agent_data_ok([
+                    'table' => $table,
+                    'search' => $term,
+                    'search_mode' => 'multi_word_and',
+                    'count' => count($rowsMw),
+                    'rows' => $rowsMw,
+                ]);
+            }
+        }
+
         $parts = [];
         $types = '';
         $values = [];
