@@ -276,6 +276,32 @@
     composer.setAttribute("aria-hidden", visible ? "false" : "true");
   }
 
+  function forkMessageToNewChat(rawText) {
+    const t = String(rawText || "")
+      .trim()
+      .slice(0, 1500);
+    if (!t) return;
+    startDraftChat();
+    const input = qs("adminAiChatInput");
+    if (input) {
+      input.value = t;
+      input.focus();
+      try {
+        input.setSelectionRange(t.length, t.length);
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    const composer = qs("adminAiChatComposer");
+    if (composer && typeof composer.scrollIntoView === "function") {
+      try {
+        composer.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      } catch (e) {
+        /* ignore */
+      }
+    }
+  }
+
   function addMessageBubble(role, text, opts = {}) {
     const wrap = qs("adminAiChatMessages");
     if (!wrap) return null;
@@ -288,14 +314,34 @@
     } else if (role === "assistant") {
       innerContent = '<div class="admin-ai-chat-bubble-inner">' + formatAssistantHtml(text) + "</div>";
     } else {
-      innerContent = '<div class="admin-ai-chat-bubble-inner">' + formatUserHtml(text) + "</div>";
+      const forkPayload = String(text || "")
+        .trim()
+        .slice(0, 1500);
+      const forkBtn =
+        forkPayload !== ""
+          ? '<button type="button" class="admin-ai-chat-fork-msg-btn" data-admin-ai-chat-fork="1" data-fork-payload="' +
+            escapeHtml(encodeURIComponent(forkPayload)) +
+            '" title="שיחה חדשה עם ניסוח זה (בלי היסטוריית השיחה)" aria-label="שיחה חדשה עם ניסוח זה (בלי היסטוריה)">' +
+            '<i class="fa-solid fa-comment-plus" aria-hidden="true"></i></button>'
+          : "";
+      innerContent =
+        '<div class="admin-ai-chat-bubble-meta-row">' +
+        '<div class="admin-ai-chat-bubble-meta">' +
+        escapeHtml(metaLabel) +
+        "</div>" +
+        forkBtn +
+        "</div>" +
+        '<div class="admin-ai-chat-bubble-inner">' +
+        formatUserHtml(text) +
+        "</div>";
     }
     const html =
       `<article class="admin-ai-chat-bubble-row admin-ai-chat-bubble-row--${cls}">` +
       messageAvatarHtml(role) +
       `<section class="admin-ai-chat-bubble ${cls}"${idAttr}>` +
-      `<div class="admin-ai-chat-bubble-meta">${escapeHtml(metaLabel)}</div>` +
-      innerContent +
+      (role === "assistant"
+        ? `<div class="admin-ai-chat-bubble-meta">${escapeHtml(metaLabel)}</div>` + innerContent
+        : innerContent) +
       `</section>` +
       `</article>`;
     wrap.insertAdjacentHTML("beforeend", html);
@@ -1353,6 +1399,20 @@
     });
 
     form.addEventListener("submit", handleSend);
+    messages.addEventListener("click", (e) => {
+      const forkBtn = e.target && e.target.closest ? e.target.closest("[data-admin-ai-chat-fork]") : null;
+      if (!forkBtn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const enc = forkBtn.getAttribute("data-fork-payload") || "";
+      let decoded = "";
+      try {
+        decoded = decodeURIComponent(enc);
+      } catch (err) {
+        return;
+      }
+      forkMessageToNewChat(decoded);
+    });
     newBtn.addEventListener("click", () => {
       startDraftChat();
       loadHistory();

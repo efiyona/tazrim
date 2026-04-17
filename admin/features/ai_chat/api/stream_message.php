@@ -5,6 +5,13 @@ require_once __DIR__ . '/_init.php';
 require_once __DIR__ . '/agent_data.php';
 require_once __DIR__ . '/../services/agent_schema.php';
 
+// קריאת Gemini יכולה לקחת עד 120 שנ' (3 ניסיונות × 40 שנ'). Hostinger מנתק
+// חיבורים אחרי wait_timeout קצר יחסית (~60 שנ' ברירת מחדל לשיתופיות).
+// נרחיב ל-10 דקות כדי שלא נקבל "MySQL server has gone away" כשנכתוב בסוף.
+if (function_exists('admin_ai_chat_db_extend_session_timeout')) {
+    admin_ai_chat_db_extend_session_timeout($conn);
+}
+
 header('Content-Type: text/event-stream; charset=utf-8');
 header('X-Accel-Buffering: no');
 
@@ -708,7 +715,10 @@ if ($agentError !== '' && $finalText === '') {
     admin_ai_chat_sse_event('token', ['text' => $fallbackText]);
     admin_ai_chat_sse_event('done', ['chat_id' => $chatId, 'fallback' => true]);
     $logLine = 'Admin AI Chat Failed: ' . $agentError . ' | ' . $lastGeminiErr;
-    $statusText = mysqli_real_escape_string($conn, $logLine);
+    if (function_exists('admin_ai_chat_db_ensure_alive')) {
+        admin_ai_chat_db_ensure_alive($conn);
+    }
+    $statusText = @mysqli_real_escape_string($conn, $logLine);
     @mysqli_query($conn, "INSERT INTO ai_api_logs (home_id, user_id, action_type) VALUES ({$homeId}, {$userId}, '{$statusText}')");
     exit;
 }
@@ -768,5 +778,8 @@ $deepTag = $needsDeep ? ' deep=1' : '';
 $agentTag = ($finalAction !== null) ? ' action=' . (string) $finalAction['action'] . ':' . (string) $finalAction['table'] : '';
 $qTag = ($dataQueryCount > 0) ? ' dq=' . $dataQueryCount : '';
 $vTag = ($validatorRetryCount > 0) ? ' vret=' . $validatorRetryCount : '';
-$statusText = mysqli_real_escape_string($conn, 'Admin AI Chat Success (Model: ' . $usedModel . $deepTag . $agentTag . $qTag . $vTag . ')');
-mysqli_query($conn, "INSERT INTO ai_api_logs (home_id, user_id, action_type) VALUES ({$homeId}, {$userId}, '{$statusText}')");
+if (function_exists('admin_ai_chat_db_ensure_alive')) {
+    admin_ai_chat_db_ensure_alive($conn);
+}
+$statusText = @mysqli_real_escape_string($conn, 'Admin AI Chat Success (Model: ' . $usedModel . $deepTag . $agentTag . $qTag . $vTag . ')');
+@mysqli_query($conn, "INSERT INTO ai_api_logs (home_id, user_id, action_type) VALUES ({$homeId}, {$userId}, '{$statusText}')");

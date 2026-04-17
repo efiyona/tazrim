@@ -519,6 +519,54 @@
     opacity: 0.85;
 }
 
+/* שורת כותרת + כפתור «שיחה חדשה עם ניסוח זה» בהודעות משתמש */
+.admin-ai-chat-bubble-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px 0 16px;
+}
+
+.admin-ai-chat-bubble-meta-row .admin-ai-chat-bubble-meta {
+    padding: 0;
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-ai-chat-fork-msg-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.admin-ai-chat-fork-msg-btn:hover {
+    background: rgba(255, 255, 255, 0.38);
+    transform: translateY(-1px);
+}
+
+.admin-ai-chat-fork-msg-btn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.95);
+    outline-offset: 2px;
+}
+
+.admin-ai-chat-fork-msg-btn i {
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
 .admin-ai-chat-bubble.user .admin-ai-chat-bubble-meta {
     color: rgba(255, 255, 255, 0.88);
 }

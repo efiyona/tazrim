@@ -150,6 +150,7 @@ if (!function_exists('admin_ai_chat_build_agent_instructions')) {
             . "- `get` — שורה בודדת לפי id. דוגמה: `{\"action\":\"get\",\"table\":\"users\",\"id\":2}`\n"
             . "- `count` — ספירה. דוגמה: `{\"action\":\"count\",\"table\":\"transactions\",\"where\":{\"home_id\":1}}`\n"
             . "- `search` — LIKE על שדות טקסט. דוגמה: `{\"action\":\"search\",\"table\":\"users\",\"search\":\"כהן\"}`\n"
+            . "  **חשוב:** כשהמנהל מספק ערך מדויק (מייל, ID, מספר טלפון) — עדיף `list` עם `where` ולא `search`. דוגמה: `{\"action\":\"list\",\"table\":\"users\",\"where\":{\"email\":\"x@y.com\"},\"limit\":1}`. אל תוותר מיד אם `search` החזיר 0 — נסה `list` עם `where` על השדה הספציפי, או הרחב את `columns` ב-search.\n"
             . "- `describe` — סכמת טבלה (שדות, טיפוסים, enum). דוגמה: `{\"action\":\"describe\",\"table\":\"homes\"}`\n"
             . "- `query` — SELECT גולמי (prepared). דוגמה: `{\"action\":\"query\",\"sql\":\"SELECT u.id, u.first_name, h.name FROM users u LEFT JOIN homes h ON u.home_id=h.id WHERE u.role=? LIMIT 20\",\"params\":[\"user\"]}`\n\n"
             . "אחרי שהבלוק יופיע — ה-PHP יריץ את השאילתה, יזין את התוצאה בחזרה אליך כהודעת משתמש סינתטית, ותמשיך בתשובה. יש מגבלה של **3 שליפות** בסבב אחד.\n"
