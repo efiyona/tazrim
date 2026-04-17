@@ -1749,6 +1749,7 @@
       let streamQuestions = null;
       let streamPreamble = "";
       let streamAction = null;
+      let streamDonePayload = null;
 
       function handleSseEvent(rawEvent) {
         const lines = rawEvent.split(/\r?\n/);
@@ -1811,6 +1812,7 @@
           updateBubbleStreamingAssistant(assistantBubble, assistantText, { clearThinking: true });
         } else if (eventName === "done") {
           streamHasDoneEvent = true;
+          streamDonePayload = payload;
           if (typeof payload.deep_pass === "boolean") {
             streamDeepPass = payload.deep_pass;
           }
@@ -1845,9 +1847,18 @@
         await loadHistory();
       } else if (streamAction) {
         const preamble = stripActionProposedBlock(stripQuestionsBlock(assistantText));
-        renderActionCard(assistantBubble, streamAction, { preamble: preamble });
-        invalidateChatCache(state.activeChatId);
-        await loadHistory();
+        if (streamDonePayload && streamDonePayload.auto_executed && state.activeChatId) {
+          if (assistantBubble) {
+            const row = assistantBubble.closest(".admin-ai-chat-bubble-row");
+            if (row) row.remove();
+          }
+          invalidateChatCache(state.activeChatId);
+          await openChat(state.activeChatId, { force: true });
+        } else {
+          renderActionCard(assistantBubble, streamAction, { preamble: preamble });
+          invalidateChatCache(state.activeChatId);
+          await loadHistory();
+        }
       } else {
         if (!streamHasDoneEvent && assistantText === "") {
           assistantText = "לא התקבלה תשובה מלאה — השידור הסתיים בלי סיום תקין.\n\nסיבות אפשריות: שגיאת PHP בשרת, חריגה מזמן ריצה, או המודל החזיר תשובה ריקה.\nבדקו ב-ai_api_logs לפרטים, או נסו שוב עם ניסוח אחר.";

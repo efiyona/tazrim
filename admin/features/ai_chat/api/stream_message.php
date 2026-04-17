@@ -881,12 +881,44 @@ if ($emittedQuestions !== null) {
     if (isset($finalAction['verification'])) {
         $actionPayload['verification'] = $finalAction['verification'];
     }
+    $proposedAtMs = (int) round(microtime(true) * 1000);
+    $actionPayload['proposedAt'] = $proposedAtMs;
+
     admin_ai_chat_sse_event('action', $actionPayload);
 
     $savedText = $finalText . "\n\n[[ACTION_PROPOSED]]" . json_encode($actionPayload, JSON_UNESCAPED_UNICODE) . "[[/ACTION_PROPOSED]]";
     admin_ai_chat_repo_add_message($conn, $chatId, 'assistant', $savedText, $usedModel);
     admin_ai_chat_repo_touch($conn, $chatId, $scopeSnapshot);
-    admin_ai_chat_sse_event('done', ['chat_id' => $chatId, 'has_action' => true]);
+
+    require_once __DIR__ . '/../services/agent_auto_row_execute.php';
+    $donePayload = [
+        'chat_id' => $chatId,
+        'has_action' => true,
+        'proposedAt' => $proposedAtMs,
+    ];
+    if (admin_ai_chat_action_is_auto_row_crud_only($finalAction)) {
+        $autoOutcomes = admin_ai_chat_run_auto_row_executions($conn, $homeId, $userId, $chatId, $finalAction, $proposedAtMs);
+        $donePayload['auto_executed'] = true;
+        $donePayload['auto_execution_summary'] = array_map(static function (array $o): array {
+            return [
+                'step' => $o['step'],
+                'ok' => (($o['payload']['status'] ?? '') === 'success'),
+                'message' => (string) ($o['payload']['message'] ?? ''),
+                'http' => (int) ($o['http'] ?? 0),
+            ];
+        }, $autoOutcomes);
+        $allOk = true;
+        foreach ($autoOutcomes as $o) {
+            if (($o['payload']['status'] ?? '') !== 'success') {
+                $allOk = false;
+                break;
+            }
+        }
+        $donePayload['auto_execution_all_ok'] = $allOk;
+        admin_ai_chat_repo_touch($conn, $chatId, $scopeSnapshot);
+    }
+
+    admin_ai_chat_sse_event('done', $donePayload);
 } else {
     admin_ai_chat_chunk_and_emit($finalText);
     admin_ai_chat_repo_add_message($conn, $chatId, 'assistant', $finalText, $usedModel);
