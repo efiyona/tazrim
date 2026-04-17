@@ -301,14 +301,26 @@ function admin_ai_chat_strip_action_block(string $text): string
     return trim((string) $cleaned);
 }
 
-function admin_ai_chat_validate_action_shape(array $action): array
+/**
+ * מחרוזת בסגנון {{step:0}} — תוחלף בלקוח אחרי ביצוע מוצלח של שלב קודם.
+ */
+function admin_ai_chat_is_step_placeholder_scalar(mixed $v): bool
+{
+    return is_string($v) && preg_match('/^\{\{step:\d+\}\}$/', $v) === 1;
+}
+
+/**
+ * ולידציה של פעולת עלה בודדת (לא sequence).
+ *
+ * @param bool $allowPlaceholders אם true — מותר id/data עם {{step:N}} (לשימוש בתוך sequence)
+ */
+function admin_ai_chat_validate_leaf_action_shape(array $action, bool $allowPlaceholders = false): array
 {
     $act = strtolower((string) ($action['action'] ?? ''));
     $table = (string) ($action['table'] ?? '');
     if (!in_array($act, ['create', 'update', 'delete', 'sql'], true)) {
         return ['ok' => false, 'error' => 'invalid_action_type'];
     }
-    // פעולת sql — מבנה שונה לגמרי (משפט SQL גולמי, בלי whitelist)
     if ($act === 'sql') {
         $sql = trim((string) ($action['sql'] ?? ''));
         if ($sql === '') {
@@ -317,7 +329,6 @@ function admin_ai_chat_validate_action_shape(array $action): array
         if (function_exists('mb_strlen') ? mb_strlen($sql, 'UTF-8') < 4 : strlen($sql) < 4) {
             return ['ok' => false, 'error' => 'sql_too_short'];
         }
-        // description חייב להיות מפורט כי אין לנו מידע אחר על הפעולה
         $desc = trim((string) ($action['description'] ?? ''));
         if ($desc === '') {
             return ['ok' => false, 'error' => 'missing_description_for_sql'];
@@ -327,8 +338,19 @@ function admin_ai_chat_validate_action_shape(array $action): array
     if (!admin_ai_agent_can_write($table)) {
         return ['ok' => false, 'error' => 'table_not_writable:' . $table];
     }
-    if (in_array($act, ['update', 'delete'], true) && (int) ($action['id'] ?? 0) <= 0) {
-        return ['ok' => false, 'error' => 'missing_id_for_' . $act];
+    if (in_array($act, ['update', 'delete'], true)) {
+        $idRaw = $action['id'] ?? null;
+        $idOk = false;
+        if ($allowPlaceholders && admin_ai_chat_is_step_placeholder_scalar($idRaw)) {
+            $idOk = true;
+        } elseif (is_int($idRaw) || (is_string($idRaw) && ctype_digit((string) $idRaw))) {
+            $idOk = ((int) $idRaw) > 0;
+        } elseif (is_float($idRaw)) {
+            $idOk = ((int) $idRaw) > 0;
+        }
+        if (!$idOk) {
+            return ['ok' => false, 'error' => 'missing_id_for_' . $act];
+        }
     }
     if ($act === 'delete' && !empty($action['data'])) {
         return ['ok' => false, 'error' => 'delete_must_not_have_data'];
@@ -338,12 +360,84 @@ function admin_ai_chat_validate_action_shape(array $action): array
             return ['ok' => false, 'error' => 'missing_data_for_' . $act];
         }
         foreach ($action['data'] as $col => $_v) {
+            if ($allowPlaceholders && admin_ai_chat_is_step_placeholder_scalar($_v)) {
+                continue;
+            }
             if (!admin_ai_agent_is_field_writable($table, (string) $col)) {
                 return ['ok' => false, 'error' => 'field_not_writable:' . $col];
             }
         }
     }
     return ['ok' => true];
+}
+
+/**
+ * בודק שבכל שלב אין הפניה ל-{{step:N}} עם N >= אינדקס השלב הנוכחי.
+ */
+function admin_ai_chat_sequence_placeholder_values_ok(mixed $v, int $stepIndex): bool
+{
+    if (is_string($v) && preg_match('/^\{\{step:(\d+)\}\}$/', $v, $m)) {
+        return (int) $m[1] < $stepIndex;
+    }
+    if (is_array($v)) {
+        foreach ($v as $x) {
+            if (!admin_ai_chat_sequence_placeholder_values_ok($x, $stepIndex)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function admin_ai_chat_validate_sequence_placeholders(array $steps): array
+{
+    foreach ($steps as $si => $step) {
+        if (!is_array($step)) {
+            return ['ok' => false, 'error' => 'sequence_step_not_object'];
+        }
+        foreach ($step as $k => $v) {
+            if ($k === 'description') {
+                continue;
+            }
+            if (!admin_ai_chat_sequence_placeholder_values_ok($v, $si)) {
+                return ['ok' => false, 'error' => 'sequence_placeholder_invalid_ref'];
+            }
+        }
+    }
+    return ['ok' => true];
+}
+
+function admin_ai_chat_validate_action_shape(array $action): array
+{
+    $act = strtolower((string) ($action['action'] ?? ''));
+    if ($act === 'sequence') {
+        $steps = $action['steps'] ?? null;
+        if (!is_array($steps) || count($steps) < 2) {
+            return ['ok' => false, 'error' => 'sequence_requires_at_least_2_steps'];
+        }
+        if (count($steps) > 12) {
+            return ['ok' => false, 'error' => 'sequence_too_many_steps'];
+        }
+        $desc = trim((string) ($action['description'] ?? ''));
+        if ($desc === '') {
+            return ['ok' => false, 'error' => 'sequence_missing_overall_description'];
+        }
+        $ph = admin_ai_chat_validate_sequence_placeholders($steps);
+        if (!$ph['ok']) {
+            return $ph;
+        }
+        foreach ($steps as $idx => $step) {
+            if (!is_array($step)) {
+                return ['ok' => false, 'error' => 'sequence_step_not_object'];
+            }
+            $leaf = admin_ai_chat_validate_leaf_action_shape($step, true);
+            if (!$leaf['ok']) {
+                return ['ok' => false, 'error' => 'sequence_step_' . $idx . ':' . ($leaf['error'] ?? 'invalid')];
+            }
+        }
+        return ['ok' => true];
+    }
+    return admin_ai_chat_validate_leaf_action_shape($action, false);
 }
 
 function admin_ai_chat_chunk_and_emit(string $text): void
@@ -761,6 +855,9 @@ if ($emittedQuestions !== null) {
     if (isset($finalAction['kind'])) {
         $actionPayload['kind'] = (string) $finalAction['kind'];
     }
+    if (($finalAction['action'] ?? '') === 'sequence' && isset($finalAction['steps']) && is_array($finalAction['steps'])) {
+        $actionPayload['steps'] = $finalAction['steps'];
+    }
     admin_ai_chat_sse_event('action', $actionPayload);
 
     $savedText = $finalText . "\n\n[[ACTION_PROPOSED]]" . json_encode($actionPayload, JSON_UNESCAPED_UNICODE) . "[[/ACTION_PROPOSED]]";
@@ -775,7 +872,12 @@ if ($emittedQuestions !== null) {
 }
 
 $deepTag = $needsDeep ? ' deep=1' : '';
-$agentTag = ($finalAction !== null) ? ' action=' . (string) $finalAction['action'] . ':' . (string) $finalAction['table'] : '';
+$agentTag = '';
+if ($finalAction !== null) {
+    $at = (string) ($finalAction['action'] ?? '');
+    $tb = (string) ($finalAction['table'] ?? '');
+    $agentTag = ' action=' . $at . ':' . ($tb !== '' ? $tb : (($at === 'sequence') ? 'multi' : ''));
+}
 $qTag = ($dataQueryCount > 0) ? ' dq=' . $dataQueryCount : '';
 $vTag = ($validatorRetryCount > 0) ? ' vret=' . $validatorRetryCount : '';
 if (function_exists('admin_ai_chat_db_ensure_alive')) {

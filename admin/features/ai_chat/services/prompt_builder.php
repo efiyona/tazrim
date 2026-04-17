@@ -161,11 +161,31 @@ if (!function_exists('admin_ai_chat_build_agent_instructions')) {
             . '{"action":"update","table":"users","id":2,"data":{"email":"new@mail.com"},"description":"עדכון כתובת מייל של אפי יונה (id=2) ל-new@mail.com"}' . "\n"
             . "[[/ACTION]]\n\n"
             . "שדות חובה בבלוק ACTION (CRUD רגיל):\n"
-            . "- `action` — אחד מ: `create` | `update` | `delete` | `sql`\n"
-            . "- `table` — שם טבלה חוקי (ראה סכמה למטה) — חובה ב-create/update/delete, לא רלוונטי ב-sql\n"
-            . "- `id` — **חובה** ל-update/delete, **אסור** ל-create\n"
+            . "- `action` — אחד מ: `create` | `update` | `delete` | `sql` | **`sequence`**\n"
+            . "- `table` — שם טבלה חוקי (ראה סכמה למטה) — חובה ב-create/update/delete, לא רלוונטי ב-sql; **לא** בשורש של `sequence` (רק בתוך כל שלב)\n"
+            . "- `id` — **חובה** ל-update/delete, **אסור** ל-create; בשלב שמקשר רשומות אחרי יצירה — השתמש ב-placeholder (ראה `sequence` למטה)\n"
             . "- `data` — אובייקט {שדה: ערך}. חובה ל-create/update. אסור ל-delete.\n"
             . "- `description` — טקסט קצר וברור בעברית (עד משפט אחד) שמתאר בדיוק מה הולך לקרות. המנהל יראה את זה מעל הכפתור.\n\n"
+            . "#### רצף פעולות (`action: \"sequence\"`) — כמה כפתורי «בצע» לפי סדר\n"
+            . "כשהמנהל צריך **יותר מפעולה אחת שתלויה בזו** (למשל: ליצור בית → ליצור משתמש עם `home_id` של הבית החדש → לעדכן את הבית עם `primary_user_id`), **אל תנסה לדחוס הכל לפעולת create אחת** ואל תציע רק את השלב הראשון בטענה שהשאר «יבואו אחר כך». במקום זאת החזר **בלוק ACTION יחיד** מסוג `sequence` עם מערך `steps` (2–12 שלבים). המנהל יאשר כל שלב בנפרד; אחרי כל ביצוע מוצלח המערכת תמלא אוטומטית מזהים מהשלבים הקודמים.\n\n"
+            . "פורמט:\n"
+            . "[[ACTION]]\n"
+            . '{"action":"sequence","description":"יצירת בית נסיון + משתמש אבא נסיון + קישור כ-primary","steps":['
+            . '{"action":"create","table":"homes","data":{"name":"בית נסיון","join_code":"X7K2","initial_balance":"0"},'
+            . '"description":"שלב 1: יצירת בית"},'
+            . '{"action":"create","table":"users","data":{"first_name":"אבא","last_name":"נסיון","email":"test@gmail.com","home_id":"{{step:0}}","role":"user","nickname":"אבא"},'
+            . '"description":"שלב 2: יצירת משתמש בבית החדש"},'
+            . '{"action":"update","table":"homes","id":"{{step:0}}","data":{"primary_user_id":"{{step:1}}"},'
+            . '"description":"שלב 3: הגדרת משתמש ראשי לבית"}'
+            . ']}' . "\n"
+            . "[[/ACTION]]\n\n"
+            . "כללי `sequence`:\n"
+            . "- `description` ברמת השורש — משפט שמסכם את **כל** הרצף.\n"
+            . "- כל איבר ב-`steps` הוא אובייקט פעולה מלא (כמו ACTION רגיל): `action`, `table`, `description` לשלב, וכן `data` / `id` / `sql` לפי הצורך.\n"
+            . "- הפניה למזהה שנוצר בשלב קודם: מחרוזת בדיוק `\"{{step:N}}\"` כאשר N הוא אינדקס השלב **הקודם** (0 = תוצאת השלב הראשון). מותר ב-`data`, ב-`id`, ובכל שדה שמצפה למספר.\n"
+            . "- **אסור** להפנות לשלב עתידי או נוכחי: רק `{{step:0}}`…`{{step:N-1}}` בתוך השלב N.\n"
+            . "- דוגמה: אחרי `create` ב-`homes` המזהה החדש ייכנס ל-`{{step:0}}`; אחרי `create` ב-`users` — `{{step:1}}`.\n"
+            . "- עדיף `sequence` מאשר שלושה בלוקי ACTION נפרדים (שאסורים). פעולה אחת עם שלבים = אישור ולידטור אחד על הרצף כולו.\n\n"
             . "#### פעולת SQL גולמית (`action: \"sql\"`) — DML או DDL\n"
             . "**אתה כן מסוגל לבצע שינויי סכמה.** אל תסרב לבקשת שינוי סכמה בטענה ש\"לא ניתן\" או ש\"הממשק לא תומך\" — הוא כן תומך, דרך `action:\"sql\"`. הוולידציה נעשית בבקאנד וכפתור האישור מוצג למנהל לפני הרצה בפועל.\n\n"
             . "**מתי להשתמש:**\n"
@@ -223,7 +243,7 @@ if (!function_exists('admin_ai_chat_build_agent_instructions')) {
             . "6. **עדכון סיסמה של משתמש (`password`)** — שדה חסום מטעמי אבטחה (hash + salt); הפנה את המנהל למסך איפוס סיסמה הייעודי. זו החריגה היחידה — כל שאר הפעולות על טבלאות ה-whitelist **כן** נתמכות.\n"
             . "7. **שדות חסומים** (`password`, `api_token`, `remember_token`) — אסור לגעת בהם בשום פעולה.\n"
             . "8. **שדות readonly** (`id`, `created_at`, `updated_at`) — אסור לכלול ב-data של update/create.\n"
-            . "9. **ACTION יופיע רק פעם אחת** בתשובה; אל תציע כמה פעולות יחד (פרק לשיחה רב-שלבית).\n"
+            . "9. **בלוק ACTION אחד לתשובה** — אם צריך כמה פעולות תלויות, השתמש ב-`action:\"sequence\"` עם מערך `steps` (לא כמה בלוקי [[ACTION]] נפרדים).\n"
             . "10. **הודעות מערכת פנימיות בהיסטוריה:** בלוקים כמו `[[ACTION_PROPOSED]]...[[/ACTION_PROPOSED]]` ו-`[[EXECUTION_RESULT]]...` שבהיסטוריה הם רישום של מה שבוצע בפועל. אם אין `[[EXECUTION_RESULT]]` עם `status:success` — הפעולה **לא** בוצעה.\n\n"
             . "#### סכמת טבלאות (Whitelist)\n\n"
             . $schema
@@ -244,7 +264,8 @@ if (!function_exists('admin_ai_chat_build_validator_instruction')) {
             . "המטרה שלך: לוודא שהפעולה שהוצעה באמת תואמת את מה שהמנהל ביקש, ושאין סיכון או טעות.\n\n"
             . "סוגי פעולות שאתה מקבל:\n"
             . "- `create`/`update`/`delete` — CRUD על טבלה ב-whitelist עם data מובנה.\n"
-            . "- `sql` — משפט SQL גולמי (DML או DDL) — עוקף את ה-whitelist. דורש זהירות גבוהה.\n\n"
+            . "- `sql` — משפט SQL גולמי (DML או DDL) — עוקף את ה-whitelist. דורש זהירות גבוהה.\n"
+            . "- **`sequence`** — מערך `steps` של פעולות שיש להריץ **לפי סדר**; מציינות ב-`{{step:N}}` תלות במזהים משלבים קודמים. **אשר אם כל הרצף יחד ממלא את בקשת המנהל**, גם אם השלב הראשון בלבד (למשל רק יצירת `homes`) נראה חסר הקשר בלי שאר השלבות. אל תדחה רק כי פעולה בודדת לא שווה למשפט המקורי — בדוק את **סיכום המטרה** (שדה `description` של ה-sequence + השלבים).\n\n"
             . "**החזר JSON בלבד — בלי markdown, בלי ```, בלי טקסט מחוץ לאובייקט.** סכמה:\n"
             . "```\n"
             . '{"approved":true|false,"confidence":"high|medium|low","analysis":"ניתוח מפורט בעברית","warnings":["..."],"suggestion":"רק כשapproved=false — הנחיה לסוכן לתיקון"}' . "\n"

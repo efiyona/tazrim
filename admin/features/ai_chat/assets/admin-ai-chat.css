@@ -1214,6 +1214,85 @@
     color: #0f172a;
 }
 
+/* רצף פעולות (sequence) — כמה שלבים עם כפתור «בצע» לכל שלב */
+.admin-ai-chat-action-sequence {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.admin-ai-chat-action-seq-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+}
+
+.admin-ai-chat-action-seq-overall {
+    margin-top: 4px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.admin-ai-chat-action-step {
+    margin-top: 2px;
+}
+
+.admin-ai-chat-action-step .admin-ai-chat-action-header {
+    margin-top: 0;
+}
+
+.admin-ai-chat-action-step-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.admin-ai-chat-action-seq-rowid {
+    font-size: 0.82rem;
+    color: #475569;
+    margin-top: 6px;
+}
+
+.admin-ai-chat-seq-step-actions {
+    margin-top: 10px;
+}
+
+.admin-ai-chat-seq-step-foot {
+    margin-top: 10px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.admin-ai-chat-seq-step-foot--ok {
+    color: #15803d;
+}
+
+.admin-ai-chat-seq-step-foot--err {
+    color: #b91c1c;
+}
+
+.admin-ai-chat-seq-step-foot--wait {
+    color: #64748b;
+}
+
+.admin-ai-chat-seq-step-foot--muted {
+    color: #94a3b8;
+}
+
+.admin-ai-chat-seq-cancel-wrap {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+}
+
 .admin-ai-chat-action-card {
     border: 1px solid rgba(99, 102, 241, 0.35);
     border-radius: 14px;

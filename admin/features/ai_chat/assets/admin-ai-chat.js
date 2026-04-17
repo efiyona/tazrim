@@ -584,6 +584,432 @@
     }
   }
 
+  function extractExecutionIdFromResult(result) {
+    if (!result || result.status !== "success") return null;
+    if (result.id != null && result.id !== "") return Number(result.id);
+    if (result.insert_id != null && result.insert_id !== "") return Number(result.insert_id);
+    return null;
+  }
+
+  function resolveSequencePlaceholders(value, stepResults) {
+    if (value === null || value === undefined) return value;
+    if (typeof value === "string") {
+      const m = value.match(/^\{\{step:(\d+)\}\}$/);
+      if (m) {
+        const idx = parseInt(m[1], 10);
+        const got = stepResults[idx];
+        const idVal = got && got.id != null ? got.id : null;
+        if (idVal == null) return value;
+        return typeof idVal === "number" ? idVal : parseInt(String(idVal), 10);
+      }
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return value.map((v) => resolveSequencePlaceholders(v, stepResults));
+    }
+    if (typeof value === "object") {
+      const out = {};
+      Object.keys(value).forEach((k) => {
+        out[k] = resolveSequencePlaceholders(value[k], stepResults);
+      });
+      return out;
+    }
+    return value;
+  }
+
+  function buildExecuteBodyFromLeaf(leaf, proposedAt, chatId) {
+    const token = window.ADMIN_AI_CHAT_API_TOKEN || "";
+    const body = {
+      api_token: token,
+      action: leaf.action,
+      table: leaf.table || "",
+      chat_id: chatId,
+      proposed_at: proposedAt || Date.now(),
+    };
+    if (leaf.id != null && leaf.id !== "") body.id = leaf.id;
+    if (leaf.data) body.data = leaf.data;
+    if (leaf.sql) body.sql = leaf.sql;
+    if (leaf.kind) body.kind = leaf.kind;
+    return body;
+  }
+
+  async function postAgentExecuteRequest(body) {
+    const url = apiBase + "agent_execute.php";
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(body),
+        credentials: "same-origin",
+      });
+      const rawText = await res.text();
+      let parsed = null;
+      if (rawText) {
+        try {
+          parsed = JSON.parse(rawText);
+        } catch (e) {
+          parsed = null;
+        }
+      }
+      if (parsed && typeof parsed === "object") {
+        if (!parsed.status) parsed.status = res.ok ? "success" : "error";
+        return parsed;
+      }
+      const snippet = (rawText || "").replace(/\s+/g, " ").trim().slice(0, 240);
+      return {
+        status: "error",
+        message: res.ok
+          ? "השרת החזיר תשובה לא-JSON (HTTP " + res.status + ")"
+          : "הבקשה נכשלה (HTTP " + res.status + ")",
+        detail: snippet || "HTTP " + res.status + " · " + res.statusText,
+        http_status: res.status,
+      };
+    } catch (err) {
+      return {
+        status: "error",
+        message: "שגיאת רשת בדרך לשרת",
+        detail: err && err.message ? String(err.message) : "Fetch failed",
+      };
+    }
+  }
+
+  function renderSequenceActionCards(bubbleEl, actionPayload, opts) {
+    const o = opts || {};
+    const inner = bubbleEl && bubbleEl.querySelector(".admin-ai-chat-bubble-inner");
+    if (!inner) return;
+    clearActionExpiryTimer(bubbleEl);
+    if (!actionPayload.proposedAt) {
+      actionPayload.proposedAt = Date.now();
+    }
+    const steps = actionPayload.steps || [];
+    const seqDesc = actionPayload.description || "";
+    const validation = actionPayload.validation || {};
+    const n = steps.length;
+
+    if (!bubbleEl.__adminAiSequenceState) {
+      bubbleEl.__adminAiSequenceState = { results: [], failedStep: null };
+    }
+    const seqSt = bubbleEl.__adminAiSequenceState;
+    if (o.executed && o.executionResult && o.executionResult.status === "historical") {
+      seqSt.results = steps.map(() => ({ id: null, historical: true }));
+    }
+
+    let preambleHtml = "";
+    if (o.preamble) {
+      preambleHtml = '<div class="admin-ai-chat-action-preamble">' + formatAssistantHtml(o.preamble) + "</div>";
+    }
+
+    let html =
+      preambleHtml +
+      '<div class="admin-ai-chat-action-sequence">' +
+      '<div class="admin-ai-chat-action-seq-head">' +
+      '<span class="admin-ai-chat-action-badge">רצף פעולות</span>' +
+      '<span class="admin-ai-chat-action-table">' +
+      escapeHtml(String(n)) +
+      " שלבים · יש לבצע לפי סדר" +
+      "</span></div>";
+
+    if (seqDesc) {
+      html += '<div class="admin-ai-chat-action-desc admin-ai-chat-action-seq-overall">' + escapeHtml(seqDesc) + "</div>";
+    }
+
+    if (validation && validation.analysis) {
+      const confidence = validation.confidence || "medium";
+      html += '<div class="admin-ai-chat-action-validation admin-ai-chat-action-validation--' + escapeHtml(confidence) + '">';
+      html += '<div class="admin-ai-chat-action-validation-head">';
+      html += '<i class="fa-solid fa-shield-halved"></i> <strong>אומת ע"י וולידטור</strong> · ביטחון: ' + escapeHtml(confidence);
+      html += "</div>";
+      html += '<div class="admin-ai-chat-action-validation-body">' + escapeHtml(validation.analysis) + "</div>";
+      if (validation.warnings && validation.warnings.length > 0) {
+        html +=
+          '<div class="admin-ai-chat-action-validation-warnings"><i class="fa-solid fa-triangle-exclamation"></i> ' +
+          escapeHtml(validation.warnings.join(", ")) +
+          "</div>";
+      }
+      html += "</div>";
+    }
+
+    const hist = o.executed && o.executionResult && o.executionResult.status === "historical";
+    const cancelled = o.executed && o.executionResult && o.executionResult.status === "cancelled";
+    const globalFail =
+      o.executed &&
+      o.executionResult &&
+      o.executionResult.status === "error" &&
+      seqSt.failedStep == null &&
+      seqSt.results.length === 0;
+
+    if (!hist && !cancelled && !globalFail && !o.executionResult) {
+      const remainingMs = actionProposalRemainingMs(actionPayload);
+      const alreadyExpired = remainingMs <= 0;
+      const ttlClass = alreadyExpired
+        ? "admin-ai-chat-action-ttl--expired"
+        : remainingMs <= 60 * 1000
+          ? "admin-ai-chat-action-ttl--warning"
+          : "";
+      html += '<div class="admin-ai-chat-action-ttl ' + ttlClass + '" data-admin-ai-action-ttl>';
+      if (alreadyExpired) {
+        html +=
+          '<i class="fa-solid fa-hourglass-end"></i> <span data-admin-ai-action-ttl-text>תוקף ההצעה פג — בקש מהסוכן להציע מחדש</span>';
+      } else {
+        html +=
+          '<i class="fa-solid fa-hourglass-half"></i> <span data-admin-ai-action-ttl-text>תוקף: נותרו <strong data-admin-ai-action-ttl-clock>' +
+          formatDurationMs(remainingMs) +
+          "</strong></span>";
+      }
+      html += "</div>";
+    }
+
+    steps.forEach((step, i) => {
+      const stAct = (step.action || "").toLowerCase();
+      const stTable = step.table || "";
+      const stDesc = step.description || "";
+      const isSql = stAct === "sql";
+      const sqlText = step.sql || "";
+      const sqlVerb = isSql && sqlText ? (sqlText.match(/^\s*([A-Za-z]+)/) || [])[1] : "";
+      const sqlVerbU = (sqlVerb || "").toUpperCase();
+      const dangerous = stAct === "delete" || (isSql && ["DROP", "TRUNCATE", "DELETE", "ALTER"].includes(sqlVerbU));
+      const canRun =
+        !hist &&
+        !cancelled &&
+        !globalFail &&
+        seqSt.failedStep === null &&
+        seqSt.results.length === i &&
+        !isActionProposalExpired(actionPayload);
+      const done = seqSt.results[i] && seqSt.results[i].ok;
+      const failedHere = seqSt.failedStep === i;
+
+      html += '<div class="admin-ai-chat-action-step admin-ai-chat-action-card admin-ai-chat-action-card--' + escapeHtml(stAct);
+      if (dangerous) html += " admin-ai-chat-action-card--dangerous";
+      html += '" data-seq-step-index="' + i + '">';
+      html += '<div class="admin-ai-chat-action-step-label">שלב ' + (i + 1) + " מתוך " + n + "</div>";
+      html += '<div class="admin-ai-chat-action-header">';
+      html += '<span class="admin-ai-chat-action-badge">' + escapeHtml(actionLabelHebrew(step.action)) + "</span>";
+      if (isSql) {
+        html += '<span class="admin-ai-chat-action-table">SQL · <code>' + escapeHtml(sqlVerbU || "?") + "</code></span>";
+      } else {
+        html += '<span class="admin-ai-chat-action-table">טבלה: <code>' + escapeHtml(stTable) + "</code></span>";
+      }
+      html += "</div>";
+      if (stDesc) {
+        html += '<div class="admin-ai-chat-action-desc">' + escapeHtml(stDesc) + "</div>";
+      }
+      if (isSql && sqlText) {
+        html += '<div class="admin-ai-chat-action-sql"><pre class="admin-ai-chat-action-sql-code"><code>' + escapeHtml(sqlText) + "</code></pre></div>";
+      }
+      const previewData = resolveSequencePlaceholders(step.data || {}, seqSt.results.map((r) => ({ id: r && r.id != null ? r.id : null })));
+      html += renderActionDataList(previewData);
+      if (step.id != null && step.id !== "") {
+        const rid = resolveSequencePlaceholders(step.id, seqSt.results.map((r) => ({ id: r && r.id != null ? r.id : null })));
+        html +=
+          '<div class="admin-ai-chat-action-seq-rowid">מזהה שורה: <code>' + escapeHtml(String(rid)) + "</code></div>";
+      }
+
+      if (hist) {
+        html += '<div class="admin-ai-chat-seq-step-foot"><i class="fa-solid fa-clock-rotate-left"></i> הצעה מההיסטוריה</div>';
+      } else if (cancelled) {
+        html += '<div class="admin-ai-chat-seq-step-foot admin-ai-chat-seq-step-foot--muted">בוטל</div>';
+      } else if (done) {
+        html +=
+          '<div class="admin-ai-chat-seq-step-foot admin-ai-chat-seq-step-foot--ok"><i class="fa-solid fa-check"></i> בוצע (id=' +
+          escapeHtml(String(seqSt.results[i].id != null ? seqSt.results[i].id : "—")) +
+          ")</div>";
+      } else if (failedHere && o.executionResult) {
+        html +=
+          '<div class="admin-ai-chat-seq-step-foot admin-ai-chat-seq-step-foot--err"><i class="fa-solid fa-xmark"></i> ' +
+          escapeHtml(o.executionResult.message || "נכשל") +
+          "</div>";
+        html +=
+          '<button type="button" class="admin-ai-chat-action-retry admin-ai-chat-seq-retry" data-seq-retry="' +
+          i +
+          '"><i class="fa-solid fa-rotate-right"></i> נסה שוב שלב זה</button>';
+      } else if (canRun) {
+        html +=
+          '<div class="admin-ai-chat-action-actions admin-ai-chat-seq-step-actions">' +
+          '<button type="button" class="admin-ai-chat-action-btn admin-ai-chat-seq-step-btn' +
+          (dangerous ? " admin-ai-chat-action-btn--danger" : "") +
+          '" data-seq-run="' +
+          i +
+          '"' +
+          (isActionProposalExpired(actionPayload) ? " disabled" : "") +
+          ">" +
+          '<i class="fa-solid fa-bolt"></i> ' +
+          escapeHtml("בצע שלב " + (i + 1)) +
+          "</button></div>";
+      } else {
+        html +=
+          '<div class="admin-ai-chat-seq-step-foot admin-ai-chat-seq-step-foot--wait"><i class="fa-solid fa-lock"></i> ממתין לשלבים קודמים</div>';
+      }
+      html += "</div>";
+    });
+
+    if (!hist && !cancelled && !globalFail && !o.executionResult) {
+      html +=
+        '<div class="admin-ai-chat-seq-cancel-wrap"><button type="button" class="admin-ai-chat-action-cancel" data-seq-cancel="1">' +
+        escapeHtml("בטל את כל הרצף") +
+        "</button></div>";
+    }
+
+    html += "</div>";
+    inner.innerHTML = html;
+
+    if (!hist && !cancelled && !globalFail && !o.executionResult) {
+      const ttlClock = inner.querySelector("[data-admin-ai-action-ttl-clock]");
+      const ttlWrap = inner.querySelector("[data-admin-ai-action-ttl]");
+      const ttlText = inner.querySelector("[data-admin-ai-action-ttl-text]");
+      if (actionProposalRemainingMs(actionPayload) > 0) {
+        bubbleEl.__adminAiActionExpiryTimer = setInterval(() => {
+          if (!bubbleEl.isConnected) {
+            clearActionExpiryTimer(bubbleEl);
+            return;
+          }
+          const remaining = actionProposalRemainingMs(actionPayload);
+          if (remaining <= 0) {
+            clearActionExpiryTimer(bubbleEl);
+            inner.querySelectorAll(".admin-ai-chat-seq-step-btn").forEach((b) => {
+              b.disabled = true;
+              b.classList.add("admin-ai-chat-action-btn--expired");
+            });
+            if (ttlWrap) {
+              ttlWrap.classList.remove("admin-ai-chat-action-ttl--warning");
+              ttlWrap.classList.add("admin-ai-chat-action-ttl--expired");
+            }
+            if (ttlText) ttlText.textContent = "תוקף ההצעה פג — בקש מהסוכן להציע מחדש";
+            return;
+          }
+          if (ttlClock) ttlClock.textContent = formatDurationMs(remaining);
+          if (ttlWrap && remaining <= 60 * 1000) ttlWrap.classList.add("admin-ai-chat-action-ttl--warning");
+        }, 1000);
+      }
+
+      inner.querySelectorAll(".admin-ai-chat-seq-step-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt(btn.getAttribute("data-seq-run") || "0", 10);
+          void runSequenceStep(bubbleEl, actionPayload, idx, o.preamble || "");
+        });
+      });
+      const cbtn = inner.querySelector("[data-seq-cancel]");
+      if (cbtn) {
+        cbtn.addEventListener("click", () => {
+          renderSequenceActionCards(bubbleEl, actionPayload, {
+            preamble: o.preamble || "",
+            executed: true,
+            executionResult: { status: "cancelled", message: "הרצף בוטל" },
+          });
+        });
+      }
+    }
+
+    inner.querySelectorAll(".admin-ai-chat-seq-retry").forEach((retryBtn) => {
+      retryBtn.addEventListener("click", () => {
+        const idx = parseInt(retryBtn.getAttribute("data-seq-retry") || "0", 10);
+        if (bubbleEl.__adminAiSequenceState) bubbleEl.__adminAiSequenceState.failedStep = null;
+        void runSequenceStep(bubbleEl, actionPayload, idx, o.preamble || "");
+      });
+    });
+
+    const wrap = qs("adminAiChatMessages");
+    if (wrap) wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  async function runSequenceStep(bubbleEl, actionPayload, stepIndex, preamble) {
+    const steps = actionPayload.steps || [];
+    const step = steps[stepIndex];
+    if (!step) return;
+    if (isActionProposalExpired(actionPayload)) {
+      renderSequenceActionCards(bubbleEl, actionPayload, {
+        preamble: preamble,
+        executed: true,
+        executionResult: { status: "error", message: "תוקף הפעולה פג (מעל 5 דקות)." },
+      });
+      return;
+    }
+    const token = window.ADMIN_AI_CHAT_API_TOKEN || "";
+    if (!token) {
+      renderSequenceActionCards(bubbleEl, actionPayload, {
+        preamble: preamble,
+        executed: true,
+        executionResult: { status: "error", message: "חסר api_token" },
+      });
+      return;
+    }
+    const seqSt = bubbleEl.__adminAiSequenceState || { results: [], failedStep: null };
+    bubbleEl.__adminAiSequenceState = seqSt;
+    const refs = seqSt.results.map((r) => ({ id: r && r.id != null ? r.id : null }));
+    const raw = JSON.parse(JSON.stringify(step));
+    const resolved = {
+      action: raw.action,
+      table: raw.table,
+      description: raw.description,
+      sql: raw.sql,
+      kind: raw.kind,
+      data: raw.data ? resolveSequencePlaceholders(raw.data, refs) : undefined,
+    };
+    if (raw.id !== undefined && raw.id !== null && raw.id !== "") {
+      resolved.id = resolveSequencePlaceholders(raw.id, refs);
+    }
+    const unresolved = JSON.stringify(resolved).indexOf("{{step:") !== -1;
+    if (unresolved) {
+      seqSt.failedStep = stepIndex;
+      renderSequenceActionCards(bubbleEl, actionPayload, {
+        preamble: preamble,
+        executed: true,
+        executionResult: {
+          status: "error",
+          message: "חסרים תוצאות משלב קודם — לא ניתן למלא את המזהים. נסה מהשלב הראשון או בקש הצעה מחדש.",
+        },
+      });
+      return;
+    }
+
+    clearActionExpiryTimer(bubbleEl);
+    const inner = bubbleEl.querySelector(".admin-ai-chat-bubble-inner");
+    const runBtn = inner && inner.querySelector('.admin-ai-chat-seq-step-btn[data-seq-run="' + stepIndex + '"]');
+    if (runBtn) {
+      runBtn.disabled = true;
+      runBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> מבצע…';
+    }
+
+    const body = buildExecuteBodyFromLeaf(resolved, actionPayload.proposedAt, state.activeChatId);
+    const result = await postAgentExecuteRequest(body);
+
+    if (result.status === "success") {
+      const newId = extractExecutionIdFromResult(result);
+      seqSt.results[stepIndex] = { ok: true, id: newId != null ? newId : null };
+      seqSt.failedStep = null;
+      if (stepIndex >= steps.length - 1) {
+        renderSequenceActionCards(bubbleEl, actionPayload, {
+          preamble: preamble,
+          executed: true,
+          executionResult: { status: "success", message: "כל השלבים הושלמו" },
+        });
+        addMessageBubble(
+          "assistant",
+          "רצף הפעולות הושלם בהצלחה (" + steps.length + " שלבים). " + (result.message || ""),
+          { loading: false }
+        );
+        invalidateChatCache(state.activeChatId);
+        await loadHistory();
+        return;
+      }
+      renderSequenceActionCards(bubbleEl, actionPayload, { preamble: preamble });
+      invalidateChatCache(state.activeChatId);
+      return;
+    }
+
+    seqSt.failedStep = stepIndex;
+    renderSequenceActionCards(bubbleEl, actionPayload, {
+      preamble: preamble,
+      executed: true,
+      executionResult: result,
+    });
+    addMessageBubble(
+      "assistant",
+      "שלב " + (stepIndex + 1) + " נכשל: " + (result.message || "שגיאה"),
+      { loading: false }
+    );
+    invalidateChatCache(state.activeChatId);
+  }
+
   function renderActionCard(bubbleEl, actionPayload, opts) {
     const o = opts || {};
     const inner = bubbleEl && bubbleEl.querySelector(".admin-ai-chat-bubble-inner");
@@ -594,6 +1020,15 @@
     // מוודאים חותמת זמן על ההצעה, למימוש TTL של 5 דקות
     if (!actionPayload.proposedAt) {
       actionPayload.proposedAt = Date.now();
+    }
+
+    if (
+      (actionPayload.action || "").toLowerCase() === "sequence" &&
+      Array.isArray(actionPayload.steps) &&
+      actionPayload.steps.length >= 2
+    ) {
+      renderSequenceActionCards(bubbleEl, actionPayload, o);
+      return;
     }
 
     const action = actionPayload.action || "";
@@ -803,7 +1238,8 @@
     if (wrap) wrap.scrollTop = wrap.scrollHeight;
   }
 
-  async function executeAction(bubbleEl, actionPayload, preamble) {
+  async function executeAction(bubbleEl, actionPayload, preamble, execOpts) {
+    const xo = execOpts || {};
     if (isActionProposalExpired(actionPayload)) {
       clearActionExpiryTimer(bubbleEl);
       renderActionCard(bubbleEl, actionPayload, {
@@ -839,52 +1275,20 @@
       if (cancelBtn) cancelBtn.disabled = true;
     }
 
-    const body = {
-      api_token: token,
-      action: actionPayload.action,
-      table: actionPayload.table || "",
-      chat_id: state.activeChatId,
-      proposed_at: actionPayload.proposedAt || Date.now(),
-    };
-    if (actionPayload.id != null) body.id = actionPayload.id;
-    if (actionPayload.data) body.data = actionPayload.data;
-    if (actionPayload.sql) body.sql = actionPayload.sql;
-
-    let result;
-    const url = apiBase + "agent_execute.php";
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(body),
-        credentials: "same-origin",
-      });
-      const rawText = await res.text();
-      let parsed = null;
-      if (rawText) {
-        try { parsed = JSON.parse(rawText); } catch (e) { parsed = null; }
-      }
-      if (parsed && typeof parsed === "object") {
-        result = parsed;
-        if (!result.status) result.status = res.ok ? "success" : "error";
-      } else {
-        const snippet = (rawText || "").replace(/\s+/g, " ").trim().slice(0, 240);
-        result = {
-          status: "error",
-          message: res.ok
-            ? "השרת החזיר תשובה לא-JSON (HTTP " + res.status + ")"
-            : "הבקשה נכשלה (HTTP " + res.status + ")",
-          detail: snippet || ("HTTP " + res.status + " · " + res.statusText),
-          http_status: res.status,
-        };
-      }
-    } catch (err) {
-      result = {
-        status: "error",
-        message: "שגיאת רשת בדרך לשרת",
-        detail: (err && err.message) ? String(err.message) : "Fetch failed",
-      };
-    }
+    const result = await postAgentExecuteRequest(
+      buildExecuteBodyFromLeaf(
+        {
+          action: actionPayload.action,
+          table: actionPayload.table,
+          id: actionPayload.id,
+          data: actionPayload.data,
+          sql: actionPayload.sql,
+          kind: actionPayload.kind,
+        },
+        actionPayload.proposedAt,
+        state.activeChatId
+      )
+    );
 
     renderActionCard(bubbleEl, actionPayload, {
       preamble: preamble,
@@ -892,11 +1296,13 @@
       executionResult: result,
     });
 
-    // הוספת בועה של assistant עם סיכום תוצאה
-    const summaryText = result.status === "success"
-      ? "הפעולה בוצעה. " + (result.message || "")
-      : "הפעולה נכשלה: " + (result.message || "שגיאה לא ידועה");
-    addMessageBubble("assistant", summaryText, { loading: false });
+    if (!xo.skipSummaryBubble) {
+      const summaryText =
+        result.status === "success"
+          ? "הפעולה בוצעה. " + (result.message || "")
+          : "הפעולה נכשלה: " + (result.message || "שגיאה לא ידועה");
+      addMessageBubble("assistant", summaryText, { loading: false });
+    }
 
     invalidateChatCache(state.activeChatId);
     await loadHistory();
