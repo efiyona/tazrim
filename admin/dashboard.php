@@ -55,7 +55,7 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
     <section class="admin-dashboard-hero">
         <div>
             <p class="admin-dashboard-hero__eyebrow">ניהול מערכת</p>
-            <h1 class="admin-dashboard-hero__title">לוח בקרה מרכזי</h1>
+            <h1 class="admin-dashboard-hero__title">דשבורד ניהול</h1>
             <p class="admin-dashboard-hero__subtitle">מבט מהיר על משתמשים, בתים ודיווחי משתמשים שממתינים לטיפול.</p>
         </div>
         <a class="admin-dashboard-hero__cta" href="<?php echo htmlspecialchars(BASE_URL . 'admin/table.php?t=feedback_reports', ENT_QUOTES, 'UTF-8'); ?>">

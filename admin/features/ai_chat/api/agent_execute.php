@@ -131,6 +131,7 @@ $chatId = (int) ($payload['chat_id'] ?? 0);
 $data = isset($payload['data']) && is_array($payload['data']) ? $payload['data'] : [];
 $rowId = isset($payload['id']) ? (int) $payload['id'] : 0;
 $rawSql = (string) ($payload['sql'] ?? '');
+$path = (string) ($payload['path'] ?? '');
 // חותמת זמן ההצעה (ב-ms) שנשלחת מהלקוח לאכיפת TTL של 5 דקות
 $proposedAtMs = isset($payload['proposed_at']) ? (int) $payload['proposed_at'] : 0;
 
@@ -140,9 +141,10 @@ $GLOBALS['admin_ai_agent_exec_chat_context'] = [
     'table' => $table,
     'id' => $rowId,
     'sql' => $rawSql,
+    'path' => $path,
 ];
 
-if (!in_array($action, ['create', 'update', 'delete', 'sql', 'push_broadcast', 'send_mail'], true)) {
+if (!in_array($action, ['create', 'update', 'delete', 'sql', 'push_broadcast', 'send_mail', 'file_patch', 'file_write', 'file_delete', 'export_sql_changes'], true)) {
     admin_ai_agent_exec_respond(['status' => 'error', 'message' => 'invalid_action', 'action' => $action], 400);
 }
 

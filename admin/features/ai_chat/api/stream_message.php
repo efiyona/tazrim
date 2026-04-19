@@ -338,8 +338,58 @@ function admin_ai_chat_validate_leaf_action_shape(array $action, bool $allowPlac
 {
     $act = strtolower((string) ($action['action'] ?? ''));
     $table = (string) ($action['table'] ?? '');
-    if (!in_array($act, ['create', 'update', 'delete', 'sql', 'push_broadcast', 'send_mail'], true)) {
+    if (!in_array($act, ['create', 'update', 'delete', 'sql', 'push_broadcast', 'send_mail', 'file_patch', 'file_write', 'file_delete', 'export_sql_changes'], true)) {
         return ['ok' => false, 'error' => 'invalid_action_type'];
+    }
+    if ($act === 'export_sql_changes') {
+        $desc = trim((string) ($action['description'] ?? ''));
+        if ($desc === '') {
+            return ['ok' => false, 'error' => 'missing_description_for_export_sql_changes'];
+        }
+        return ['ok' => true];
+    }
+    if ($act === 'file_patch') {
+        $desc = trim((string) ($action['description'] ?? ''));
+        $path = trim((string) ($action['path'] ?? ''));
+        $search = (string) ($action['search_block'] ?? '');
+        if ($desc === '') {
+            return ['ok' => false, 'error' => 'missing_description_for_file_patch'];
+        }
+        if ($path === '') {
+            return ['ok' => false, 'error' => 'missing_path_for_file_patch'];
+        }
+        if ($search === '') {
+            return ['ok' => false, 'error' => 'missing_search_block_for_file_patch'];
+        }
+        if (!array_key_exists('replace_block', $action) || !is_string($action['replace_block'])) {
+            return ['ok' => false, 'error' => 'missing_replace_block_for_file_patch'];
+        }
+        return ['ok' => true];
+    }
+    if ($act === 'file_write') {
+        $desc = trim((string) ($action['description'] ?? ''));
+        $path = trim((string) ($action['path'] ?? ''));
+        if ($desc === '') {
+            return ['ok' => false, 'error' => 'missing_description_for_file_write'];
+        }
+        if ($path === '') {
+            return ['ok' => false, 'error' => 'missing_path_for_file_write'];
+        }
+        if (!array_key_exists('content', $action) || !is_string($action['content'])) {
+            return ['ok' => false, 'error' => 'missing_content_for_file_write'];
+        }
+        return ['ok' => true];
+    }
+    if ($act === 'file_delete') {
+        $desc = trim((string) ($action['description'] ?? ''));
+        $path = trim((string) ($action['path'] ?? ''));
+        if ($desc === '') {
+            return ['ok' => false, 'error' => 'missing_description_for_file_delete'];
+        }
+        if ($path === '') {
+            return ['ok' => false, 'error' => 'missing_path_for_file_delete'];
+        }
+        return ['ok' => true];
     }
     if ($act === 'send_mail') {
         $desc = trim((string) ($action['description'] ?? ''));
@@ -848,8 +898,14 @@ while (true) {
     if ($dataQuery !== null && $dataQueryCount < $maxDataQueries) {
         $dataQueryCount++;
         $tableName = (string) ($dataQuery['table'] ?? '');
+        $hintSuffix = '';
+        if ($tableName !== '') {
+            $hintSuffix = " מ־{$tableName}";
+        } elseif (!empty($dataQuery['path'])) {
+            $hintSuffix = ' מקובץ';
+        }
         admin_ai_chat_sse_event('data_fetching', [
-            'hint' => 'שולף נתונים' . ($tableName !== '' ? " מ־{$tableName}" : '') . '…',
+            'hint' => 'שולף נתונים' . $hintSuffix . '…',
             'query' => $dataQuery,
         ]);
         $queryResult = admin_ai_chat_agent_query($conn, $dataQuery);
@@ -1043,6 +1099,18 @@ if ($emittedQuestions !== null) {
     if (isset($finalAction['sql'])) {
         $actionPayload['sql'] = (string) $finalAction['sql'];
     }
+    if (isset($finalAction['path'])) {
+        $actionPayload['path'] = (string) $finalAction['path'];
+    }
+    if (isset($finalAction['search_block'])) {
+        $actionPayload['search_block'] = (string) $finalAction['search_block'];
+    }
+    if (isset($finalAction['replace_block'])) {
+        $actionPayload['replace_block'] = (string) $finalAction['replace_block'];
+    }
+    if (isset($finalAction['content'])) {
+        $actionPayload['content'] = (string) $finalAction['content'];
+    }
     if (isset($finalAction['kind'])) {
         $actionPayload['kind'] = (string) $finalAction['kind'];
     }
@@ -1130,7 +1198,8 @@ $agentTag = '';
 if ($finalAction !== null) {
     $at = (string) ($finalAction['action'] ?? '');
     $tb = (string) ($finalAction['table'] ?? '');
-    $agentTag = ' action=' . $at . ':' . ($tb !== '' ? $tb : (($at === 'sequence') ? 'multi' : (($at === 'push_broadcast') ? 'push' : (($at === 'send_mail') ? 'mail' : ''))));
+    $pathTag = (string) ($finalAction['path'] ?? '');
+    $agentTag = ' action=' . $at . ':' . ($tb !== '' ? $tb : (($pathTag !== '') ? $pathTag : (($at === 'sequence') ? 'multi' : (($at === 'push_broadcast') ? 'push' : (($at === 'send_mail') ? 'mail' : '')))));
 }
 $qTag = ($dataQueryCount > 0) ? ' dq=' . $dataQueryCount : '';
 $vTag = ($validatorRetryCount > 0) ? ' vret=' . $validatorRetryCount : '';

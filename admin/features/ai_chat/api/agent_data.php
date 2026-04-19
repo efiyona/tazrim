@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/../services/agent_schema.php';
+require_once __DIR__ . '/../services/agent_project_files.php';
 
 if (!function_exists('admin_ai_agent_data_error')) {
     function admin_ai_agent_data_error(string $message, array $extra = []): array
@@ -372,12 +373,17 @@ if (!function_exists('admin_ai_chat_agent_query')) {
     /**
      * נקודת כניסה ראשית. מקבל בקשה מהבינה, מחזיר תוצאה.
      *
-     * $request['action'] in: list | get | count | search | describe | query
+     * $request['action'] in: list | get | count | search | describe | query | file_read
      */
     function admin_ai_chat_agent_query(mysqli $conn, array $request): array
     {
         $action = strtolower((string) ($request['action'] ?? ''));
         $table = (string) ($request['table'] ?? '');
+
+        if ($action === 'file_read') {
+            $path = (string) ($request['path'] ?? '');
+            return admin_ai_agent_project_file_read($path);
+        }
 
         if ($action !== 'query' && !admin_ai_agent_can_read($table)) {
             return admin_ai_agent_data_error('table_not_readable', ['table' => $table]);

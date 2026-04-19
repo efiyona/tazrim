@@ -7,6 +7,9 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/../api/agent_data.php';
+require_once __DIR__ . '/agent_project_files.php';
+require_once __DIR__ . '/agent_git_ops.php';
+require_once __DIR__ . '/agent_sql_change_report.php';
 
 if (!function_exists('admin_ai_agent_exec_log')) {
     function admin_ai_agent_exec_log(mysqli $conn, int $homeId, int $userId, string $text): void
@@ -136,9 +139,10 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
         $restoreDeletedRow = $action === 'create' && !empty($payload['restore_deleted_row']);
         $rowId = isset($payload['id']) ? (int) $payload['id'] : 0;
         $rawSql = (string) ($payload['sql'] ?? '');
+        $path = (string) ($payload['path'] ?? '');
         $proposedAtMs = isset($payload['proposed_at']) ? (int) $payload['proposed_at'] : 0;
 
-        if (!in_array($action, ['create', 'update', 'delete', 'sql', 'push_broadcast', 'send_mail'], true)) {
+        if (!in_array($action, ['create', 'update', 'delete', 'sql', 'push_broadcast', 'send_mail', 'file_patch', 'file_write', 'file_delete', 'export_sql_changes'], true)) {
             return ['http' => 400, 'payload' => ['status' => 'error', 'message' => 'invalid_action', 'action' => $action]];
         }
 
@@ -281,6 +285,152 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
             ];
         }
 
+        if ($action === 'export_sql_changes') {
+            $exp = admin_ai_agent_sql_change_export_for_chat($conn, $chatId, $userId);
+            if (empty($exp['ok'])) {
+                return [
+                    'http' => 400,
+                    'payload' => [
+                        'status' => 'error',
+                        'action' => 'export_sql_changes',
+                        'message' => (string) ($exp['message'] ?? 'export_failed'),
+                    ],
+                ];
+            }
+            return [
+                'http' => 200,
+                'payload' => [
+                    'status' => 'success',
+                    'action' => 'export_sql_changes',
+                    'count' => (int) ($exp['count'] ?? 0),
+                    'sql_script' => (string) ($exp['sql_script'] ?? ''),
+                    'message' => (string) ($exp['message'] ?? 'export_ok'),
+                ],
+            ];
+        }
+
+        if ($action === 'file_patch') {
+            $path = (string) ($payload['path'] ?? '');
+            $searchBlock = (string) ($payload['search_block'] ?? '');
+            $replaceBlock = (string) ($payload['replace_block'] ?? '');
+            $op = admin_ai_agent_project_file_patch($path, $searchBlock, $replaceBlock);
+            if (empty($op['ok'])) {
+                return [
+                    'http' => 200,
+                    'payload' => [
+                        'status' => 'error',
+                        'action' => 'file_patch',
+                        'message' => (string) ($op['error'] ?? 'file_patch_failed'),
+                        'detail' => (string) ($op['detail'] ?? ''),
+                        'path' => (string) ($op['path'] ?? $path),
+                    ],
+                ];
+            }
+            $matchedBlock = (string) ($op['matched_block'] ?? $searchBlock);
+            $undoPayload = [
+                'action' => 'file_patch',
+                'path' => (string) ($op['path'] ?? $path),
+                'search_block' => $replaceBlock,
+                'replace_block' => $matchedBlock,
+                'description' => 'ביטול patch קובץ',
+            ];
+            $git = admin_ai_agent_git_after_file_change(admin_ai_agent_project_root_path(), (string) ($op['path'] ?? $path), $chatId, 'file_patch');
+            admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent FILE_PATCH ' . (string) ($op['path'] ?? $path) . ' chat=' . $chatId);
+            return [
+                'http' => 200,
+                'payload' => [
+                    'status' => 'success',
+                    'action' => 'file_patch',
+                    'path' => (string) ($op['path'] ?? $path),
+                    'message' => 'קובץ עודכן בהצלחה',
+                    'patch_mode' => (string) ($op['mode'] ?? 'exact'),
+                    'syntax_check' => $op['syntax_check'] ?? ['ok' => true, 'skipped' => true],
+                    'undo_payload' => $undoPayload,
+                    'git' => $git,
+                ],
+            ];
+        }
+
+        if ($action === 'file_write') {
+            $path = (string) ($payload['path'] ?? '');
+            $content = (string) ($payload['content'] ?? '');
+            $op = admin_ai_agent_project_file_write($path, $content);
+            if (empty($op['ok'])) {
+                return [
+                    'http' => 200,
+                    'payload' => [
+                        'status' => 'error',
+                        'action' => 'file_write',
+                        'message' => (string) ($op['error'] ?? 'file_write_failed'),
+                        'detail' => (string) ($op['detail'] ?? ''),
+                        'path' => (string) ($op['path'] ?? $path),
+                    ],
+                ];
+            }
+            $hadBefore = isset($op['before_content']) && is_string($op['before_content']);
+            $undoPayload = $hadBefore
+                ? [
+                    'action' => 'file_write',
+                    'path' => (string) ($op['path'] ?? $path),
+                    'content' => (string) $op['before_content'],
+                    'description' => 'שחזור קובץ לגרסה קודמת',
+                ]
+                : [
+                    'action' => 'file_delete',
+                    'path' => (string) ($op['path'] ?? $path),
+                    'description' => 'מחיקת קובץ שנוצר',
+                ];
+            $git = admin_ai_agent_git_after_file_change(admin_ai_agent_project_root_path(), (string) ($op['path'] ?? $path), $chatId, 'file_write');
+            admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent FILE_WRITE ' . (string) ($op['path'] ?? $path) . ' chat=' . $chatId);
+            return [
+                'http' => 200,
+                'payload' => [
+                    'status' => 'success',
+                    'action' => 'file_write',
+                    'path' => (string) ($op['path'] ?? $path),
+                    'message' => 'קובץ נשמר בהצלחה',
+                    'syntax_check' => $op['syntax_check'] ?? ['ok' => true, 'skipped' => true],
+                    'undo_payload' => $undoPayload,
+                    'git' => $git,
+                ],
+            ];
+        }
+
+        if ($action === 'file_delete') {
+            $path = (string) ($payload['path'] ?? '');
+            $op = admin_ai_agent_project_file_delete($path);
+            if (empty($op['ok'])) {
+                return [
+                    'http' => 200,
+                    'payload' => [
+                        'status' => 'error',
+                        'action' => 'file_delete',
+                        'message' => (string) ($op['error'] ?? 'file_delete_failed'),
+                        'path' => (string) ($op['path'] ?? $path),
+                    ],
+                ];
+            }
+            $undoPayload = [
+                'action' => 'file_write',
+                'path' => (string) ($op['path'] ?? $path),
+                'content' => (string) ($op['before_content'] ?? ''),
+                'description' => 'שחזור קובץ שנמחק',
+            ];
+            $git = admin_ai_agent_git_after_file_change(admin_ai_agent_project_root_path(), (string) ($op['path'] ?? $path), $chatId, 'file_delete');
+            admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent FILE_DELETE ' . (string) ($op['path'] ?? $path) . ' chat=' . $chatId);
+            return [
+                'http' => 200,
+                'payload' => [
+                    'status' => 'success',
+                    'action' => 'file_delete',
+                    'path' => (string) ($op['path'] ?? $path),
+                    'message' => 'קובץ נמחק בהצלחה',
+                    'undo_payload' => $undoPayload,
+                    'git' => $git,
+                ],
+            ];
+        }
+
         if ($action === 'sql') {
             if ($rawSql === '') {
                 return ['http' => 400, 'payload' => ['status' => 'error', 'message' => 'missing_sql']];
@@ -346,6 +496,7 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                 $userId,
                 'Admin AI Agent SQL OK verb=' . $verb . ' kind=' . $kind . ' affected=' . $affected . ' rows=' . ((string) $rowsReturned) . ' ms=' . $elapsedMs . ' chat=' . $chatId
             );
+            admin_ai_agent_sql_change_append($conn, $chatId, $safeSql, $kind);
 
             $msgParts = ['SQL הורץ בהצלחה (' . $verb . ')'];
             if ($kind === 'ddl') {
@@ -470,6 +621,8 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                 $insertId = $stmt->insert_id;
                 $stmt->close();
                 admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent CREATE ' . $table . ' id=' . $insertId . ' chat=' . $chatId);
+                $sqlAudit = '/* CREATE via agent */ INSERT INTO `' . $table . '` (...) VALUES (...)';
+                admin_ai_agent_sql_change_append($conn, $chatId, $sqlAudit, 'dml');
 
                 return [
                     'http' => 200,
@@ -527,6 +680,8 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                 $affected = $stmt->affected_rows;
                 $stmt->close();
                 admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent UPDATE ' . $table . ' id=' . $rowId . ' fields=' . implode(',', array_keys($sanitizedData)) . ' chat=' . $chatId);
+                $sqlAudit = '/* UPDATE via agent */ UPDATE `' . $table . '` SET ... WHERE id=' . $rowId;
+                admin_ai_agent_sql_change_append($conn, $chatId, $sqlAudit, 'dml');
 
                 $undoData = [];
                 foreach (array_keys($sanitizedData) as $colName) {
@@ -586,6 +741,8 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                 $affected = $stmt->affected_rows;
                 $stmt->close();
                 admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent DELETE ' . $table . ' id=' . $rowId . ' chat=' . $chatId);
+                $sqlAudit = '/* DELETE via agent */ DELETE FROM `' . $table . '` WHERE id=' . $rowId;
+                admin_ai_agent_sql_change_append($conn, $chatId, $sqlAudit, 'dml');
 
                 $restoreData = [];
                 foreach ($beforeRow as $colName => $val) {
@@ -665,6 +822,22 @@ if (!function_exists('admin_ai_agent_exec_persist_chat_execution')) {
         }
         if (($payload['action'] ?? '') === 'send_mail' && isset($result['recipients'])) {
             $payload['recipients'] = (int) $result['recipients'];
+        }
+        if (in_array((string) ($payload['action'] ?? ''), ['file_patch', 'file_write', 'file_delete'], true)) {
+            $payload['path'] = (string) ($result['path'] ?? '');
+            if (isset($result['patch_mode'])) {
+                $payload['patch_mode'] = (string) $result['patch_mode'];
+            }
+            if (isset($result['syntax_check'])) {
+                $payload['syntax_check'] = $result['syntax_check'];
+            }
+            if (isset($result['git'])) {
+                $payload['git'] = $result['git'];
+            }
+        }
+        if (($payload['action'] ?? '') === 'export_sql_changes') {
+            $payload['count'] = (int) ($result['count'] ?? 0);
+            $payload['sql_script'] = (string) ($result['sql_script'] ?? '');
         }
         if (isset($result['undo_payload']) && is_array($result['undo_payload'])) {
             $payload['undo_payload'] = $result['undo_payload'];

@@ -128,10 +128,10 @@
     return out;
   }
 
-  const SCHEMA = window.ADMIN_AI_CHAT_SCHEMA || { tables: [], fields_by_table: {}, all_fields: [], actions: ["create", "update", "delete"] };
+  const SCHEMA = window.ADMIN_AI_CHAT_SCHEMA || { tables: [], fields_by_table: {}, all_fields: [], actions: ["create", "update", "delete", "sql", "file_patch", "file_write", "file_delete", "export_sql_changes"] };
   const TABLE_SET = new Set((SCHEMA.tables || []).map((t) => String(t).toLowerCase()));
   const FIELD_SET = new Set((SCHEMA.all_fields || []).map((f) => String(f).toLowerCase()));
-  const ACTION_SET = new Set((SCHEMA.actions || ["create", "update", "delete"]).map((a) => String(a).toLowerCase()));
+  const ACTION_SET = new Set((SCHEMA.actions || ["create", "update", "delete", "sql", "file_patch", "file_write", "file_delete", "export_sql_changes"]).map((a) => String(a).toLowerCase()));
   const ACTION_META = {
     create: { icon: "fa-plus", label: "יצירה" },
     update: { icon: "fa-pen", label: "עדכון" },
@@ -139,6 +139,10 @@
     sql: { icon: "fa-terminal", label: "SQL" },
     push_broadcast: { icon: "fa-bell", label: "שידור התראה" },
     send_mail: { icon: "fa-envelope", label: "שליחת מייל" },
+    file_patch: { icon: "fa-code-compare", label: "עריכת קובץ" },
+    file_write: { icon: "fa-file-pen", label: "כתיבת קובץ" },
+    file_delete: { icon: "fa-file-circle-minus", label: "מחיקת קובץ" },
+    export_sql_changes: { icon: "fa-file-export", label: "ייצוא SQL" },
   };
 
   function classifyInlineToken(raw) {
@@ -673,6 +677,10 @@
       case "sql": return "SQL";
       case "push_broadcast": return "שידור התראה";
       case "send_mail": return "שליחת מייל";
+      case "file_patch": return "עריכת קובץ";
+      case "file_write": return "כתיבת קובץ";
+      case "file_delete": return "מחיקת קובץ";
+      case "export_sql_changes": return "ייצוא SQL";
       default: return action || "פעולה";
     }
   }
@@ -685,6 +693,10 @@
       case "sql": return "הרץ SQL";
       case "push_broadcast": return "שלח התראה";
       case "send_mail": return "שלח מייל";
+      case "file_patch": return "בצע Patch";
+      case "file_write": return "שמור קובץ";
+      case "file_delete": return "מחק קובץ";
+      case "export_sql_changes": return "ייצא SQL";
       default: return "בצע פעולה";
     }
   }
@@ -707,6 +719,19 @@
         "</div>";
     });
     return '<div class="admin-ai-chat-action-data">' + rows + "</div>";
+  }
+
+  function renderFilePatchPreview(searchBlock, replaceBlock) {
+    const before = String(searchBlock || "");
+    const after = String(replaceBlock || "");
+    return (
+      '<div class="admin-ai-chat-action-sql">' +
+      '<div class="admin-ai-chat-action-sql-label"><i class="fa-solid fa-code-compare"></i> תצוגת שינוי ממוקד</div>' +
+      '<div class="admin-ai-chat-file-diff">' +
+      '<div><strong>- search_block</strong><pre class="admin-ai-chat-action-sql-code"><code>' + escapeHtml(before) + "</code></pre></div>" +
+      '<div><strong>+ replace_block</strong><pre class="admin-ai-chat-action-sql-code"><code>' + escapeHtml(after) + "</code></pre></div>" +
+      "</div></div>"
+    );
   }
 
   function formatDurationMs(ms) {
@@ -782,6 +807,10 @@
     if (leaf.data) body.data = leaf.data;
     if (leaf.sql) body.sql = leaf.sql;
     if (leaf.kind) body.kind = leaf.kind;
+    if (leaf.path != null) body.path = leaf.path;
+    if (leaf.search_block != null) body.search_block = leaf.search_block;
+    if (leaf.replace_block != null) body.replace_block = leaf.replace_block;
+    if (leaf.content != null) body.content = leaf.content;
     if (leaf.restore_deleted_row) body.restore_deleted_row = true;
     const act = (leaf.action || "").toLowerCase();
     if (act === "push_broadcast") {
@@ -1284,6 +1313,10 @@
       sql: raw.sql,
       kind: raw.kind,
       data: raw.data ? resolveSequencePlaceholders(raw.data, refs) : undefined,
+      path: raw.path,
+      search_block: raw.search_block,
+      replace_block: raw.replace_block,
+      content: raw.content,
     };
     if (raw.id !== undefined && raw.id !== null && raw.id !== "") {
       resolved.id = resolveSequencePlaceholders(raw.id, refs);
@@ -1412,12 +1445,18 @@
     const isSql = actionType === "sql";
     const isPushBroadcast = actionType === "push_broadcast";
     const isSendMail = actionType === "send_mail";
+    const isFilePatch = actionType === "file_patch";
+    const isFileWrite = actionType === "file_write";
+    const isFileDelete = actionType === "file_delete";
+    const isExportSql = actionType === "export_sql_changes";
+    const filePath = actionPayload.path || "";
     const rc = Number(actionPayload.recipient_count || 0);
     const sqlVerb = isSql && sqlText ? (sqlText.match(/^\s*([A-Za-z]+)/) || [])[1] : "";
     const sqlVerbUpper = (sqlVerb || "").toUpperCase();
     const dangerousSqlVerbs = ["DROP", "TRUNCATE", "DELETE", "ALTER"];
     const dangerous =
       actionType === "delete" ||
+      actionType === "file_delete" ||
       (isSql && dangerousSqlVerbs.includes(sqlVerbUpper)) ||
       (isPushBroadcast && (actionPayload.target || "all") === "all") ||
       (isSendMail && rc > 25);
@@ -1441,6 +1480,10 @@
       html += '<span class="admin-ai-chat-action-table">שידור מערכת (Push / פעמון)</span>';
     } else if (isSendMail) {
       html += '<span class="admin-ai-chat-action-table">אימייל (SMTP)</span>';
+    } else if (isFilePatch || isFileWrite || isFileDelete) {
+      html += '<span class="admin-ai-chat-action-table">קובץ: <code>' + escapeHtml(filePath) + "</code></span>";
+    } else if (isExportSql) {
+      html += '<span class="admin-ai-chat-action-table">ייצוא SQL לשינויים</span>';
     } else {
       html += '<span class="admin-ai-chat-action-table">טבלה: <code>' + escapeHtml(table) + "</code>";
       if (rowId) html += ' · ID: <code>' + escapeHtml(String(rowId)) + "</code>";
@@ -1455,6 +1498,12 @@
       html += '<div class="admin-ai-chat-action-sql-label"><i class="fa-solid fa-terminal"></i> משפט SQL שיורץ</div>';
       html += '<pre class="admin-ai-chat-action-sql-code"><code>' + escapeHtml(sqlText) + '</code></pre>';
       html += "</div>";
+    }
+    if (isFilePatch) {
+      html += renderFilePatchPreview(actionPayload.search_block || "", actionPayload.replace_block || "");
+    }
+    if (isFileWrite && actionPayload.content) {
+      html += '<div class="admin-ai-chat-action-sql"><div class="admin-ai-chat-action-sql-label"><i class="fa-solid fa-file-lines"></i> תוכן קובץ</div><pre class="admin-ai-chat-action-sql-code"><code>' + escapeHtml(String(actionPayload.content)) + '</code></pre></div>';
     }
     if (isPushBroadcast) {
       const pbTitle = actionPayload.title != null ? String(actionPayload.title) : "";
@@ -1533,6 +1582,15 @@
       html += escapeHtml(resultState.message || (isSuccess ? "בוצע בהצלחה" : (isFailure ? "נכשל" : "—")));
       if (isFailure && resultState.detail) {
         html += '<div class="admin-ai-chat-action-result-detail">' + escapeHtml(String(resultState.detail)) + "</div>";
+      }
+      if (resultState.syntax_check && resultState.syntax_check.ok === false) {
+        html += '<div class="admin-ai-chat-action-result-detail">Syntax check נכשל: ' + escapeHtml(String(resultState.syntax_check.detail || resultState.syntax_check.error || "")) + "</div>";
+      }
+      if (resultState.git && typeof resultState.git === "object") {
+        html += '<div class="admin-ai-chat-action-result-detail">Git: ' + escapeHtml(String(resultState.git.git_status || "unknown")) + "</div>";
+      }
+      if (resultState.sql_script) {
+        html += '<pre class="admin-ai-chat-action-sql-code"><code>' + escapeHtml(String(resultState.sql_script)) + "</code></pre>";
       }
       html += "</div>";
 
@@ -1774,6 +1832,10 @@
           html_body: actionPayload.html_body,
           text_body: actionPayload.text_body,
           recipients: actionPayload.recipients,
+          path: actionPayload.path,
+          search_block: actionPayload.search_block,
+          replace_block: actionPayload.replace_block,
+          content: actionPayload.content,
         },
         actionPayload.proposedAt,
         state.activeChatId
@@ -1961,6 +2023,13 @@
             } else if (executionResult.action === "send_mail") {
               const rc = executionResult.recipients != null ? " · נמענים: " + executionResult.recipients : "";
               summary = "מייל נשלח" + rc + ". " + (executionResult.message || "");
+            } else if (executionResult.action === "file_patch" || executionResult.action === "file_write" || executionResult.action === "file_delete") {
+              const p = executionResult.path ? " · " + executionResult.path : "";
+              const g = executionResult.git && executionResult.git.git_status ? " · git: " + executionResult.git.git_status : "";
+              summary = "פעולת קובץ בוצעה" + p + g + ". " + (executionResult.message || "");
+            } else if (executionResult.action === "export_sql_changes") {
+              const c = executionResult.count != null ? " · " + executionResult.count + " שינויים" : "";
+              summary = "יוצא SQL מסכם" + c + ". " + (executionResult.message || "");
             } else {
               summary = "הפעולה בוצעה (" + (executionResult.action || "") + " ב-" + (executionResult.table || "") + (executionResult.id ? " · id=" + executionResult.id : "") + "). " + (executionResult.message || "");
             }

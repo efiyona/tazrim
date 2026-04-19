@@ -414,7 +414,7 @@ if (!function_exists('admin_ai_agent_build_schema_for_js')) {
             'tables'          => $tables,
             'fields_by_table' => $fieldsByTable,
             'all_fields'      => array_keys($fieldsSet),
-            'actions'         => ['create', 'update', 'delete', 'sql', 'sequence', 'push_broadcast', 'send_mail'],
+            'actions'         => ['create', 'update', 'delete', 'sql', 'sequence', 'push_broadcast', 'send_mail', 'file_patch', 'file_write', 'file_delete', 'export_sql_changes'],
         ];
     }
 }

@@ -12,7 +12,7 @@ if (!function_exists('admin_ai_chat_reply_polish_default_hint')) {
 
         return "הטיוטה שנשלחה לא מתאימה להצגה למנהל (זיהוי: {$r}). "
             . "החזר תשובה **בעברית** — תקציר ברור, הסבר או טבלה מסודרת. "
-            . "**אל** תכלול בלוקים פנימיים כמו [[DATA_QUERY]], [[ACTION]], [[DATA_CHART]] או קוד מכונה בלי הקשר. "
+            . "**אל** תכלול בלוקים פנימיים כמו [[DATA_QUERY]], [[ACTION]], [[DATA_CHART]], [[SQL_CHANGE]] או קוד מכונה בלי הקשר. "
             . "אם חסר מידע — שלוף ב-[[DATA_QUERY]] ואז ענה.";
     }
 }
@@ -29,8 +29,8 @@ if (!function_exists('admin_ai_chat_reply_quality_scan')) {
             return ['suspicious' => true, 'reasons' => ['empty_reply']];
         }
 
-        if (preg_match('/\[\[\s*(?:DATA_QUERY|ACTION|DATA_CHART)\s*\]\]/i', $t)
-            || preg_match('/\[\[\s*\/\s*(?:DATA_QUERY|ACTION|DATA_CHART)\s*\]\]/i', $t)) {
+        if (preg_match('/\[\[\s*(?:DATA_QUERY|ACTION|DATA_CHART|SQL_CHANGE)\s*\]\]/i', $t)
+            || preg_match('/\[\[\s*\/\s*(?:DATA_QUERY|ACTION|DATA_CHART|SQL_CHANGE)\s*\]\]/i', $t)) {
             $reasons[] = 'internal_marker_leaked';
         }
 

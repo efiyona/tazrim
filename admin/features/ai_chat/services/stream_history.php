@@ -6,6 +6,8 @@ declare(strict_types=1);
  * והעשרת snapshot לפני עדכון.
  */
 
+require_once __DIR__ . '/agent_project_files.php';
+
 if (!function_exists('admin_ai_chat_redact_action_payload_for_model')) {
     /**
      * מסיר מזהה ACTION_PROPOSED את before_row (כבד) כדי שלא יישלח שוב ל-Gemini.
@@ -25,6 +27,19 @@ if (!function_exists('admin_ai_chat_redact_action_payload_for_model')) {
                         $j['html_body'] = mb_substr($j['html_body'], 0, 800, 'UTF-8') . '…[קוצר לשליחה חוזרת למודל]';
                     } elseif (isset($j['html_body']) && is_string($j['html_body']) && strlen($j['html_body']) > 800) {
                         $j['html_body'] = substr($j['html_body'], 0, 800) . '…';
+                    }
+                }
+                if (($j['action'] ?? '') === 'file_patch') {
+                    if (isset($j['search_block']) && is_string($j['search_block']) && strlen($j['search_block']) > 800) {
+                        $j['search_block'] = substr($j['search_block'], 0, 800) . '…';
+                    }
+                    if (isset($j['replace_block']) && is_string($j['replace_block']) && strlen($j['replace_block']) > 800) {
+                        $j['replace_block'] = substr($j['replace_block'], 0, 800) . '…';
+                    }
+                }
+                if (($j['action'] ?? '') === 'file_write') {
+                    if (isset($j['content']) && is_string($j['content']) && strlen($j['content']) > 800) {
+                        $j['content'] = substr($j['content'], 0, 800) . '…';
                     }
                 }
                 if (isset($j['steps']) && is_array($j['steps'])) {
@@ -75,6 +90,20 @@ if (!function_exists('admin_ai_chat_enrich_proposed_action_with_snapshots')) {
             } else {
                 $action['recipient_count'] = 0;
                 $action['recipient_resolution_error'] = (string) ($c['error'] ?? 'unknown');
+            }
+        } elseif ($act === 'file_patch' || $act === 'file_delete' || $act === 'file_write') {
+            $path = trim((string) ($action['path'] ?? ''));
+            if ($path !== '' && function_exists('admin_ai_agent_project_file_read')) {
+                $fr = admin_ai_agent_project_file_read($path);
+                if (!empty($fr['ok'])) {
+                    $content = (string) ($fr['content'] ?? '');
+                    if ($content !== '') {
+                        $action['before_excerpt'] = substr($content, 0, 500);
+                    }
+                    $action['before_sha1'] = (string) ($fr['sha1'] ?? '');
+                } else {
+                    $action['path_state_error'] = (string) ($fr['error'] ?? 'read_failed');
+                }
             }
         } elseif ($act === 'sequence' && isset($action['steps']) && is_array($action['steps'])) {
             foreach ($action['steps'] as $i => $step) {
