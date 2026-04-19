@@ -139,6 +139,21 @@ function admin_ai_chat_build_questions_context_text(array $questions): string
     return "[[QUESTIONS_CONTEXT]]\n" . implode("\n", $lines) . "\n[[/QUESTIONS_CONTEXT]]";
 }
 
+function admin_ai_chat_user_wants_chart(string $message): bool
+{
+    $m = trim($message);
+    if ($m === '') {
+        return false;
+    }
+
+    return preg_match('/(גרף|תרשים|chart|pie|bar|line|doughnut)/iu', $m) === 1;
+}
+
+function admin_ai_chat_contains_chart_block(string $text): bool
+{
+    return preg_match('/\[\[DATA_CHART\]\][\s\S]*?\[\[\/DATA_CHART\]\]/u', $text) === 1;
+}
+
 function admin_ai_chat_should_retry_http_code(int $httpCode): bool
 {
     return in_array($httpCode, [429, 500, 502, 503, 504], true);
@@ -984,6 +999,8 @@ $maxValidatorRetries = 2;
 $validatorRetryCount = 0;
 $maxReplyPolishRetries = 1;
 $replyPolishRetries = 0;
+$maxChartFormatRetries = 1;
+$chartFormatRetryCount = 0;
 $usedModel = '';
 $finalText = '';
 $finalAction = null;
@@ -1152,6 +1169,24 @@ while (true) {
     // תשובה רגילה
     $candidateText = admin_ai_chat_strip_action_block($rawText);
     $candidateText = admin_ai_chat_strip_internal_transport_leaks($candidateText);
+    if (
+        admin_ai_chat_user_wants_chart($message)
+        && !admin_ai_chat_contains_chart_block($candidateText)
+        && $chartFormatRetryCount < $maxChartFormatRetries
+    ) {
+        $chartFormatRetryCount++;
+        $history[] = [
+            'role' => 'model',
+            'parts' => [['text' => $rawText]],
+        ];
+        $history[] = [
+            'role' => 'user',
+            'parts' => [[
+                'text' => 'המשתמש ביקש גרף. החזר תשובה חדשה שכוללת בלוק [[DATA_CHART]] תקין (עם [[/DATA_CHART]]) ובנוסף משפט סיכום קצר בעברית. אל תסביר מה זה DATA_CHART.',
+            ]],
+        ];
+        continue;
+    }
     if ($candidateText === '' && $rawText !== '') {
         $candidateText = 'לא הצלחתי לנסח פעולה תקינה. נסה לנסח את הבקשה מחדש, אם אפשר עם פחות פירוט (ה-HTML הארוך יכול להיכנס ישירות ל-data).';
     }
