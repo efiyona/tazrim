@@ -8,6 +8,8 @@
   // תוקף הצעת פעולה (ביצוע שינויים במסד) — 5 דקות מרגע ההצעה.
   // מעבר לזה הכפתור ננעל ולא מתבצע שום דבר, מסיבות בטיחות.
   const ACTION_PROPOSAL_TTL_MS = 5 * 60 * 1000;
+  /** מגבלה לכפתור "שיחה חדשה עם ניסוח זה" בלבד (מאפיין HTML) — לא חותך את ההודעה בשליחה */
+  const FORK_PAYLOAD_MAX_CHARS = 12000;
 
   const state = {
     open: false,
@@ -419,7 +421,7 @@
   function forkMessageToNewChat(rawText) {
     const t = String(rawText || "")
       .trim()
-      .slice(0, 1500);
+      .slice(0, FORK_PAYLOAD_MAX_CHARS);
     if (!t) return;
     startDraftChat();
     const input = qs("adminAiChatInput");
@@ -456,7 +458,7 @@
     } else {
       const forkPayload = String(text || "")
         .trim()
-        .slice(0, 1500);
+        .slice(0, FORK_PAYLOAD_MAX_CHARS);
       const forkBtn =
         forkPayload !== ""
           ? '<button type="button" class="admin-ai-chat-fork-msg-btn" data-admin-ai-chat-fork="1" data-fork-payload="' +
@@ -2392,9 +2394,15 @@
 
     if (input) {
       input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          if (!state.sending) form.requestSubmit();
+        if (e.key !== "Enter" || e.shiftKey) {
+          return;
+        }
+        if (e.isComposing) {
+          return;
+        }
+        e.preventDefault();
+        if (!state.sending) {
+          form.requestSubmit();
         }
       });
     }

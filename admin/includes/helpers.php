@@ -64,6 +64,13 @@ function tazrim_admin_nav_items(): array
                 ],
                 [
                     'type' => 'link',
+                    'key' => 'mass_email',
+                    'label' => 'שליחת מיילים',
+                    'icon' => 'fa-envelope',
+                    'href' => BASE_URL . 'admin/mass_email.php',
+                ],
+                [
+                    'type' => 'link',
                     'key' => 'popup_campaigns',
                     'label' => 'פופאפים למשתמשים',
                     'icon' => 'fa-message',

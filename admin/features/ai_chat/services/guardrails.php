@@ -8,9 +8,6 @@ if (!function_exists('admin_ai_chat_guard_validate_input')) {
         if ($trimmed === '') {
             return ['ok' => false, 'reason' => 'empty'];
         }
-        if (mb_strlen($trimmed, 'UTF-8') > 1500) {
-            return ['ok' => false, 'reason' => 'too_long'];
-        }
 
         $blockedPatterns = [
             '/ignore\s+all\s+previous\s+instructions/i',

@@ -105,7 +105,7 @@ if (!function_exists('admin_ai_chat_render_modal')) {
         echo '        <div class="admin-ai-chat-messages" id="adminAiChatMessages" aria-live="polite"></div>';
         echo '        <div class="admin-ai-chat-composer" id="adminAiChatComposer">';
         echo '          <form id="adminAiChatForm" class="admin-ai-chat-form">';
-        echo '            <input type="text" id="adminAiChatInput" class="admin-ai-chat-input" maxlength="1500" autocomplete="off" placeholder="מה תרצו לשאול?" enterkeyhint="send">';
+        echo '            <textarea id="adminAiChatInput" class="admin-ai-chat-input" rows="2" autocomplete="off" placeholder="מה תרצו לשאול? (Enter לשליחה · Shift+Enter שורה חדשה)"></textarea>';
         echo '            <button type="button" class="admin-ai-chat-stop" id="adminAiChatStopBtn" hidden aria-label="עצירת שליחה והפסקת חשיבה"><i class="fa-solid fa-stop" aria-hidden="true"></i></button>';
         echo '            <button type="submit" class="admin-ai-chat-send" id="adminAiChatSendBtn" aria-label="שליחת הודעה"><i class="fa-solid fa-paper-plane"></i></button>';
         echo '          </form>';

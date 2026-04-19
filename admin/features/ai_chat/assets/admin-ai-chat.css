@@ -902,17 +902,22 @@
 
 .admin-ai-chat-form {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 12px;
 }
 
 .admin-ai-chat-input {
     flex: 0 1 100%;
-    border-radius: 25px;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 18px;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    padding: 12px 14px;
+    padding: 10px 14px;
     min-height: 46px;
-    height: 46px;
+    max-height: 220px;
+    overflow-y: auto;
+    resize: vertical;
+    line-height: 1.45;
     font-family: inherit;
     font-size: 0.92rem;
     text-align: right;
@@ -1171,6 +1176,7 @@
 
     .admin-ai-chat-input {
         min-height: 44px;
+        max-height: 180px;
         font-size: .92rem;
     }
 
