@@ -81,6 +81,24 @@ function admin_ai_chat_strip_json_fences(string $raw): string
     return $s;
 }
 
+function admin_ai_chat_strip_internal_transport_leaks(string $text): string
+{
+    $clean = $text;
+    $clean = (string) preg_replace('/^\s*תוצאת\s+DATA_QUERY\s*\(.*?\)\s*:\s*/u', '', $clean);
+    $clean = (string) preg_replace('/\[\[QUESTIONS_ASKED\]\]/u', '', $clean);
+
+    // If model echoed only synthetic DATA_QUERY payload, treat as empty so fallback flow handles it.
+    $trimmed = trim($clean);
+    if ($trimmed !== '' && preg_match('/^\{[\s\S]*\}$/u', $trimmed) === 1) {
+        $parsed = json_decode($trimmed, true);
+        if (is_array($parsed) && array_key_exists('sql_executed', $parsed)) {
+            return '';
+        }
+    }
+
+    return trim($clean);
+}
+
 function admin_ai_chat_should_retry_http_code(int $httpCode): bool
 {
     return in_array($httpCode, [429, 500, 502, 503, 504], true);
@@ -327,6 +345,71 @@ function admin_ai_chat_strip_action_block(string $text): string
 function admin_ai_chat_is_step_placeholder_scalar(mixed $v): bool
 {
     return is_string($v) && preg_match('/^\{\{step:\d+\}\}$/', $v) === 1;
+}
+
+function admin_ai_chat_file_patch_snapshot_guard(array $action): array
+{
+    $act = strtolower((string) ($action['action'] ?? ''));
+    if ($act !== 'file_patch') {
+        return ['ok' => true];
+    }
+
+    $path = trim((string) ($action['path'] ?? ''));
+    $search = (string) ($action['search_block'] ?? '');
+    if ($path === '') {
+        return ['ok' => false, 'error' => 'file_patch_missing_path'];
+    }
+    if ($search === '') {
+        return ['ok' => false, 'error' => 'file_patch_missing_search_block'];
+    }
+
+    if (!function_exists('admin_ai_agent_project_file_read') || !function_exists('admin_ai_agent_project_try_patch_content')) {
+        return ['ok' => false, 'error' => 'file_patch_guard_service_unavailable'];
+    }
+
+    $read = admin_ai_agent_project_file_read($path);
+    if (empty($read['ok'])) {
+        return ['ok' => false, 'error' => 'file_patch_target_unreadable_before_validation'];
+    }
+
+    $content = (string) ($read['content'] ?? '');
+    if ($content === '') {
+        return ['ok' => false, 'error' => 'file_patch_target_empty_or_unreadable'];
+    }
+
+    // Reuse the same matcher used by executor to avoid validator/runtime mismatch.
+    $probe = admin_ai_agent_project_try_patch_content($content, $search, $search);
+    if (!empty($probe['ok'])) {
+        return ['ok' => true];
+    }
+
+    $probeError = (string) ($probe['error'] ?? 'file_patch_search_block_not_in_file_snapshot');
+    if ($probeError === 'ambiguous_match_found_make_search_block_larger') {
+        return ['ok' => false, 'error' => 'file_patch_search_block_ambiguous_in_file_snapshot'];
+    }
+
+    return ['ok' => false, 'error' => 'file_patch_search_block_not_in_file_snapshot'];
+}
+
+function admin_ai_chat_action_snapshot_guard(array $action): array
+{
+    $act = strtolower((string) ($action['action'] ?? ''));
+    if ($act === 'file_patch') {
+        return admin_ai_chat_file_patch_snapshot_guard($action);
+    }
+    if ($act === 'sequence' && isset($action['steps']) && is_array($action['steps'])) {
+        foreach ($action['steps'] as $step) {
+            if (!is_array($step)) {
+                continue;
+            }
+            $stepGuard = admin_ai_chat_action_snapshot_guard($step);
+            if (empty($stepGuard['ok'])) {
+                return $stepGuard;
+            }
+        }
+    }
+
+    return ['ok' => true];
 }
 
 /**
@@ -968,6 +1051,28 @@ while (true) {
         admin_ai_chat_sse_event('validating', ['hint' => 'מאמת את הפעולה…']);
         // העשרת before_row לפני הוולידטור — כדי שייבדק שה-id באמת מתאים לישות שהמנהל התכוון אליה (לא רק לפי טקסט ב-description).
         $actionForValidation = admin_ai_chat_enrich_proposed_action_with_snapshots($conn, $action);
+        $snapshotGuard = admin_ai_chat_action_snapshot_guard($actionForValidation);
+        if (empty($snapshotGuard['ok'])) {
+            if ($validatorRetryCount < $maxValidatorRetries) {
+                $validatorRetryCount++;
+                $history[] = [
+                    'role' => 'model',
+                    'parts' => [['text' => $rawText]],
+                ];
+                $history[] = [
+                    'role' => 'user',
+                    'parts' => [[
+                        'text' => "הפעולה שהצעת נדחתה לפני ולידטור: {$snapshotGuard['error']}. חובה לבצע file_read מחדש לאותו קובץ ולהציע search_block שמופיע במדויק בתוכן שקראת.",
+                    ]],
+                ];
+                continue;
+            }
+            $finalText = admin_ai_chat_strip_action_block($rawText)
+                . "\n\n⚠️ לא הצלחתי לייצר file_patch בטוח. סיבה: " . (string) ($snapshotGuard['error'] ?? 'snapshot_guard_failed')
+                . "\nבצע file_read מחדש והצע patch ממוקד.";
+            break;
+        }
+
         $validation = admin_ai_chat_run_validator($apiKey, $message, $historyText, $actionForValidation);
 
         if ($validation['approved']) {
@@ -1006,6 +1111,7 @@ while (true) {
 
     // תשובה רגילה
     $candidateText = admin_ai_chat_strip_action_block($rawText);
+    $candidateText = admin_ai_chat_strip_internal_transport_leaks($candidateText);
     if ($candidateText === '' && $rawText !== '') {
         $candidateText = 'לא הצלחתי לנסח פעולה תקינה. נסה לנסח את הבקשה מחדש, אם אפשר עם פחות פירוט (ה-HTML הארוך יכול להיכנס ישירות ל-data).';
     }

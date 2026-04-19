@@ -199,4 +199,63 @@ return [
             ],
         ],
     ],
+    'transactions' => [
+        'table' => 'transactions',
+        'label' => 'פעולות',
+        'nav_icon' => 'fa-money-bill-transfer',
+        'list_columns' => ['id', 'transaction_date', 'amount', 'currency_code', 'type', 'description', 'user_id', 'home_id'],
+        'per_page' => 30,
+        'order_by' => 'transaction_date DESC, id DESC',
+        'allow_delete' => true,
+        'fields' => [
+            'home_id' => [
+                'type' => 'fk_lookup',
+                'label' => 'בית',
+                'fk' => [
+                    'table' => 'homes',
+                    'value_column' => 'id',
+                    'label_template' => '{name} (#{id})',
+                    'search_columns' => ['name', 'join_code'],
+                    'order_by' => 'name ASC',
+                    'optional' => false,
+                ],
+            ],
+            'user_id' => [
+                'type' => 'fk_lookup',
+                'label' => 'משתמש',
+                'fk' => [
+                    'table' => 'users',
+                    'value_column' => 'id',
+                    'label_template' => '{first_name} {last_name} ({email})',
+                    'search_columns' => ['first_name', 'last_name', 'email', 'nickname'],
+                    'order_by' => 'last_name ASC, first_name ASC',
+                    'optional' => false,
+                ],
+            ],
+            'amount' => ['type' => 'number', 'label' => 'סכום'],
+            'currency_code' => ['type' => 'text', 'label' => 'מטבע (למשל ILS)'],
+            'type' => [
+                'type' => 'enum',
+                'label' => 'סוג',
+                'enum_options' => [
+                    'income' => 'הכנסה',
+                    'expense' => 'הוצאה',
+                ],
+            ],
+            'category' => [
+                'type' => 'fk_lookup',
+                'label' => 'קטגוריה',
+                'fk' => [
+                    'table' => 'categories',
+                    'value_column' => 'id',
+                    'label_template' => '{name} ({type})',
+                    'search_columns' => ['name'],
+                    'order_by' => 'name ASC',
+                    'optional' => true,
+                ],
+            ],
+            'description' => ['type' => 'text', 'label' => 'תיאור'],
+            'transaction_date' => ['type' => 'datetime', 'label' => 'תאריך פעולה'],
+        ],
+    ],
 ];

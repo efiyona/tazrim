@@ -34,6 +34,10 @@ if (!function_exists('admin_ai_chat_reply_quality_scan')) {
             $reasons[] = 'internal_marker_leaked';
         }
 
+        if (preg_match('/^\s*תוצאת\s+DATA_QUERY\s*\(/u', $t)) {
+            $reasons[] = 'internal_data_query_payload_leaked';
+        }
+
         // טיוטה שהיא כמעט רק JSON (ללא משפט הסבר למנהל)
         if (strlen($t) < 12000) {
             $try = json_decode($t, true);

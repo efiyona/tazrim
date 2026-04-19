@@ -46,6 +46,12 @@ if ($reportsRes) {
     }
 }
 
+$latestRegisteredUser = null;
+$latestUserRes = mysqli_query($conn, "SELECT id, first_name, last_name, email, created_at FROM `users` ORDER BY `created_at` DESC LIMIT 1");
+if ($latestUserRes && mysqli_num_rows($latestUserRes) > 0) {
+    $latestRegisteredUser = mysqli_fetch_assoc($latestUserRes);
+}
+
 $admin_nav_context = 'dashboard';
 
 require dirname(__FILE__) . '/includes/partials/head.php';
@@ -85,6 +91,7 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
             <div class="admin-kpi-card__label">סה"כ דיווחים</div>
             <div class="admin-kpi-card__value"><?php echo number_format($stats['reports_total']); ?></div>
         </article>
+
     </section>
 
     <section class="admin-dashboard-grid">
@@ -166,15 +173,7 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
         </article>
     </section>
 
-    <section class="admin-dashboard-links">
-        <?php foreach ($registry as $key => $cfg): ?>
-            <a class="admin-dashboard-links__item" href="<?php echo htmlspecialchars(BASE_URL . 'admin/table.php?t=' . urlencode($key), ENT_QUOTES, 'UTF-8'); ?>">
-                <i class="fa-solid <?php echo htmlspecialchars($cfg['nav_icon'] ?? 'fa-table', ENT_QUOTES, 'UTF-8'); ?>"></i>
-                <span><?php echo htmlspecialchars($cfg['label'] ?? $key, ENT_QUOTES, 'UTF-8'); ?></span>
-            </a>
-        <?php endforeach; ?>
-    </section>
-</main>
+
 <?php
 require dirname(__FILE__) . '/includes/partials/layout_shell_end.php';
 require dirname(__FILE__) . '/includes/partials/footer.php';

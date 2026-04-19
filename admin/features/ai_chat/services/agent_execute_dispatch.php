@@ -315,13 +315,21 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
             $replaceBlock = (string) ($payload['replace_block'] ?? '');
             $op = admin_ai_agent_project_file_patch($path, $searchBlock, $replaceBlock);
             if (empty($op['ok'])) {
+                $errCode = (string) ($op['error'] ?? 'file_patch_failed');
+                $hint = '';
+                if ($errCode === 'search_block_not_found') {
+                    $hint = 'לא נמצאה התאמה ל-search_block בקובץ. בצע file_read מחדש והשתמש בבלוק מדויק מהקובץ (עדיף כמה שורות עם הקשר).';
+                } elseif ($errCode === 'ambiguous_match_found_make_search_block_larger') {
+                    $hint = 'נמצאו כמה התאמות. הרחב את search_block עם יותר הקשר עד שהוא ייחודי.';
+                }
                 return [
                     'http' => 200,
                     'payload' => [
                         'status' => 'error',
                         'action' => 'file_patch',
-                        'message' => (string) ($op['error'] ?? 'file_patch_failed'),
+                        'message' => $errCode,
                         'detail' => (string) ($op['detail'] ?? ''),
+                        'hint' => $hint,
                         'path' => (string) ($op['path'] ?? $path),
                     ],
                 ];

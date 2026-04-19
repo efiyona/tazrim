@@ -414,7 +414,7 @@ if (!function_exists('admin_ai_agent_project_file_patch')) {
     /**
      * @return array{ok:bool,error?:string,path?:string,mode?:string,matched_block?:string,occurrences?:int,new_content?:string}
      */
-    function admin_ai_agent_project_try_patch_content(string $content, string $searchBlock, string $replaceBlock): array
+    function admin_ai_agent_project_try_patch_content(string $content, string $searchBlock, string $replaceBlock, bool $allowEscapedDecode = true): array
     {
         $exactCount = substr_count($content, $searchBlock);
         if ($exactCount === 1) {
@@ -428,6 +428,24 @@ if (!function_exists('admin_ai_agent_project_file_patch')) {
         }
         if ($exactCount > 1) {
             return ['ok' => false, 'error' => 'ambiguous_match_found_make_search_block_larger', 'occurrences' => $exactCount];
+        }
+
+        if ($allowEscapedDecode) {
+            $decoded = str_replace(
+                ['\\r\\n', '\\n', '\\r', '\\t', '\\"'],
+                ["\r\n", "\n", "\r", "\t", '"'],
+                $searchBlock
+            );
+            if ($decoded !== $searchBlock) {
+                $retry = admin_ai_agent_project_try_patch_content($content, $decoded, $replaceBlock, false);
+                if (!empty($retry['ok'])) {
+                    $retry['mode'] = 'decoded_escapes_' . (string) ($retry['mode'] ?? 'exact');
+                    return $retry;
+                }
+                if (($retry['error'] ?? '') === 'ambiguous_match_found_make_search_block_larger') {
+                    return $retry;
+                }
+            }
         }
 
         $contentLf = str_replace("\r\n", "\n", $content);
