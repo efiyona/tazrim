@@ -735,6 +735,7 @@ while (true) {
             'query' => $dataQuery,
         ]);
         $queryResult = admin_ai_chat_agent_query($conn, $dataQuery);
+        $dataCoach = admin_ai_agent_data_query_error_coach_appendix($queryResult);
 
         $history[] = [
             'role' => 'model',
@@ -742,7 +743,7 @@ while (true) {
         ];
         $history[] = [
             'role' => 'user',
-            'parts' => [['text' => "תוצאת DATA_QUERY (אל תציג אותה ישירות — השתמש בה כדי להמשיך):\n" . json_encode($queryResult, JSON_UNESCAPED_UNICODE)]],
+            'parts' => [['text' => "תוצאת DATA_QUERY (אל תציג אותה ישירות — השתמש בה כדי להמשיך):\n" . json_encode($queryResult, JSON_UNESCAPED_UNICODE) . $dataCoach]],
         ];
         continue;
     }
@@ -940,35 +941,11 @@ if ($emittedQuestions !== null) {
     admin_ai_chat_repo_add_message($conn, $chatId, 'assistant', $savedText, $usedModel);
     admin_ai_chat_repo_touch($conn, $chatId, $scopeSnapshot);
 
-    require_once __DIR__ . '/../services/agent_auto_row_execute.php';
-    $donePayload = [
+    admin_ai_chat_sse_event('done', [
         'chat_id' => $chatId,
         'has_action' => true,
         'proposedAt' => $proposedAtMs,
-    ];
-    if (admin_ai_chat_action_is_auto_row_crud_only($finalAction)) {
-        $autoOutcomes = admin_ai_chat_run_auto_row_executions($conn, $homeId, $userId, $chatId, $finalAction, $proposedAtMs);
-        $donePayload['auto_executed'] = true;
-        $donePayload['auto_execution_summary'] = array_map(static function (array $o): array {
-            return [
-                'step' => $o['step'],
-                'ok' => (($o['payload']['status'] ?? '') === 'success'),
-                'message' => (string) ($o['payload']['message'] ?? ''),
-                'http' => (int) ($o['http'] ?? 0),
-            ];
-        }, $autoOutcomes);
-        $allOk = true;
-        foreach ($autoOutcomes as $o) {
-            if (($o['payload']['status'] ?? '') !== 'success') {
-                $allOk = false;
-                break;
-            }
-        }
-        $donePayload['auto_execution_all_ok'] = $allOk;
-        admin_ai_chat_repo_touch($conn, $chatId, $scopeSnapshot);
-    }
-
-    admin_ai_chat_sse_event('done', $donePayload);
+    ]);
 } else {
     admin_ai_chat_chunk_and_emit($finalText);
     admin_ai_chat_repo_add_message($conn, $chatId, 'assistant', $finalText, $usedModel);

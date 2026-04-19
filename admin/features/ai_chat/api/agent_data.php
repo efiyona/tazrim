@@ -71,31 +71,171 @@ if (!function_exists('admin_ai_agent_data_safe_select_list')) {
     }
 }
 
+if (!function_exists('admin_ai_agent_data_where_sql_ops')) {
+    /** @return list<string> */
+    function admin_ai_agent_data_where_sql_ops(): array
+    {
+        return ['=', '!=', '<', '>', '<=', '>=', 'LIKE', 'IS NULL', 'IS NOT NULL', 'IN', 'BETWEEN'];
+    }
+}
+
+if (!function_exists('admin_ai_agent_data_is_stray_range_operator_json_key')) {
+    /** מפתח JSON כמו "<=" או ">=" שלא עמודה — טעות נפוצה של מודלים לטווח תאריכים. */
+    function admin_ai_agent_data_is_stray_range_operator_json_key(string $key): bool
+    {
+        $k = strtoupper(trim($key));
+
+        return $k === '<=' || $k === '>=';
+    }
+}
+
+if (!function_exists('admin_ai_agent_data_where_key_looks_like_operator')) {
+    function admin_ai_agent_data_where_key_looks_like_operator(string $key): bool
+    {
+        if (admin_ai_agent_data_is_stray_range_operator_json_key($key)) {
+            return false;
+        }
+        $k = strtoupper(trim($key));
+
+        return in_array($k, ['=', '!=', '<', '>', 'LIKE'], true);
+    }
+}
+
+if (!function_exists('admin_ai_agent_data_bind_type_char')) {
+    function admin_ai_agent_data_bind_type_char(mixed $v): string
+    {
+        return is_int($v) ? 'i' : 's';
+    }
+}
+
+if (!function_exists('admin_ai_agent_data_parse_scalar_where_to_op_val')) {
+    /**
+     * ממפה ערך בודד של where (לעמודה ידועה) ל-op + ערך/ערכים.
+     *
+     * @return array{ok:true, op:string, val:mixed}|array{ok:false, error:string}
+     */
+    function admin_ai_agent_data_parse_scalar_where_to_op_val(mixed $v): array
+    {
+        if (is_array($v) && array_key_exists('op', $v)) {
+            $op = strtoupper(trim((string) $v['op']));
+            $val = $v['value'] ?? null;
+
+            return ['ok' => true, 'op' => $op, 'val' => $val];
+        }
+        // קיצור נפוץ מהמודלים: ["<=", "2026-03-31"] במקום {"op":"<=","value":"..."}
+        if (is_array($v) && !array_key_exists('op', $v) && count($v) === 2
+            && is_string($v[0]) && !is_array($v[1])) {
+            $maybeOp = strtoupper(trim($v[0]));
+            if (in_array($maybeOp, ['=', '!=', '<', '>', '<=', '>=', 'LIKE'], true)) {
+                return ['ok' => true, 'op' => $maybeOp, 'val' => $v[1]];
+            }
+        }
+        if (is_array($v) && !array_key_exists('op', $v)) {
+            return ['ok' => false, 'error' => 'where_value_array_requires_op_or_two_tuple'];
+        }
+
+        return ['ok' => true, 'op' => '=', 'val' => $v];
+    }
+}
+
+if (!function_exists('admin_ai_agent_data_flatten_where_clauses')) {
+    /**
+     * הופך where לאיחוד של תנאים (עמודה, אופרטור, ערך) — תומך בכמה תנאים על אותה עמודה.
+     *
+     * צורות נתמכות:
+     * - אובייקט מפתח=>ערך (legacy): {"user_id":2,"transaction_date":{"op":">=","value":"..."}}
+     * - מערך תנאים: [{"column":"transaction_date","op":">=","value":"..."}, ...]
+     *
+     * @return array{ok:true, clauses:list<array{col:string, op:string, val:mixed}>}|array{ok:false, error:string}
+     */
+    function admin_ai_agent_data_flatten_where_clauses(string $table, array $where): array
+    {
+        $clauses = [];
+        if ($where === []) {
+            return ['ok' => true, 'clauses' => []];
+        }
+
+        if (function_exists('array_is_list') ? array_is_list($where) : array_keys($where) === range(0, count($where) - 1)) {
+            foreach ($where as $item) {
+                if (!is_array($item)) {
+                    return ['ok' => false, 'error' => 'where_list_item_not_object'];
+                }
+                $col = trim((string) ($item['column'] ?? ''));
+                if ($col === '') {
+                    return ['ok' => false, 'error' => 'where_list_missing_column'];
+                }
+                if (!admin_ai_agent_data_allowed_column($table, $col)) {
+                    return ['ok' => false, 'error' => 'invalid_where_column:' . $col];
+                }
+                $op = strtoupper(trim((string) ($item['op'] ?? '=')));
+                $val = $item['value'] ?? null;
+                $clauses[] = ['col' => $col, 'op' => $op, 'val' => $val];
+            }
+
+            return ['ok' => true, 'clauses' => $clauses];
+        }
+
+        $lastInequalityColumn = null;
+        foreach ($where as $col => $v) {
+            $col = (string) $col;
+            if (admin_ai_agent_data_is_stray_range_operator_json_key($col)) {
+                if ($lastInequalityColumn === null || $lastInequalityColumn === '') {
+                    return ['ok' => false, 'error' => 'invalid_where_operator_as_key:' . $col];
+                }
+                if (!is_scalar($v) && $v !== null) {
+                    return ['ok' => false, 'error' => 'invalid_where_range_operator_value'];
+                }
+                $op = strtoupper(trim($col));
+                $clauses[] = ['col' => $lastInequalityColumn, 'op' => $op, 'val' => $v];
+
+                continue;
+            }
+            if (admin_ai_agent_data_where_key_looks_like_operator($col)) {
+                return ['ok' => false, 'error' => 'invalid_where_operator_as_key:' . $col];
+            }
+            if (!admin_ai_agent_data_allowed_column($table, $col)) {
+                return ['ok' => false, 'error' => 'invalid_where_column:' . $col];
+            }
+            $parsed = admin_ai_agent_data_parse_scalar_where_to_op_val($v);
+            if (!$parsed['ok']) {
+                return ['ok' => false, 'error' => (string) $parsed['error']];
+            }
+            $clauses[] = ['col' => $col, 'op' => $parsed['op'], 'val' => $parsed['val']];
+            if (in_array($parsed['op'], ['>', '>=', '<', '<='], true)) {
+                $lastInequalityColumn = $col;
+            } else {
+                // אחרי = / BETWEEN / IN וכו' — לא מצמידים מפתח "<=" שגוי לעמודה הקודמת בטעות
+                $lastInequalityColumn = null;
+            }
+        }
+
+        return ['ok' => true, 'clauses' => $clauses];
+    }
+}
+
 if (!function_exists('admin_ai_agent_data_build_where')) {
     /**
-     * בונה WHERE מ-array של ['column' => value] או ['column' => ['op' => '=', 'value' => v]].
+     * בונה WHERE מתנאים מנורמלים (AND).
      * מחזיר [$sql, $types, $values, $error|null].
      */
     function admin_ai_agent_data_build_where(string $table, array $where): array
     {
-        if (empty($where)) {
+        $flat = admin_ai_agent_data_flatten_where_clauses($table, $where);
+        if (!$flat['ok']) {
+            return ['', '', [], (string) $flat['error']];
+        }
+        $normClauses = $flat['clauses'];
+        if ($normClauses === []) {
             return ['', '', [], null];
         }
+        $allowedOps = admin_ai_agent_data_where_sql_ops();
         $parts = [];
         $types = '';
         $values = [];
-        foreach ($where as $col => $v) {
-            $col = (string) $col;
-            if (!admin_ai_agent_data_allowed_column($table, $col)) {
-                return ['', '', [], 'invalid_where_column:' . $col];
-            }
-            $op = '=';
-            $val = $v;
-            if (is_array($v) && array_key_exists('op', $v)) {
-                $op = strtoupper((string) $v['op']);
-                $val = $v['value'] ?? null;
-            }
-            $allowedOps = ['=', '!=', '<', '>', '<=', '>=', 'LIKE', 'IS NULL', 'IS NOT NULL', 'IN'];
+        foreach ($normClauses as $row) {
+            $col = (string) $row['col'];
+            $op = strtoupper((string) $row['op']);
+            $val = $row['val'];
             if (!in_array($op, $allowedOps, true)) {
                 return ['', '', [], 'invalid_op:' . $op];
             }
@@ -110,17 +250,50 @@ if (!function_exists('admin_ai_agent_data_build_where')) {
                 $placeholders = [];
                 foreach ($val as $item) {
                     $placeholders[] = '?';
-                    $types .= is_int($item) ? 'i' : 's';
+                    $types .= admin_ai_agent_data_bind_type_char($item);
                     $values[] = $item;
                 }
                 $parts[] = "`{$col}` IN (" . implode(',', $placeholders) . ')';
                 continue;
             }
+            if ($op === 'BETWEEN') {
+                if (!is_array($val) || count($val) !== 2) {
+                    return ['', '', [], 'between_requires_two_values'];
+                }
+                $parts[] = "`{$col}` BETWEEN ? AND ?";
+                $types .= admin_ai_agent_data_bind_type_char($val[0]) . admin_ai_agent_data_bind_type_char($val[1]);
+                $values[] = $val[0];
+                $values[] = $val[1];
+                continue;
+            }
             $parts[] = "`{$col}` {$op} ?";
-            $types .= is_int($val) ? 'i' : 's';
+            $types .= admin_ai_agent_data_bind_type_char($val);
             $values[] = $val;
         }
+
         return [' WHERE ' . implode(' AND ', $parts), $types, $values, null];
+    }
+}
+
+if (!function_exists('admin_ai_agent_data_query_error_coach_appendix')) {
+    /**
+     * טקסט קצר למודל כש-DATA_QUERY נכשל בגלל where — מפחית סבבי ניסוי שגויים.
+     */
+    function admin_ai_agent_data_query_error_coach_appendix(array $queryResult): string
+    {
+        if (($queryResult['ok'] ?? false) === true) {
+            return '';
+        }
+        $err = (string) ($queryResult['error'] ?? '');
+        if ($err === '' || !preg_match('/invalid_where|where_list_|where_value|between_requires|in_requires_array|^invalid_op:/u', $err)) {
+            return '';
+        }
+
+        return "\n\n[מערכת — פורמט where לטווחים ולתאריכים]\n"
+            . "- טווח על עמודה אחת: `{\"transaction_date\":{\"op\":\"BETWEEN\",\"value\":[\"2026-03-01\",\"2026-03-31\"]}}` בתוך `where`.\n"
+            . "- או `where` כמערך תנאים (כמה פעמים אותה עמודה): `[{\"column\":\"user_id\",\"value\":2},{\"column\":\"transaction_date\",\"op\":\">=\",\"value\":\"2026-03-01\"},{\"column\":\"transaction_date\",\"op\":\"<=\",\"value\":\"2026-03-31\"}]`.\n"
+            . "- קיצור לתנאי בודד: `\"transaction_date\": [\">=\", \"2026-03-01\"]` — זהה ל-`{\"op\":\">=\",\"value\":\"...\"}`.\n"
+            . "- אין להשתמש במפתחות כמו `\"<=\"` בשורש ה-where; לקצה שני השתמש ב-BETWEEN או במערך תנאים.";
     }
 }
 

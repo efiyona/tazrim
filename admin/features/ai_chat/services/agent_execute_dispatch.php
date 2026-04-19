@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * ליבת ביצוע פעולות agent (CRUD + sql) — משותף ל-agent_execute.php ול-stream_message (אוטו-ביצוע).
+ * ליבת ביצוע פעולות agent (CRUD + sql) — משותף ל-agent_execute.php.
  * מחזיר תשובת JSON כמערך + קוד HTTP, בלי exit.
  */
 
@@ -499,7 +499,7 @@ if (!function_exists('admin_ai_agent_exec_persist_chat_execution')) {
      * שומר EXECUTION_RESULT בהיסטוריית הצ'אט (זהה ל-agent_execute — ללא exit).
      *
      * @param array<string, mixed> $ctx chat_id, action, table, id, sql
-     * @param bool                   $persistErrors כשאמת — גם כשלונות (לאוטו-ביצוע)
+     * @param bool                   $persistErrors כשאמת — תיעוד גם כשלונות בצ'אט
      */
     function admin_ai_agent_exec_persist_chat_execution(mysqli $conn, int $chatId, array $ctx, array $result, bool $persistErrors = false): void
     {

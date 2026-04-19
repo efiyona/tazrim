@@ -1942,18 +1942,9 @@
         await loadHistory();
       } else if (streamAction) {
         const preamble = stripActionProposedBlock(stripQuestionsBlock(assistantText));
-        if (streamDonePayload && streamDonePayload.auto_executed && state.activeChatId) {
-          if (assistantBubble) {
-            const row = assistantBubble.closest(".admin-ai-chat-bubble-row");
-            if (row) row.remove();
-          }
-          invalidateChatCache(state.activeChatId);
-          await openChat(state.activeChatId, { force: true });
-        } else {
-          renderActionCard(assistantBubble, streamAction, { preamble: preamble });
-          invalidateChatCache(state.activeChatId);
-          await loadHistory();
-        }
+        renderActionCard(assistantBubble, streamAction, { preamble: preamble });
+        invalidateChatCache(state.activeChatId);
+        await loadHistory();
       } else {
         if (!streamHasDoneEvent && assistantText === "") {
           assistantText = "לא התקבלה תשובה מלאה — השידור הסתיים בלי סיום תקין.\n\nסיבות אפשריות: שגיאת PHP בשרת, חריגה מזמן ריצה, או המודל החזיר תשובה ריקה.\nבדקו ב-ai_api_logs לפרטים, או נסו שוב עם ניסוח אחר.";
