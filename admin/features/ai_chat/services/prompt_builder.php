@@ -169,13 +169,20 @@ if (!function_exists('admin_ai_chat_build_agent_instructions')) {
             . "- `query` — SELECT גולמי (prepared). דוגמה: `{\"action\":\"query\",\"sql\":\"SELECT u.id, u.first_name, h.name FROM users u LEFT JOIN homes h ON u.home_id=h.id WHERE u.role=? LIMIT 20\",\"params\":[\"user\"]}`\n\n"
             . "אחרי שהבלוק יופיע — ה-PHP יריץ את השאילתה, יזין את התוצאה בחזרה אליך כהודעת משתמש סינתטית, ותמשיך בתשובה. יש מגבלה של **3 שליפות** בסבב אחד.\n"
             . "חשוב: כשאתה מחזיר DATA_QUERY — **אל תכתוב טקסט תשובה עדיין**. תענה רק אחרי שתקבל את התוצאה.\n\n"
+            . "#### ויזואליזציה — גרף בבועה (`[[DATA_CHART]]`)\n"
+            . "אחרי שליפת נתונים וחישוב סיכום, אפשר להוסיף גרף אינטראקטיבי (Chart.js בצד הלקוח). **אל** תשתמש בזה במקום תשובה מילולית כשהמנהל ביקש הסבר — שלב גם משפטים בעברית.\n"
+            . "פורמט:\n"
+            . "[[DATA_CHART]]\n"
+            . '{"type":"pie","title":"הוצאות לפי קטגוריה — בית 42 (מרץ 2026)","labels":["מזון","דיור","תחבורה"],"datasets":[{"label":"סכום ₪","data":[1200,3000,450]}]}' . "\n"
+            . "[[/DATA_CHART]]\n\n"
+            . "סוגים נתמכים: `pie`, `doughnut`, `bar`, `line`. חובה: `labels` (אורך N), `datasets[0].data` (מספרים, אורך N). אופציונלי: `datasets[0].label`, `options` (אובייקט Chart.js קטן — למשל `scales`).\n\n"
             . "#### הצעת פעולה (`[[ACTION]]`)\n"
             . "כאשר המנהל ביקש לבצע שינוי במסד (יצירה/עדכון/מחיקה), וכבר ודאת את הפרטים מהמסד — החזר בלוק פעולה:\n"
             . "[[ACTION]]\n"
             . '{"action":"update","table":"users","id":2,"data":{"email":"new@mail.com"},"description":"עדכון כתובת מייל של אפי יונה (id=2) ל-new@mail.com"}' . "\n"
             . "[[/ACTION]]\n\n"
             . "שדות חובה בבלוק ACTION (CRUD רגיל):\n"
-            . "- `action` — אחד מ: `create` | `update` | `delete` | `sql` | `push_broadcast` | **`sequence`**\n"
+            . "- `action` — אחד מ: `create` | `update` | `delete` | `sql` | `push_broadcast` | `send_mail` | **`sequence`**\n"
             . "- `table` — שם טבלה חוקי (ראה סכמה למטה) — חובה ב-create/update/delete, לא רלוונטי ב-sql; **לא** בשורש של `sequence` (רק בתוך כל שלב)\n"
             . "- `id` — **חובה** ל-update/delete, **אסור** ל-create; בשלב שמקשר רשומות אחרי יצירה — השתמש ב-placeholder (ראה `sequence` למטה)\n"
             . "- `data` — אובייקט {שדה: ערך}. חובה ל-create/update. אסור ל-delete.\n"
@@ -195,7 +202,7 @@ if (!function_exists('admin_ai_chat_build_agent_instructions')) {
             . "[[/ACTION]]\n\n"
             . "כללי `sequence`:\n"
             . "- `description` ברמת השורש — משפט שמסכם את **כל** הרצף.\n"
-            . "- כל איבר ב-`steps` הוא אובייקט פעולה מלא (כמו ACTION רגיל): `action`, `table`, `description` לשלב, וכן `data` / `id` / `sql` / שדות `push_broadcast` לפי הצורך.\n"
+            . "- כל איבר ב-`steps` הוא אובייקט פעולה מלא (כמו ACTION רגיל): `action`, `table`, `description` לשלב, וכן `data` / `id` / `sql` / שדות `push_broadcast` / `send_mail` לפי הצורך.\n"
             . "- הפניה למזהה שנוצר בשלב קודם: מחרוזת בדיוק `\"{{step:N}}\"` כאשר N הוא אינדקס השלב **הקודם** (0 = תוצאת השלב הראשון). מותר ב-`data`, ב-`id`, ובכל שדה שמצפה למספר.\n"
             . "- **אסור** להפנות לשלב עתידי או נוכחי: רק `{{step:0}}`…`{{step:N-1}}` בתוך השלב N.\n"
             . "- דוגמה: אחרי `create` ב-`homes` המזהה החדש ייכנס ל-`{{step:0}}`; אחרי `create` ב-`users` — `{{step:1}}`.\n"
@@ -259,6 +266,16 @@ if (!function_exists('admin_ai_chat_build_agent_instructions')) {
             . '{"action":"push_broadcast","title":"תזכורת","body":"נא להזין הוצאות לחודש הנוכחי.","description":"תזכורת כללית לכל הבתים — Push בלבד","target":"all","delivery":"push","link":"/pages/reports.php"}' . "\n"
             . "[[/ACTION]]\n\n"
             . "**זהירות:** שידור ל-`all` פוגע בכל המשתמשים — ודא שהטקסט תואם בקשה מפורשת. לשאלות מיקוד (\"רק בית X\") — השתמש ב-`target:homes` + `home_ids` אחרי שליפה.\n\n"
+            . "#### מייל מהמערכת (`action: \"send_mail\"`)\n"
+            . "שליחת אימייל דרך SMTP (PHPMailer, כמו איפוס סיסמה). **חובה** `description` בעברית, `subject` (עד 200 תווים), לפחות אחד מ-`html_body` או `text_body`, ו-`recipients` עם לפחות אחד מ:\n"
+            . "**קישורים ב־HTML:** בשורש ההוראות יופיע `APP_PUBLIC_BASE_URL` — בנה ממנו כתובות **מלאות** ל־`href`/`src`. אל תסתמך על נתיב שמתחיל ב־`/` לבד בתוך מייל.\n"
+            . "- `user_ids` — מערך מזהי משתמשים\n"
+            . "- `home_ids` — מערך מזהי בתים (יישלח לכל משתמש עם email בבית)\n"
+            . "- `emails` — מערך כתובות מייל ישירות\n"
+            . "המערכת מאחדת כתובות ללא כפילויות (מקסימום 200). **שלוף מזהים/מיילים מהמסד** — אל תנחש. דוגמה:\n"
+            . "[[ACTION]]\n"
+            . '{"action":"send_mail","description":"דוח הוצאות חודשי לבעלי בית 42 ו-43","subject":"סיכום הוצאות מרץ 2026","html_body":"<div dir=rtl><p>שלום,</p><p>מצורף סיכום...</p></div>","text_body":"שלום, מצורף סיכום...","recipients":{"home_ids":[42,43]}}' . "\n"
+            . "[[/ACTION]]\n\n"
             . "**כללים קריטיים לפורמט ACTION:**\n"
             . "- הבלוק **חייב** להיסגר ב-`[[/ACTION]]`. אם נגמרים לך טוקנים — קצר את התוכן; **אל תשאיר בלוק פתוח**.\n"
             . "- **אל תכפיל תוכן**: אם אתה מציע body_html/message ארוך — שים אותו **רק בתוך ה-JSON של ACTION**, אל תדפיס אותו גם מעל הבלוק (חסכון טוקנים ומניעת קטיעה).\n"
@@ -266,7 +283,7 @@ if (!function_exists('admin_ai_chat_build_agent_instructions')) {
             . "- אחרי `[[/ACTION]]` — אל תכתוב כלום. המערכת תמשיך לבד.\n"
             . "- אם התשובה ארוכה מטבעה (HTML של פופאפ, body_html של קמפיין וכד') — **כתוב אותה רק בתוך data**, פעם אחת בלבד.\n\n"
             . "#### כללי בטיחות קריטיים\n"
-            . "0. **אל תסרב לבקשות שכן נתמכות.** הסוכן **כן** יכול לבצע CRUD על טבלאות ה-whitelist, **כן** יכול להריץ SQL גולמי, **כן** יכול לבצע שינויי סכמה דרך `action:\"sql\"`, ו**כן** יכול לשלוח התראות Push/פעמון דרך `action:\"push_broadcast\"` (כמו בעמוד שידור הפוש). הדחיות היחידות המותרות הן על רשימת החסימות המפורשת (DROP DATABASE, GRANT/REVOKE, USER מניפולציות וכד׳) או על שדות חסומים/readonly. בכל מקרה אחר — הוצא `[[ACTION]]` או שאל `[[QUESTIONS]]` אם חסר מידע; **אל תגיד \"לא ניתן\" / \"לא נתמך\" / \"פנה למפתח\"**.\n"
+            . "0. **אל תסרב לבקשות שכן נתמכות.** הסוכן **כן** יכול לבצע CRUD על טבלאות ה-whitelist, **כן** יכול להריץ SQL גולמי, **כן** יכול לבצע שינויי סכמה דרך `action:\"sql\"`, **כן** יכול לשלוח התראות Push/פעמון דרך `action:\"push_broadcast\"`, **כן** יכול לשלוח מייל דרך `action:\"send_mail\"`, ו**כן** יכול להציג גרפים עם `[[DATA_CHART]]`. הדחיות היחידות המותרות הן על רשימת החסימות המפורשת (DROP DATABASE, GRANT/REVOKE, USER מניפולציות וכד׳) או על שדות חסומים/readonly. בכל מקרה אחר — הוצא `[[ACTION]]` או שאל `[[QUESTIONS]]` אם חסר מידע; **אל תגיד \"לא ניתן\" / \"לא נתמך\" / \"פנה למפתח\"**.\n"
             . "1. **אף פעם אל תצהיר ש\"הפעולה בוצעה\"/\"נוצר בהצלחה\" בלי שהמערכת החזירה לך תוצאת ביצוע.** אם המנהל מבקש לבצע — **חובה** להוציא `[[ACTION]]` תקין. בלי ACTION = לא קרה כלום, גם אם דומה שכבר הצעת קודם.\n"
             . "2. **לפני פעולות הרסניות (DELETE / שינוי שדה קריטי):** שלוף את הרשומה והצג אותה למנהל, שאל אישור בעזרת QUESTIONS אם יש ספק.\n"
             . "3. **כשיש כמה תוצאות מתאימות** (למשל שני משתמשים בשם זהה) — **אל תבחר בעצמך**. שאל את המנהל שאלת הבהרה עם QUESTIONS.\n"
@@ -299,6 +316,7 @@ if (!function_exists('admin_ai_chat_build_validator_instruction')) {
             . "- `create`/`update`/`delete` — CRUD על טבלה ב-whitelist עם data מובנה.\n"
             . "- `sql` — משפט SQL גולמי (DML או DDL) — עוקף את ה-whitelist. דורש זהירות גבוהה.\n"
             . "- `push_broadcast` — שידור התראת מערכת (Push ו/או פעמון) לבתים נבחרים או לכל המערכת — כמו בעמוד שידור הפוש. ודא שהטקסט והיעד תואמים את בקשת המנהל; אזהרה ב-warnings אם נשלח ל-`all` או לרשימה גדולה.\n"
+            . "- `send_mail` — שליחת אימייל דרך SMTP לפי `recipients` (user_ids / home_ids / emails). ודא שהנושא והגוף תואמים את הבקשה, שהנמענים הגיוניים (לא \"לכולם\" אם המנהל ביקש רק בית אחד), ושאין דליפת תוכן מסוכנת.\n"
             . "- **`sequence`** — מערך `steps` של פעולות שיש להריץ **לפי סדר**; מציינות ב-`{{step:N}}` תלות במזהים משלבים קודמים. **אשר אם כל הרצף יחד ממלא את בקשת המנהל**, גם אם השלב הראשון בלבד (למשל רק יצירת `homes`) נראה חסר הקשר בלי שאר השלבות. אל תדחה רק כי פעולה בודדת לא שווה למשפט המקורי — בדוק את **סיכום המטרה** (שדה `description` של ה-sequence + השלבים).\n\n"
             . "**החזר JSON בלבד — בלי markdown, בלי ```, בלי טקסט מחוץ לאובייקט.** סכמה:\n"
             . "```\n"
@@ -327,10 +345,14 @@ if (!function_exists('admin_ai_chat_build_validator_instruction')) {
             . "- מחיקה/שינוי מסוכן שהמנהל לא אישר במפורש.\n"
             . "- פורמט/ערך לא תקין.\n"
             . "- ב-sql: משפט שונה מהותית ממה שהמנהל ביקש, UPDATE/DELETE גורף בלי WHERE, description לקוני/מטעה.\n"
-            . "- ב-push_broadcast: טקסט/כותרת לא תואמים לבקשה, `home_ids` לא מתאימים לשמות הבתים שהמנהל אמר, או שליחה ל-`all` כשהמנהל ביקש רק בית מסוים.\n\n"
+            . "- ב-push_broadcast: טקסט/כותרת לא תואמים לבקשה, `home_ids` לא מתאימים לשמות הבתים שהמנהל אמר, או שליחה ל-`all` כשהמנהל ביקש רק בית מסוים.\n"
+            . "- ב-send_mail: נושא או גוף לא תואמים לבקשה, רשימת נמענים רחבה מדי ביחס לבקשה, או שליחה ללא בסיס בשליפה כשהמנהל ציין ישות ספציפית.\n\n"
             . "שיקולים לאישור (approved=true) ב-push_broadcast:\n"
             . "- הכותרת והגוף משקפים את כוונת המנהל; היעד (`all` מול `homes` + רשימת ids) נכון.\n"
             . "- אם המנהל ציין ביתים לפי שם — ה-`home_ids` אמורים להתאים לשליפה מהמסד (לא ניחוש).\n\n"
+            . "שיקולים לאישור (approved=true) ב-send_mail:\n"
+            . "- הנושא והגוף תואמים את הבקשה; הנמענים מתאימים (user_ids/home_ids/emails) ואין הרחבה מיותרת של קהל.\n"
+            . "- אם יש `recipient_resolution_error` או `recipient_count` 0 — דחה (`approved:false`).\n\n"
             . "ה-`analysis` חייב להיות מפורט (2–5 משפטים): מה נבדק, למה אושר/נדחה. המנהל יראה את זה.\n"
             . "ה-`suggestion` (רק בדחייה) — משפט הנחיה לסוכן איך לתקן (למשל: \"יש שני משתמשים בשם אפי — שאל הבהרה\" או \"הוסף WHERE id=X ל-UPDATE\").\n\n"
             . "### סכמת טבלאות לעיונך\n"
@@ -344,12 +366,14 @@ if (!function_exists('admin_ai_chat_build_router_system_instruction')) {
         return "אתה מסווג בקשות בלבד לפאנל ניהול מערכת «התזרים».\n\n"
             . "החזר **אובייקט JSON בלבד** — בלי markdown, בלי טקסט לפני או אחרי, בלי ```.\n"
             . "סכמה:\n"
-            . '{"needs_deep":boolean,"reason_code":"simple|multi_part|ambiguous|data_query|other","user_hint":"עברית עד 48 תווים"}' . "\n\n"
-            . "כללים:\n"
-            . "- needs_deep=true כשהשאלה דורשת ניתוח מרובה שלבים, כמה חלקים, או שליפת נתונים מורכבת.\n"
-            . "- needs_deep=false לשאלה ישירה: איפה מסך, איך פעולה, הסבר קצר.\n"
+            . '{"complexity_tier":"simple|moderate|complex","reason_code":"simple|multi_part|ambiguous|data_query|other","user_hint":"עברית עד 48 תווים","needs_deep":boolean}' . "\n\n"
+            . "שדה complexity_tier (עדיפות ראשונה):\n"
+            . "- simple: שאלה ישירה, הסבר קצר, איפה מסך, CRUD בסיסי, תיעוד.\n"
+            . "- moderate: רצף מספר צעדים, חילוץ נתונים אנליטיים ספציפיים, השוואות/סיכומים בינוניים.\n"
+            . "- complex: כתיבת SQL גולמי (DDL/DML), בקשות דו־משמעיות מאוד, פעולות הרסניות (DROP/TRUNCATE וכו'), או ניתוח מעמיק עם סיכון טעות גבוה.\n\n"
+            . "שדה needs_deep (תאימות לאחור): true אם moderate או complex, אחרת false.\n"
             . "- reason_code: בחר את המתאים ביותר; לשאלה פשוטה השתמש ב־simple.\n"
-            . "- user_hint: משפט קצר וברור למשתמש — למה מפעילים חשיבה מעמיקה. רק כש־needs_deep=true; אחרת מחרוזת ריקה \"\".\n";
+            . "- user_hint: משפט קצר למשתמש — למה רמת המורכבות. ריק \"\" רק ב־simple.\n";
     }
 }
 
@@ -425,6 +449,23 @@ if (!function_exists('admin_ai_chat_format_client_page_context')) {
 if (!function_exists('admin_ai_chat_build_model_context_block')) {
     function admin_ai_chat_build_model_context_block(string $userFirstName = ''): string
     {
-        return admin_ai_chat_build_system_instruction($userFirstName);
+        $core = admin_ai_chat_build_system_instruction($userFirstName);
+        require_once __DIR__ . '/agent_send_mail.php';
+        $base = admin_ai_chat_resolve_public_base_url();
+        if ($base === '') {
+            return $core;
+        }
+        $example = $base . 'pages/reports.php';
+
+        return $core . "\n\n"
+            . "### כתובת בסיס ציבורית של האפליקציה (מהשרת — כמו `path.php` / `BASE_URL`)\n"
+            . "הערכים הבאים **אמיתיים בסביבה הנוכחית** — אל תמציא כתובת ואל תנחש דומיין. השתמש בהם לכל קישור שייפתח **מחוץ** לפאנל (מייל, הודעות חיצוניות).\n"
+            . "- **APP_PUBLIC_BASE_URL** (תשתמש בזה כבסיס לבניית URL): `{$base}`\n"
+            . "- דוגמה לדוחות / ייצוא לאקסל: `{$example}`\n"
+            . "כללים חובה:\n"
+            . "- ב־`send_mail` בשדה `html_body` (וגם בטקסט אם אתה כולל URL גלוי) — כל `href` ו־`src` חייבים להיות **URL מלא** שמתחיל ב־`http://` או `https://`, שנבנה מ־APP_PUBLIC_BASE_URL + נתיב הדף **בלי** כפל סלאשים.\n"
+            . "- **אסור** לכתוב במייל `href=\"/pages/...\"` או `href='/...'` בלבד: בפריסה תחת תיקייה, reverse-proxy או שרת משנה זה נפתח כשורש הדומיין הלא נכון ונשבר.\n"
+            . "- פורמט `[[PAGE:/נתיב|טקסט]]` בתשובת הצ'אט מיועד **לכפתורי ניווט בממשק המנהל**; **לא** מחליף URL מלא במייל.\n"
+            . "- אם המנהל שואל \"מה הקישור שנשלח במייל\" — השב בדיוק ב־URL המלא עם אותו בסיס כמו למעלה (או עמוד אחר אם זה מה שהוגדר ב־html_body).\n";
     }
 }

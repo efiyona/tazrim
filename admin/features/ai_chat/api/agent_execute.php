@@ -142,7 +142,7 @@ $GLOBALS['admin_ai_agent_exec_chat_context'] = [
     'sql' => $rawSql,
 ];
 
-if (!in_array($action, ['create', 'update', 'delete', 'sql', 'push_broadcast'], true)) {
+if (!in_array($action, ['create', 'update', 'delete', 'sql', 'push_broadcast', 'send_mail'], true)) {
     admin_ai_agent_exec_respond(['status' => 'error', 'message' => 'invalid_action', 'action' => $action], 400);
 }
 

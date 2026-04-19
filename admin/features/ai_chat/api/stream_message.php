@@ -160,10 +160,16 @@ function admin_ai_chat_gemini_generate_text(string $apiKey, string $model, array
 }
 
 require_once __DIR__ . '/../services/stream_history.php';
+require_once __DIR__ . '/../services/reply_quality_gate.php';
 
 function admin_ai_chat_route_decision(string $apiKey, string $message): array
 {
-    $default = ['needs_deep' => false, 'reason_code' => 'simple', 'user_hint' => ''];
+    $default = [
+        'complexity_tier' => 'simple',
+        'needs_deep' => false,
+        'reason_code' => 'simple',
+        'user_hint' => '',
+    ];
     $routerInstruction = admin_ai_chat_build_router_system_instruction();
     $baseBody = [
         'system_instruction' => [
@@ -196,6 +202,10 @@ function admin_ai_chat_route_decision(string $apiKey, string $message): array
             if (!is_array($parsed)) {
                 continue;
             }
+            $tierRaw = isset($parsed['complexity_tier']) ? strtolower(trim((string) $parsed['complexity_tier'])) : '';
+            $allowedTiers = ['simple', 'moderate', 'complex'];
+            $tier = in_array($tierRaw, $allowedTiers, true) ? $tierRaw : '';
+
             $needs = false;
             if (array_key_exists('needs_deep', $parsed)) {
                 $v = $parsed['needs_deep'];
@@ -207,6 +217,13 @@ function admin_ai_chat_route_decision(string $apiKey, string $message): array
                     $needs = in_array(strtolower(trim($v)), ['1', 'true', 'yes'], true);
                 }
             }
+
+            if ($tier === '') {
+                $tier = $needs ? 'moderate' : 'simple';
+            }
+
+            $needsDeep = in_array($tier, ['moderate', 'complex'], true);
+
             $reason = (string) ($parsed['reason_code'] ?? 'simple');
             $hint = trim((string) ($parsed['user_hint'] ?? ''));
             if (function_exists('mb_substr')) {
@@ -214,12 +231,13 @@ function admin_ai_chat_route_decision(string $apiKey, string $message): array
             } else {
                 $hint = substr($hint, 0, 48);
             }
-            if ($needs && $hint === '') {
-                $hint = 'מנתח את השאלה לעומק';
+            if ($needsDeep && $hint === '') {
+                $hint = $tier === 'complex' ? 'משימה מורכבת — דורשת מודל חזק' : 'מנתח את השאלה לעומק';
             }
 
             return [
-                'needs_deep' => $needs,
+                'complexity_tier' => $tier,
+                'needs_deep' => $needsDeep,
                 'reason_code' => $reason !== '' ? $reason : 'other',
                 'user_hint' => $hint,
             ];
@@ -320,8 +338,38 @@ function admin_ai_chat_validate_leaf_action_shape(array $action, bool $allowPlac
 {
     $act = strtolower((string) ($action['action'] ?? ''));
     $table = (string) ($action['table'] ?? '');
-    if (!in_array($act, ['create', 'update', 'delete', 'sql', 'push_broadcast'], true)) {
+    if (!in_array($act, ['create', 'update', 'delete', 'sql', 'push_broadcast', 'send_mail'], true)) {
         return ['ok' => false, 'error' => 'invalid_action_type'];
+    }
+    if ($act === 'send_mail') {
+        $desc = trim((string) ($action['description'] ?? ''));
+        if ($desc === '') {
+            return ['ok' => false, 'error' => 'missing_description_for_send_mail'];
+        }
+        $sub = trim((string) ($action['subject'] ?? ''));
+        if ($sub === '') {
+            return ['ok' => false, 'error' => 'send_mail_missing_subject'];
+        }
+        if ((function_exists('mb_strlen') ? mb_strlen($sub, 'UTF-8') : strlen($sub)) > 200) {
+            return ['ok' => false, 'error' => 'send_mail_subject_too_long'];
+        }
+        $html = trim((string) ($action['html_body'] ?? ''));
+        $plain = trim((string) ($action['text_body'] ?? ''));
+        if ($html === '' && $plain === '') {
+            return ['ok' => false, 'error' => 'send_mail_missing_body'];
+        }
+        $rec = $action['recipients'] ?? null;
+        if (!is_array($rec)) {
+            return ['ok' => false, 'error' => 'send_mail_missing_recipients'];
+        }
+        $hasAny = (isset($rec['user_ids']) && is_array($rec['user_ids']) && count($rec['user_ids']) > 0)
+            || (isset($rec['home_ids']) && is_array($rec['home_ids']) && count($rec['home_ids']) > 0)
+            || (isset($rec['emails']) && is_array($rec['emails']) && count($rec['emails']) > 0);
+        if (!$hasAny) {
+            return ['ok' => false, 'error' => 'send_mail_recipients_empty'];
+        }
+
+        return ['ok' => true];
     }
     if ($act === 'push_broadcast') {
         $title = trim((string) ($action['title'] ?? ''));
@@ -561,6 +609,65 @@ function admin_ai_chat_run_validator(string $apiKey, string $originalRequest, ar
     ];
 }
 
+/**
+ * שער איכות לתשובה גולמית — רק כשהסריקה המהירה מסמנת חשד; מחזיר האם לקבל את הטיוטה.
+ *
+ * @param list<string> $scanReasons
+ * @return array{acceptable: bool, retry_instruction_he: string, model: string}
+ */
+function admin_ai_chat_run_reply_polish_gate(string $apiKey, string $originalUserMessage, string $draftAssistant, array $scanReasons): array
+{
+    $reasonStr = implode(',', $scanReasons);
+    $sys = "אתה **בודק איכות תשובה** לסוכן AI בפאנל ניהול (עברית).\n\n"
+        . "קבע אם הטיוטה למטה מתאימה **להצגה למנהל** כתשובה סופית, או שהיא נראית כמו טיוטת-ביניים: שאריות כלי (`[[DATA_QUERY]]` וכו'), JSON גולמי בלי הסבר, או קוד בלי מלל בעברית.\n\n"
+        . "החזר **אובייקט JSON בלבד** (בלי markdown):\n"
+        . '{"acceptable":true|false,"retry_instruction_he":"רק אם acceptable=false — הנחיה קצרה לסוכן לנסח מחדש בעברית, בלי בלוקים פנימיים"}';
+
+    $userPay = "בקשת המנהל:\n«{$originalUserMessage}»\n\n"
+        . "טיוטת תשובה מהסוכן:\n---\n{$draftAssistant}\n---\n\n"
+        . "דגלי זיהוי מהיר: {$reasonStr}";
+
+    $body = [
+        'system_instruction' => ['parts' => [['text' => $sys]]],
+        'contents' => [
+            ['role' => 'user', 'parts' => [['text' => $userPay]]],
+        ],
+        'generationConfig' => [
+            'temperature' => 0.12,
+            'maxOutputTokens' => 280,
+            'responseMimeType' => 'application/json',
+        ],
+    ];
+
+    $models = ['gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    foreach ($models as $m) {
+        $text = admin_ai_chat_gemini_generate_text($apiKey, $m, $body);
+        if ($text === null) {
+            continue;
+        }
+        $parsed = json_decode(admin_ai_chat_strip_json_fences($text), true);
+        if (!is_array($parsed)) {
+            continue;
+        }
+        $acceptable = true;
+        if (array_key_exists('acceptable', $parsed)) {
+            $v = $parsed['acceptable'];
+            if (is_bool($v)) {
+                $acceptable = $v;
+            } elseif (is_int($v) || is_float($v)) {
+                $acceptable = ((int) $v) === 1;
+            } elseif (is_string($v)) {
+                $acceptable = in_array(strtolower(trim($v)), ['1', 'true', 'yes'], true);
+            }
+        }
+        $hint = trim((string) ($parsed['retry_instruction_he'] ?? ''));
+
+        return ['acceptable' => $acceptable, 'retry_instruction_he' => $hint, 'model' => $m];
+    }
+
+    return ['acceptable' => true, 'retry_instruction_he' => '', 'model' => ''];
+}
+
 // ─────────────────────────────────────────────────────────
 // Main flow
 // ─────────────────────────────────────────────────────────
@@ -661,7 +768,11 @@ if (is_array($pageCtx)) {
 $pageBlock = admin_ai_chat_format_client_page_context($pagePath, $pageTitle, $pageEntity);
 
 $route = admin_ai_chat_route_decision($apiKey, $message);
-$needsDeep = !empty($route['needs_deep']);
+$complexityTier = strtolower((string) ($route['complexity_tier'] ?? 'simple'));
+if (!in_array($complexityTier, ['simple', 'moderate', 'complex'], true)) {
+    $complexityTier = !empty($route['needs_deep']) ? 'moderate' : 'simple';
+}
+$needsDeep = in_array($complexityTier, ['moderate', 'complex'], true);
 
 $userFirstName = admin_ai_chat_format_user_first_name((string) ($_SESSION['first_name'] ?? ''));
 $modelContext = admin_ai_chat_build_model_context_block($userFirstName);
@@ -674,25 +785,32 @@ if ($needsDeep) {
     $modelContext .= "\n\n---\n" . admin_ai_chat_build_deep_system_layer_suffix();
 }
 
-$genTemp = $needsDeep ? 0.32 : 0.28;
+$genTemp = $complexityTier === 'complex' ? 0.26 : ($complexityTier === 'moderate' ? 0.32 : 0.28);
 $genMax = 4000;
 
-admin_ai_chat_sse_event('meta', ['chat_id' => $chatId, 'blocked' => false, 'deep_pass' => $needsDeep]);
-if ($needsDeep) {
-    admin_ai_chat_sse_event('thinking', [
-        'hint' => (string) ($route['user_hint'] ?? ''),
-        'reason_code' => (string) ($route['reason_code'] ?? 'other'),
-    ]);
-}
+admin_ai_chat_sse_event('meta', [
+    'chat_id' => $chatId,
+    'blocked' => false,
+    'deep_pass' => $needsDeep,
+    'complexity_tier' => $complexityTier,
+    'user_hint' => (string) ($route['user_hint'] ?? ''),
+    'reason_code' => (string) ($route['reason_code'] ?? 'simple'),
+]);
 
-$agentModels = $needsDeep
-    ? ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite']
-    : ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash'];
+$primaryModels = match ($complexityTier) {
+    'complex' => ['gemini-2.5-pro', 'gemini-2.0-pro', 'gemini-1.5-pro'],
+    'moderate' => ['gemini-2.5-flash', 'gemini-2.0-flash'],
+    default => ['gemini-2.5-flash-lite', 'gemini-2.5-flash'],
+};
+$fallbackModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+$agentModels = array_values(array_unique(array_merge($primaryModels, $fallbackModels)));
 
 $maxDataQueries = 3;
 $dataQueryCount = 0;
 $maxValidatorRetries = 2;
 $validatorRetryCount = 0;
+$maxReplyPolishRetries = 1;
+$replyPolishRetries = 0;
 $usedModel = '';
 $finalText = '';
 $finalAction = null;
@@ -831,10 +949,35 @@ while (true) {
     }
 
     // תשובה רגילה
-    $finalText = admin_ai_chat_strip_action_block($rawText);
-    if ($finalText === '' && $rawText !== '') {
-        $finalText = 'לא הצלחתי לנסח פעולה תקינה. נסה לנסח את הבקשה מחדש, אם אפשר עם פחות פירוט (ה-HTML הארוך יכול להיכנס ישירות ל-data).';
+    $candidateText = admin_ai_chat_strip_action_block($rawText);
+    if ($candidateText === '' && $rawText !== '') {
+        $candidateText = 'לא הצלחתי לנסח פעולה תקינה. נסה לנסח את הבקשה מחדש, אם אפשר עם פחות פירוט (ה-HTML הארוך יכול להיכנס ישירות ל-data).';
     }
+
+    $scan = admin_ai_chat_reply_quality_scan($candidateText);
+    if ($scan['suspicious'] && $replyPolishRetries < $maxReplyPolishRetries) {
+        $gate = admin_ai_chat_run_reply_polish_gate($apiKey, $message, $candidateText, $scan['reasons']);
+        if (!$gate['acceptable']) {
+            $replyPolishRetries++;
+            $history[] = [
+                'role' => 'model',
+                'parts' => [['text' => $rawText]],
+            ];
+            $hint = $gate['retry_instruction_he'] !== ''
+                ? $gate['retry_instruction_he']
+                : admin_ai_chat_reply_polish_default_hint($scan['reasons']);
+            $history[] = [
+                'role' => 'user',
+                'parts' => [['text' => "שער איכות התשובה: הטקסט לא מוכן להצגה למנהל.\n{$hint}"]],
+            ];
+            $historyText[] = ['role' => 'assistant', 'text' => $rawText];
+            $historyText[] = ['role' => 'user', 'text' => $hint];
+            admin_ai_chat_sse_event('reply_polish', ['hint' => 'משפר תשובה…', 'reasons' => $scan['reasons']]);
+            continue;
+        }
+    }
+
+    $finalText = $candidateText;
     break;
 }
 
@@ -932,6 +1075,29 @@ if ($emittedQuestions !== null) {
             $actionPayload['home_ids'] = $finalAction['home_ids'];
         }
     }
+    if (($finalAction['action'] ?? '') === 'send_mail') {
+        if (isset($finalAction['subject'])) {
+            $actionPayload['subject'] = (string) $finalAction['subject'];
+        }
+        if (isset($finalAction['html_body'])) {
+            $actionPayload['html_body'] = (string) $finalAction['html_body'];
+        }
+        if (isset($finalAction['text_body'])) {
+            $actionPayload['text_body'] = (string) $finalAction['text_body'];
+        }
+        if (isset($finalAction['recipients']) && is_array($finalAction['recipients'])) {
+            $actionPayload['recipients'] = $finalAction['recipients'];
+        }
+        if (isset($finalAction['recipient_count'])) {
+            $actionPayload['recipient_count'] = (int) $finalAction['recipient_count'];
+        }
+        if (isset($finalAction['recipient_preview'])) {
+            $actionPayload['recipient_preview'] = (string) $finalAction['recipient_preview'];
+        }
+        if (isset($finalAction['recipient_resolution_error'])) {
+            $actionPayload['recipient_resolution_error'] = (string) $finalAction['recipient_resolution_error'];
+        }
+    }
     $proposedAtMs = (int) round(microtime(true) * 1000);
     $actionPayload['proposedAt'] = $proposedAtMs;
 
@@ -945,12 +1111,18 @@ if ($emittedQuestions !== null) {
         'chat_id' => $chatId,
         'has_action' => true,
         'proposedAt' => $proposedAtMs,
+        'complexity_tier' => $complexityTier,
+        'deep_pass' => $needsDeep,
     ]);
 } else {
     admin_ai_chat_chunk_and_emit($finalText);
     admin_ai_chat_repo_add_message($conn, $chatId, 'assistant', $finalText, $usedModel);
     admin_ai_chat_repo_touch($conn, $chatId, $scopeSnapshot);
-    admin_ai_chat_sse_event('done', ['chat_id' => $chatId, 'deep_pass' => $needsDeep]);
+    admin_ai_chat_sse_event('done', [
+        'chat_id' => $chatId,
+        'deep_pass' => $needsDeep,
+        'complexity_tier' => $complexityTier,
+    ]);
 }
 
 $deepTag = $needsDeep ? ' deep=1' : '';
@@ -958,12 +1130,13 @@ $agentTag = '';
 if ($finalAction !== null) {
     $at = (string) ($finalAction['action'] ?? '');
     $tb = (string) ($finalAction['table'] ?? '');
-    $agentTag = ' action=' . $at . ':' . ($tb !== '' ? $tb : (($at === 'sequence') ? 'multi' : (($at === 'push_broadcast') ? 'push' : '')));
+    $agentTag = ' action=' . $at . ':' . ($tb !== '' ? $tb : (($at === 'sequence') ? 'multi' : (($at === 'push_broadcast') ? 'push' : (($at === 'send_mail') ? 'mail' : ''))));
 }
 $qTag = ($dataQueryCount > 0) ? ' dq=' . $dataQueryCount : '';
 $vTag = ($validatorRetryCount > 0) ? ' vret=' . $validatorRetryCount : '';
+$pTag = ($replyPolishRetries > 0) ? ' polish=' . $replyPolishRetries : '';
 if (function_exists('admin_ai_chat_db_ensure_alive')) {
     admin_ai_chat_db_ensure_alive($conn);
 }
-$statusText = @mysqli_real_escape_string($conn, 'Admin AI Chat Success (Model: ' . $usedModel . $deepTag . $agentTag . $qTag . $vTag . ')');
+$statusText = @mysqli_real_escape_string($conn, 'Admin AI Chat Success (Model: ' . $usedModel . $deepTag . $agentTag . $qTag . $vTag . $pTag . ')');
 @mysqli_query($conn, "INSERT INTO ai_api_logs (home_id, user_id, action_type) VALUES ({$homeId}, {$userId}, '{$statusText}')");

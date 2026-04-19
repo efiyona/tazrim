@@ -98,6 +98,26 @@ if (!function_exists('admin_ai_agent_exec_analyze_sql')) {
     }
 }
 
+if (!function_exists('admin_ai_agent_dispatch_fetch_row_snapshot')) {
+    /**
+     * שורה אחת לפני עדכון/מחיקה — אותו נתיב כמו enrich (get + פענוח/סינון פלט).
+     *
+     * @return array<string, mixed>|null
+     */
+    function admin_ai_agent_dispatch_fetch_row_snapshot(mysqli $conn, string $table, int $id): ?array
+    {
+        if ($id <= 0 || $table === '') {
+            return null;
+        }
+        $q = admin_ai_chat_agent_query($conn, ['action' => 'get', 'table' => $table, 'id' => $id]);
+        if (!empty($q['ok']) && !empty($q['found']) && isset($q['row']) && is_array($q['row'])) {
+            return $q['row'];
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
     /**
      * @param array<string, mixed> $payload כמו agent_execute: action, table, chat_id, proposed_at, id?, data?, sql?, kind?
@@ -113,11 +133,12 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
         $action = strtolower((string) ($payload['action'] ?? ''));
         $table = (string) ($payload['table'] ?? '');
         $data = isset($payload['data']) && is_array($payload['data']) ? $payload['data'] : [];
+        $restoreDeletedRow = $action === 'create' && !empty($payload['restore_deleted_row']);
         $rowId = isset($payload['id']) ? (int) $payload['id'] : 0;
         $rawSql = (string) ($payload['sql'] ?? '');
         $proposedAtMs = isset($payload['proposed_at']) ? (int) $payload['proposed_at'] : 0;
 
-        if (!in_array($action, ['create', 'update', 'delete', 'sql', 'push_broadcast'], true)) {
+        if (!in_array($action, ['create', 'update', 'delete', 'sql', 'push_broadcast', 'send_mail'], true)) {
             return ['http' => 400, 'payload' => ['status' => 'error', 'message' => 'invalid_action', 'action' => $action]];
         }
 
@@ -234,6 +255,32 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
             ];
         }
 
+        if ($action === 'send_mail') {
+            require_once __DIR__ . '/agent_send_mail.php';
+            $out = admin_ai_agent_send_mail_execute($conn, $homeId, $userId, $chatId, $payload);
+            if (empty($out['ok'])) {
+                return [
+                    'http' => 200,
+                    'payload' => [
+                        'status' => 'error',
+                        'action' => 'send_mail',
+                        'message' => (string) ($out['message'] ?? 'send_failed'),
+                        'detail' => (string) ($out['detail'] ?? ''),
+                    ],
+                ];
+            }
+
+            return [
+                'http' => 200,
+                'payload' => [
+                    'status' => 'success',
+                    'action' => 'send_mail',
+                    'message' => (string) ($out['message'] ?? 'נשלח'),
+                    'recipients' => (int) ($out['recipients'] ?? 0),
+                ],
+            ];
+        }
+
         if ($action === 'sql') {
             if ($rawSql === '') {
                 return ['http' => 400, 'payload' => ['status' => 'error', 'message' => 'missing_sql']];
@@ -332,11 +379,35 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
 
         $cfg = admin_ai_agent_get_table_config($table);
         $fieldDefs = $cfg['fields'] ?? [];
+        $blockedFlip = array_flip(admin_ai_agent_global_blocked_fields());
 
         $sanitizedData = [];
         foreach ($data as $col => $val) {
             $col = (string) $col;
-            if (!admin_ai_agent_is_field_writable($table, $col)) {
+            if (isset($blockedFlip[$col])) {
+                return [
+                    'http' => 403,
+                    'payload' => [
+                        'status' => 'error',
+                        'message' => 'field_blocked',
+                        'table' => $table,
+                        'field' => $col,
+                    ],
+                ];
+            }
+            if ($restoreDeletedRow) {
+                if (!isset($fieldDefs[$col])) {
+                    return [
+                        'http' => 400,
+                        'payload' => [
+                            'status' => 'error',
+                            'message' => 'unknown_field',
+                            'table' => $table,
+                            'field' => $col,
+                        ],
+                    ];
+                }
+            } elseif (!admin_ai_agent_is_field_writable($table, $col)) {
                 return [
                     'http' => 403,
                     'payload' => [
@@ -419,6 +490,18 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                 if (empty($sanitizedData)) {
                     return ['http' => 400, 'payload' => ['status' => 'error', 'message' => 'empty_data']];
                 }
+                $beforeRow = admin_ai_agent_dispatch_fetch_row_snapshot($conn, $table, $rowId);
+                if ($beforeRow === null) {
+                    return [
+                        'http' => 404,
+                        'payload' => [
+                            'status' => 'error',
+                            'message' => 'row_not_found',
+                            'table' => $table,
+                            'id' => $rowId,
+                        ],
+                    ];
+                }
                 $setParts = [];
                 $types = '';
                 $values = [];
@@ -445,6 +528,20 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                 $stmt->close();
                 admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent UPDATE ' . $table . ' id=' . $rowId . ' fields=' . implode(',', array_keys($sanitizedData)) . ' chat=' . $chatId);
 
+                $undoData = [];
+                foreach (array_keys($sanitizedData) as $colName) {
+                    if (array_key_exists($colName, $beforeRow)) {
+                        $undoData[$colName] = $beforeRow[$colName];
+                    }
+                }
+                $undoPayload = [
+                    'action' => 'update',
+                    'table' => $table,
+                    'id' => $rowId,
+                    'description' => 'ביטול שינויים — שחזור ערכים קודמים',
+                    'data' => $undoData,
+                ];
+
                 return [
                     'http' => 200,
                     'payload' => [
@@ -454,12 +551,25 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                         'id' => $rowId,
                         'affected' => (int) $affected,
                         'message' => $affected > 0 ? 'הרשומה עודכנה בהצלחה' : 'לא בוצע שינוי (ייתכן שהערכים זהים)',
+                        'undo_payload' => $undoPayload,
                     ],
                 ];
 
             case 'delete':
                 if ($rowId <= 0) {
                     return ['http' => 400, 'payload' => ['status' => 'error', 'message' => 'missing_id']];
+                }
+                $beforeRow = admin_ai_agent_dispatch_fetch_row_snapshot($conn, $table, $rowId);
+                if ($beforeRow === null) {
+                    return [
+                        'http' => 404,
+                        'payload' => [
+                            'status' => 'error',
+                            'message' => 'row_not_found',
+                            'table' => $table,
+                            'id' => $rowId,
+                        ],
+                    ];
                 }
                 $sqlDel = 'DELETE FROM `' . $table . '` WHERE `id` = ?';
                 $stmt = $conn->prepare($sqlDel);
@@ -477,6 +587,22 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                 $stmt->close();
                 admin_ai_agent_exec_log($conn, $homeId, $userId, 'Admin AI Agent DELETE ' . $table . ' id=' . $rowId . ' chat=' . $chatId);
 
+                $restoreData = [];
+                foreach ($beforeRow as $colName => $val) {
+                    $cn = (string) $colName;
+                    if (isset($blockedFlip[$cn]) || !isset($fieldDefs[$cn])) {
+                        continue;
+                    }
+                    $restoreData[$cn] = $val;
+                }
+                $undoPayload = [
+                    'action' => 'create',
+                    'table' => $table,
+                    'description' => 'שחזור רשומה שנמחקה (ביטול מחיקה)',
+                    'restore_deleted_row' => true,
+                    'data' => $restoreData,
+                ];
+
                 return [
                     'http' => 200,
                     'payload' => [
@@ -486,6 +612,7 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                         'id' => $rowId,
                         'affected' => (int) $affected,
                         'message' => $affected > 0 ? 'הרשומה נמחקה בהצלחה' : 'לא נמצאה רשומה למחיקה',
+                        'undo_payload' => $undoPayload,
                     ],
                 ];
         }
@@ -535,6 +662,12 @@ if (!function_exists('admin_ai_agent_exec_persist_chat_execution')) {
         }
         if (($payload['action'] ?? '') === 'push_broadcast' && isset($result['homes_count'])) {
             $payload['homes_count'] = (int) $result['homes_count'];
+        }
+        if (($payload['action'] ?? '') === 'send_mail' && isset($result['recipients'])) {
+            $payload['recipients'] = (int) $result['recipients'];
+        }
+        if (isset($result['undo_payload']) && is_array($result['undo_payload'])) {
+            $payload['undo_payload'] = $result['undo_payload'];
         }
         $summary = '[[EXECUTION_RESULT]]' . json_encode($payload, JSON_UNESCAPED_UNICODE) . '[[/EXECUTION_RESULT]]';
         @admin_ai_chat_repo_add_message($conn, $chatId, 'assistant', $summary, 'agent-execute');

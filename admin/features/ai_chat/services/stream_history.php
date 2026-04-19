@@ -20,10 +20,25 @@ if (!function_exists('admin_ai_chat_redact_action_payload_for_model')) {
                     return $m[0];
                 }
                 unset($j['before_row']);
+                if (($j['action'] ?? '') === 'send_mail') {
+                    if (isset($j['html_body']) && is_string($j['html_body']) && function_exists('mb_strlen') && mb_strlen($j['html_body'], 'UTF-8') > 800) {
+                        $j['html_body'] = mb_substr($j['html_body'], 0, 800, 'UTF-8') . '…[קוצר לשליחה חוזרת למודל]';
+                    } elseif (isset($j['html_body']) && is_string($j['html_body']) && strlen($j['html_body']) > 800) {
+                        $j['html_body'] = substr($j['html_body'], 0, 800) . '…';
+                    }
+                }
                 if (isset($j['steps']) && is_array($j['steps'])) {
                     foreach ($j['steps'] as $i => $st) {
                         if (is_array($st)) {
                             unset($j['steps'][$i]['before_row']);
+                            if (($st['action'] ?? '') === 'send_mail' && isset($j['steps'][$i]['html_body']) && is_string($j['steps'][$i]['html_body'])) {
+                                $hb = $j['steps'][$i]['html_body'];
+                                if (function_exists('mb_strlen') && mb_strlen($hb, 'UTF-8') > 800) {
+                                    $j['steps'][$i]['html_body'] = mb_substr($hb, 0, 800, 'UTF-8') . '…';
+                                } elseif (strlen($hb) > 800) {
+                                    $j['steps'][$i]['html_body'] = substr($hb, 0, 800) . '…';
+                                }
+                            }
                         }
                     }
                 }
@@ -50,12 +65,36 @@ if (!function_exists('admin_ai_chat_enrich_proposed_action_with_snapshots')) {
                     $action['before_row'] = $q['row'];
                 }
             }
+        } elseif ($act === 'send_mail') {
+            require_once __DIR__ . '/agent_send_mail.php';
+            $rec = isset($action['recipients']) && is_array($action['recipients']) ? $action['recipients'] : [];
+            $c = admin_ai_agent_collect_send_mail_recipients($conn, $rec);
+            if (!empty($c['ok'])) {
+                $action['recipient_count'] = (int) ($c['count'] ?? 0);
+                $action['recipient_preview'] = implode(', ', array_slice($c['emails'], 0, 5));
+            } else {
+                $action['recipient_count'] = 0;
+                $action['recipient_resolution_error'] = (string) ($c['error'] ?? 'unknown');
+            }
         } elseif ($act === 'sequence' && isset($action['steps']) && is_array($action['steps'])) {
             foreach ($action['steps'] as $i => $step) {
                 if (!is_array($step)) {
                     continue;
                 }
                 $st = strtolower((string) ($step['action'] ?? ''));
+                if ($st === 'send_mail') {
+                    require_once __DIR__ . '/agent_send_mail.php';
+                    $rec = isset($step['recipients']) && is_array($step['recipients']) ? $step['recipients'] : [];
+                    $c = admin_ai_agent_collect_send_mail_recipients($conn, $rec);
+                    if (!empty($c['ok'])) {
+                        $action['steps'][$i]['recipient_count'] = (int) ($c['count'] ?? 0);
+                        $action['steps'][$i]['recipient_preview'] = implode(', ', array_slice($c['emails'], 0, 5));
+                    } else {
+                        $action['steps'][$i]['recipient_count'] = 0;
+                        $action['steps'][$i]['recipient_resolution_error'] = (string) ($c['error'] ?? 'unknown');
+                    }
+                    continue;
+                }
                 if ($st !== 'update' && $st !== 'delete') {
                     continue;
                 }
