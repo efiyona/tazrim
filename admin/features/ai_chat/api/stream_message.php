@@ -96,7 +96,47 @@ function admin_ai_chat_strip_internal_transport_leaks(string $text): string
         }
     }
 
+    // Common model typo: opens DATA_CHART but closes DATA_QUERY.
+    $clean = (string) preg_replace(
+        '/\[\[DATA_CHART\]\]([\s\S]*?)\[\[\/DATA_QUERY\]\]/u',
+        '[[DATA_CHART]]$1[[/DATA_CHART]]',
+        $clean
+    );
+
     return trim($clean);
+}
+
+function admin_ai_chat_build_questions_context_text(array $questions): string
+{
+    $lines = [];
+    foreach ($questions as $q) {
+        if (!is_array($q)) {
+            continue;
+        }
+        $text = trim((string) ($q['text'] ?? ''));
+        if ($text === '') {
+            continue;
+        }
+        $opts = [];
+        if (isset($q['options']) && is_array($q['options'])) {
+            foreach ($q['options'] as $opt) {
+                $optText = trim((string) $opt);
+                if ($optText !== '') {
+                    $opts[] = $optText;
+                }
+            }
+        }
+        $line = '- ' . $text;
+        if ($opts !== []) {
+            $line .= ' | אפשרויות: ' . implode(' / ', array_slice($opts, 0, 6));
+        }
+        $lines[] = $line;
+    }
+    if ($lines === []) {
+        return '';
+    }
+
+    return "[[QUESTIONS_CONTEXT]]\n" . implode("\n", $lines) . "\n[[/QUESTIONS_CONTEXT]]";
 }
 
 function admin_ai_chat_should_retry_http_code(int $httpCode): bool
@@ -1173,7 +1213,12 @@ if ($agentError !== '' && $finalText === '') {
 $finalText = trim($finalText);
 
 if ($emittedQuestions !== null) {
-    $savedText = $finalText !== '' ? $finalText . "\n\n[[QUESTIONS_ASKED]]" : '[[QUESTIONS_ASKED]]';
+    $questionsContext = admin_ai_chat_build_questions_context_text($emittedQuestions);
+    $savedText = $finalText !== '' ? $finalText : '';
+    if ($questionsContext !== '') {
+        $savedText = $savedText !== '' ? ($savedText . "\n\n" . $questionsContext) : $questionsContext;
+    }
+    $savedText = $savedText !== '' ? ($savedText . "\n\n[[QUESTIONS_ASKED]]") : '[[QUESTIONS_ASKED]]';
     admin_ai_chat_repo_add_message($conn, $chatId, 'assistant', $savedText, $usedModel);
     admin_ai_chat_repo_touch($conn, $chatId, $scopeSnapshot);
     if ($finalText !== '') {

@@ -582,6 +582,7 @@
     return (text || "")
       .replace(/\[\[QUESTIONS\]\][\s\S]*?\[\[\/QUESTIONS\]\]/g, "")
       .replace(/\[\[QUESTIONS_ASKED\]\]/g, "")
+      .replace(/\[\[QUESTIONS_CONTEXT\]\][\s\S]*?\[\[\/QUESTIONS_CONTEXT\]\]/g, "")
       .trim();
   }
 
@@ -2003,7 +2004,9 @@
     }
     setCurrentChatTitle(payload.title || "");
     msgs.forEach((m) => {
-      let content = (m.content || "").replace(/\[\[QUESTIONS_ASKED\]\]/g, "");
+      let content = (m.content || "")
+        .replace(/\[\[QUESTIONS_ASKED\]\]/g, "")
+        .replace(/\[\[QUESTIONS_CONTEXT\]\][\s\S]*?\[\[\/QUESTIONS_CONTEXT\]\]/g, "");
       const actionPayload = m.role === "assistant" ? extractActionProposedBlock(content) : null;
       const executionResult = m.role === "assistant" ? extractExecutionResultBlock(content) : null;
       content = stripExecutionResultBlock(stripActionProposedBlock(content)).trim();
