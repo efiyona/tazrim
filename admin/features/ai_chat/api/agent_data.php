@@ -5,7 +5,7 @@ declare(strict_types=1);
  * שרת נתונים פנימי עבור סוכן ה-AI של פאנל הניהול.
  *
  * לא endpoint חשוף — נקרא מ-stream_message.php כפונקציה כאשר הבינה מחזירה [[DATA_QUERY]].
- * כל הקריאות כאן הן קריאה בלבד (SELECT / SHOW COLUMNS).
+ * כל הקריאות כאן הן קריאה בלבד (SELECT/SHOW/DESCRIBE/EXPLAIN).
  */
 
 require_once __DIR__ . '/../services/agent_schema.php';
@@ -286,6 +286,21 @@ if (!function_exists('admin_ai_agent_data_query_error_coach_appendix')) {
         }
         $err = (string) ($queryResult['error'] ?? '');
         if ($err === '' || !preg_match('/invalid_where|where_list_|where_value|between_requires|in_requires_array|^invalid_op:/u', $err)) {
+            if ($err === 'only_read_queries_allowed') {
+                return "\n\n[מערכת — השאילתה נדחתה כי מותרות רק שאילתות קריאה]\n"
+                    . "- מותר: `SELECT`, `SHOW`, `DESCRIBE`/`DESC`, `EXPLAIN`.\n"
+                    . "- אסור: `INSERT/UPDATE/DELETE/ALTER/DROP/CREATE/TRUNCATE` בתוך `DATA_QUERY`.\n"
+                    . "- כדי לקבל שמות טבלאות במסד, השתמש ב:\n"
+                    . "  `{\"action\":\"query\",\"sql\":\"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME\"}`\n"
+                    . "- כדי לקבל שדות של טבלה ספציפית, השתמש ב:\n"
+                    . "  `{\"action\":\"query\",\"sql\":\"SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION\",\"params\":[\"transactions\"]}`";
+            }
+            if (str_starts_with($err, 'forbidden_token')) {
+                return "\n\n[מערכת — זוהה טוקן חסום ב-SQL]\n"
+                    . "- הרץ משפט יחיד וללא הערות inline (`--`/`/* */`).\n"
+                    . "- ב-`DATA_QUERY` מותרות רק שאילתות קריאה; שינויים במסד יש לבצע דרך `[[ACTION]]` מסוג מתאים.";
+            }
+
             return '';
         }
 
@@ -608,7 +623,7 @@ if (!function_exists('admin_ai_agent_data_describe')) {
 
 if (!function_exists('admin_ai_agent_data_raw_query')) {
     /**
-     * שאילתת SELECT גולמית. חסום INSERT/UPDATE/DELETE ו-DDL.
+     * שאילתת קריאה גולמית. חסום INSERT/UPDATE/DELETE ו-DDL.
      * נועד לשאלות מורכבות שלא ניתן לבטא ב-list/search.
      */
     function admin_ai_agent_data_raw_query(mysqli $conn, array $req): array
@@ -617,8 +632,8 @@ if (!function_exists('admin_ai_agent_data_raw_query')) {
         if ($sql === '') {
             return admin_ai_agent_data_error('missing_sql');
         }
-        if (!preg_match('/^\s*SELECT\s/i', $sql)) {
-            return admin_ai_agent_data_error('only_select_allowed');
+        if (!preg_match('/^\s*(SELECT|SHOW|DESCRIBE|DESC|EXPLAIN)\b/i', $sql)) {
+            return admin_ai_agent_data_error('only_read_queries_allowed');
         }
         $forbidden = ['insert ', 'update ', 'delete ', 'drop ', 'alter ', 'truncate ', 'replace ', 'grant ', 'create ', ';--', '/*'];
         $lower = strtolower($sql);
@@ -634,7 +649,8 @@ if (!function_exists('admin_ai_agent_data_raw_query')) {
         if (!empty($params) && substr_count($sql, '?') !== count($params)) {
             return admin_ai_agent_data_error('params_count_mismatch');
         }
-        if (!preg_match('/\blimit\s+\d+/i', $sql)) {
+        // רק SELECT מאפשר הוספת LIMIT אוטומטית בצורה עקבית בכל דיאלקט.
+        if (preg_match('/^\s*SELECT\b/i', $sql) && !preg_match('/\blimit\s+\d+/i', $sql)) {
             $sql .= ' LIMIT 100';
         }
         $types = '';
