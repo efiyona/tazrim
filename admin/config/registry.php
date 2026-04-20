@@ -61,7 +61,9 @@ return [
                 ],
             ],
             'join_code' => ['type' => 'text', 'label' => 'קוד הצטרפות'],
-            'initial_balance' => ['type' => 'balance', 'label' => 'יתרה התחלתית'],
+            'bank_balance_ledger_cached' => ['type' => 'balance', 'label' => 'יתרה ממומשת (cache)'],
+            'bank_balance_manual_adjustment' => ['type' => 'balance', 'label' => 'יישור ידני'],
+            'show_bank_balance' => ['type' => 'checkbox', 'label' => 'הצג יתרת בנק בדף הבית'],
         ],
     ],
     'users' => [

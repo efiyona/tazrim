@@ -14,7 +14,7 @@ declare(strict_types=1);
  *  2. הטוקן מאומת כאן מול טבלת users + role=program_admin
  *  3. Session חייב להיות אקטיבי + program_admin (בדיקה דו-שכבתית)
  *  4. ל-CRUD: Whitelist טבלאות + Blacklist שדות (דרך agent_schema.php)
- *  5. הצפנה אוטומטית לשדות רגישים (homes.initial_balance)
+ *  5. הצפנה אוטומטית לשדות רגישים (homes.bank_balance_*)
  *  6. ל-sql: וולידציה של משפט יחיד, חסימת DROP DATABASE/SCHEMA, חסימת GRANT/REVOKE, לוג מלא
  *  7. logging של כל פעולה ל-ai_api_logs
  */

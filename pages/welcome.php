@@ -116,6 +116,10 @@ if ($has_active_categories) {
                         <i class="fa-solid fa-shekel-sign" style="position: absolute; left: 15px; color: #888;"></i>
                         <input type="number" id="initial_balance" value="0" step="0.01" style="width: 100%; padding: 12px 12px 12px 35px; border: 2px solid #ddd; border-radius: 10px; font-size: 1.2rem; font-weight: 800; color: var(--main);">
                     </div>
+                    <label class="checkbox-container" style="display: flex; align-items: center; gap: 10px; margin-top: 10px; font-weight: 600; text-align: right;">
+                        <input type="checkbox" id="welcome_show_bank_balance" name="show_bank_balance" value="1">
+                        הצגת יתרת חשבון בדף הבית ובדוחות
+                    </label>
                 </div>
 
                 <button type="button" class="btn-welcome" onclick="nextStep(3)">המשך לקטגוריות <i class="fa-solid fa-arrow-left"></i></button>
@@ -293,6 +297,8 @@ if ($has_active_categories) {
             const formData = new FormData();
             formData.append('home_name', document.getElementById('home_name').value);
             formData.append('initial_balance', document.getElementById('initial_balance').value);
+            const showCb = document.getElementById('welcome_show_bank_balance');
+            formData.append('show_bank_balance', showCb && showCb.checked ? '1' : '0');
 
             let hasEmptyCustomNames = false;
 

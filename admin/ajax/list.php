@@ -87,8 +87,13 @@ if ($params !== []) {
 
 $rows = [];
 while ($row = mysqli_fetch_assoc($result)) {
-    if ($sqlTable === 'homes' && isset($row['initial_balance'])) {
-        $row['initial_balance'] = decryptBalance($row['initial_balance']);
+    if ($sqlTable === 'homes') {
+        if (isset($row['bank_balance_ledger_cached'])) {
+            $row['bank_balance_ledger_cached'] = decryptBalance($row['bank_balance_ledger_cached']);
+        }
+        if (isset($row['bank_balance_manual_adjustment'])) {
+            $row['bank_balance_manual_adjustment'] = decryptBalance($row['bank_balance_manual_adjustment']);
+        }
     }
     foreach ($listCols as $column) {
         $row[$column] = tazrim_admin_list_display_value($config, $column, $row);

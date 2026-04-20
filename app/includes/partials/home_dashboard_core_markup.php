@@ -50,7 +50,7 @@
                             </div>
                         </div>
                     </div>
-                    <?php if ($initial_balance != 0): ?>
+                    <?php if (!empty($show_bank_balance)): ?>
                         <div class="kpi-card kpi-card--home kpi-card--balance kpi-card--span-full">
                             <div class="kpi-card__info-corner">
                                 <?php

@@ -86,7 +86,15 @@ if (mysqli_num_rows($recurring_result) > 0) {
                              VALUES ($home_id, $user_id, $amount_ils, '$currency_code_esc', '$type', $category, '$description', '$transaction_date')";
             
             if (mysqli_query($conn, $insert_trans)) {
-                
+                global $today_il;
+                $today_for_ledger = isset($today_il) ? (string) $today_il : date('Y-m-d');
+                $newLedgerRow = [
+                    'type' => $type,
+                    'amount' => $amount_ils,
+                    'transaction_date' => $transaction_date,
+                ];
+                tazrim_after_transaction_row_change($conn, (int) $home_id, null, $newLedgerRow, $today_for_ledger);
+
                 // 2. עדכון חודש ההזרקה בתבנית
                 mysqli_query($conn, "UPDATE recurring_transactions SET last_injected_month = '$loop_month_start' WHERE id = $template_id");
 

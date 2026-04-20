@@ -136,7 +136,10 @@ if (isset($_POST['register_btn'])) {
                 $target_home_id = create('homes', [
                     'name' => $home_name,
                     'join_code' => $new_home_code,
-                    'primary_user_id' => $user_id 
+                    'primary_user_id' => $user_id,
+                    'bank_balance_ledger_cached' => encryptBalance(0.0),
+                    'bank_balance_manual_adjustment' => encryptBalance(0.0),
+                    'show_bank_balance' => 0,
                 ]);
             }
 

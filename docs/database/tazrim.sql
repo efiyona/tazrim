@@ -101,7 +101,9 @@ CREATE TABLE `homes` (
   `name` varchar(255) NOT NULL,
   `primary_user_id` int(11) DEFAULT NULL,
   `join_code` varchar(4) NOT NULL,
-  `initial_balance` varchar(255) DEFAULT NULL,
+  `bank_balance_ledger_cached` varchar(255) DEFAULT NULL,
+  `bank_balance_manual_adjustment` varchar(255) DEFAULT NULL,
+  `show_bank_balance` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `join_code` (`join_code`)

@@ -101,6 +101,40 @@ if (!function_exists('admin_ai_agent_exec_analyze_sql')) {
     }
 }
 
+if (!function_exists('tazrim_admin_agent_sync_ledger_from_transactions')) {
+    /**
+     * מסנכרן bank_balance_ledger_cached אחרי שינוי ב-transactions (סוכן אדמין).
+     */
+    function tazrim_admin_agent_sync_ledger_from_transactions(mysqli $conn, string $table, ?array $row, ?int $insertId, ?array $insertData = null): void
+    {
+        if ($table !== 'transactions') {
+            return;
+        }
+        if (!defined('ROOT_PATH')) {
+            return;
+        }
+        if (!function_exists('tazrim_recompute_home_ledger_cached_from_db')) {
+            require_once ROOT_PATH . '/app/functions/home_bank_balance.php';
+        }
+        $hid = 0;
+        if ($row !== null && isset($row['home_id'])) {
+            $hid = (int) $row['home_id'];
+        }
+        if ($hid <= 0 && $insertData !== null && isset($insertData['home_id'])) {
+            $hid = (int) $insertData['home_id'];
+        }
+        if ($hid <= 0 && $insertId !== null && $insertId > 0) {
+            $q = mysqli_query($conn, 'SELECT home_id FROM transactions WHERE id = ' . (int) $insertId . ' LIMIT 1');
+            if ($q && ($r = mysqli_fetch_assoc($q))) {
+                $hid = (int) ($r['home_id'] ?? 0);
+            }
+        }
+        if ($hid > 0) {
+            tazrim_recompute_home_ledger_cached_from_db($conn, $hid);
+        }
+    }
+}
+
 if (!function_exists('admin_ai_agent_dispatch_fetch_row_snapshot')) {
     /**
      * שורה אחת לפני עדכון/מחיקה — אותו נתיב כמו enrich (get + פענוח/סינון פלט).
@@ -506,6 +540,17 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
             );
             admin_ai_agent_sql_change_append($conn, $chatId, $safeSql, $kind);
 
+            if ($kind === 'dml' && stripos($safeSql, 'transactions') !== false) {
+                if (!defined('ROOT_PATH')) {
+                    // skip
+                } else {
+                    if (!function_exists('tazrim_recompute_home_ledger_cached_from_db_all_homes')) {
+                        require_once ROOT_PATH . '/app/functions/home_bank_balance.php';
+                    }
+                    tazrim_recompute_home_ledger_cached_from_db_all_homes($conn);
+                }
+            }
+
             $msgParts = ['SQL הורץ בהצלחה (' . $verb . ')'];
             if ($kind === 'ddl') {
                 $msgParts[] = '— שינוי מבנה נרשם';
@@ -632,6 +677,8 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                 $sqlAudit = '/* CREATE via agent */ INSERT INTO `' . $table . '` (...) VALUES (...)';
                 admin_ai_agent_sql_change_append($conn, $chatId, $sqlAudit, 'dml');
 
+                tazrim_admin_agent_sync_ledger_from_transactions($conn, $table, null, (int) $insertId, $sanitizedData);
+
                 return [
                     'http' => 200,
                     'payload' => [
@@ -705,6 +752,8 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                     'data' => $undoData,
                 ];
 
+                tazrim_admin_agent_sync_ledger_from_transactions($conn, $table, $beforeRow, null, null);
+
                 return [
                     'http' => 200,
                     'payload' => [
@@ -767,6 +816,8 @@ if (!function_exists('admin_ai_agent_dispatch_execute_payload')) {
                     'restore_deleted_row' => true,
                     'data' => $restoreData,
                 ];
+
+                tazrim_admin_agent_sync_ledger_from_transactions($conn, $table, $beforeRow, null, null);
 
                 return [
                     'http' => 200,

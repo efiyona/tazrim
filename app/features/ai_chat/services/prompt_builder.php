@@ -136,24 +136,14 @@ if (!function_exists('ai_chat_build_financial_snapshot')) {
 
         $today = date('Y-m-d');
 
-        $home = selectOne('homes', ['id' => $homeId]);
-        $initialBalance = isset($home['initial_balance']) ? (float) decryptBalance($home['initial_balance']) : 0.0;
-
-        $netQuery = "SELECT 
-            COALESCE(SUM(CASE WHEN type = 'income' AND transaction_date <= ? THEN amount ELSE 0 END), 0) -
-            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS net_balance
-            FROM transactions WHERE home_id = ?";
-        $stmt = $conn->prepare($netQuery);
-        $stmt->bind_param('si', $today, $homeId);
-        $stmt->execute();
-        $netRow = $stmt->get_result()->fetch_assoc() ?: ['net_balance' => 0];
-        $stmt->close();
-        $currentBalance = $initialBalance + (float) ($netRow['net_balance'] ?? 0);
+        $disp = tazrim_home_display_bank_balance($conn, $homeId, $today);
 
         $lines = [];
         $lines[] = 'נתוני תזרים (בית משותף — כל הפעולות של הבית):';
-        $lines[] = '- יתרה התחלתית שהוגדרה לבית: ' . $initialBalance . ' ₪';
-        $lines[] = '- יתרה מחושבת (עד היום, כולל הכנסות עד היום והוצאות כולל עבר): ' . round($currentBalance, 2) . ' ₪';
+        $lines[] = '- יתרה ממומשת (מתנועות, תאריכים עד היום): ' . round($disp['ledger_dec'], 2) . ' ₪';
+        $lines[] = '- יישור ידני (כולל יתרה התחלתית שהועברה במיגרציה): ' . round($disp['adjustment_dec'], 2) . ' ₪';
+        $lines[] = '- סכום הוצאות עתידיות (מעל היום): ' . round($disp['future_expenses_sum'], 2) . ' ₪';
+        $lines[] = '- יתרה מוצגת (מוערכת): ledger + יישור − הוצאות עתידיות = ' . round($disp['display'], 2) . ' ₪';
         $lines[] = '';
 
         $currentMonthStart = new DateTimeImmutable('first day of this month');

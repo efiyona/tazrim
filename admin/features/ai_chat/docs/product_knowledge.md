@@ -66,7 +66,7 @@
 |-------|---------|--------|
 | `info_messages` | `info_messages` | הודעות הסבר במערכת (msg_key, title, content) |
 | `ios_shortcut_links` | `ios_shortcut_links` | קיצורי דרך iOS (title, url, sort_order, is_active) |
-| `homes` | `homes` | בתים משפחתיים (name, primary_user_id FK→users, join_code, initial_balance מוצפן) |
+| `homes` | `homes` | בתים משפחתיים (name, primary_user_id FK→users, join_code, bank_balance_ledger_cached / bank_balance_manual_adjustment מוצפנים, show_bank_balance) |
 | `users` | `users` | משתמשים (home_id FK→homes, first/last name, nickname, email, phone, role, password) |
 | `tos_agreements` | `tos_agreements` | הסכמות תקנון — צפייה בלבד (user_id, tos_version, accepted_at, ip_address) |
 | `tos_terms` | `tos_terms` | נוסחי תקנון (version, last_updated_label, content_html, is_current). כשמסמנים is_current — מבוטלות שאר הגרסאות. לא ניתן למחוק גרסה נוכחית. |
@@ -147,7 +147,7 @@
 | טבלה | תיאור |
 |-------|--------|
 | `users` | משתמשים: id, email, password, first_name, last_name, nickname, phone, role, home_id, remember_token |
-| `homes` | בתים: id, name, join_code, primary_user_id, initial_balance (מוצפן) |
+| `homes` | בתים: id, name, join_code, primary_user_id, bank_balance_ledger_cached / bank_balance_manual_adjustment (מוצפנים), show_bank_balance |
 | `transactions` | פעולות: id, home_id, user_id, type (income/expense), amount, description, category, transaction_date |
 | `categories` | קטגוריות: id, home_id, name, type (income/expense), budget_limit, is_active, sort_order |
 | `recurring_transactions` | פעולות קבועות: תבנית חודשית, יום בחודש, סכום, קטגוריה |

@@ -11,7 +11,7 @@ declare(strict_types=1);
  *
  * הקובץ הזה מגדיר רק את המדיניות שאי-אפשר לגזור אוטומטית מהמסד:
  *   1. שדות חסומים גלובלית (password / tokens).
- *   2. מיפוי הצפנה ברמת אפליקציה (homes.initial_balance וכד').
+ *   2. מיפוי הצפנה ברמת אפליקציה (homes.bank_balance_* וכד').
  *   3. רשימת טבלאות חסומות (אם נרצה להסתיר שירותיות).
  */
 
@@ -36,7 +36,7 @@ if (!function_exists('admin_ai_agent_encrypt_map')) {
     function admin_ai_agent_encrypt_map(): array
     {
         return [
-            'homes' => ['initial_balance'],
+            'homes' => ['bank_balance_ledger_cached', 'bank_balance_manual_adjustment'],
         ];
     }
 }

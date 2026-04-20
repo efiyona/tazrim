@@ -14,7 +14,7 @@ function tazrim_admin_blocked_field_names(): array
 function tazrim_admin_balance_encrypt_map(): array
 {
     return [
-        'homes' => ['initial_balance'],
+        'homes' => ['bank_balance_ledger_cached', 'bank_balance_manual_adjustment'],
     ];
 }
 
@@ -210,8 +210,13 @@ function tazrim_admin_fk_lookup_resolve_label(array $fk, $id): string
     if (!$row) {
         return '';
     }
-    if ($table === 'homes' && isset($row['initial_balance'])) {
-        $row['initial_balance'] = decryptBalance($row['initial_balance']);
+    if ($table === 'homes') {
+        if (isset($row['bank_balance_ledger_cached'])) {
+            $row['bank_balance_ledger_cached'] = decryptBalance($row['bank_balance_ledger_cached']);
+        }
+        if (isset($row['bank_balance_manual_adjustment'])) {
+            $row['bank_balance_manual_adjustment'] = decryptBalance($row['bank_balance_manual_adjustment']);
+        }
     }
     $cache[$cacheKey] = tazrim_admin_fk_format_label($template, $row);
     return $cache[$cacheKey];
@@ -457,7 +462,7 @@ function tazrim_admin_apply_encrypt_for_save(string $tableKey, array $data): arr
         }
         $v = $data[$col];
         if ($v === null || $v === '') {
-            $data[$col] = null;
+            $data[$col] = encryptBalance(0.0);
             continue;
         }
         $data[$col] = encryptBalance((string) $v);

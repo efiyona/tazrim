@@ -10,17 +10,10 @@ function tazrim_render_home_dashboard_core(mysqli $conn, int $home_id, int $sele
     $limit = 4;
 
     $home_data = selectOne('homes', ['id' => $home_id]);
-    $initial_balance = $home_data['initial_balance'] ?? 0;
+    $show_bank_balance = (int) ($home_data['show_bank_balance'] ?? 0);
 
-    $real_balance_query = "SELECT 
-    COALESCE(SUM(CASE WHEN type = 'income' AND transaction_date <= '$today_il' THEN amount ELSE 0 END), 0) - 
-    COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as net_balance
-    FROM transactions 
-    WHERE home_id = $home_id";
-
-    $balance_result = mysqli_query($conn, $real_balance_query);
-    $balance_data = mysqli_fetch_assoc($balance_result);
-    $current_bank_balance = $initial_balance + $balance_data['net_balance'];
+    $balance_parts = tazrim_home_display_bank_balance($conn, $home_id, $today_il);
+    $current_bank_balance = $balance_parts['display'];
 
     $month_income_query = "SELECT SUM(amount) as total FROM transactions 
                        WHERE home_id = $home_id AND type = 'income' 

@@ -193,7 +193,7 @@ if (!function_exists('admin_ai_chat_build_agent_instructions')) {
             . "פורמט:\n"
             . "[[ACTION]]\n"
             . '{"action":"sequence","description":"יצירת בית נסיון + משתמש אבא נסיון + קישור כ-primary","steps":['
-            . '{"action":"create","table":"homes","data":{"name":"בית נסיון","join_code":"X7K2","initial_balance":"0"},'
+            . '{"action":"create","table":"homes","data":{"name":"בית נסיון","join_code":"X7K2","bank_balance_ledger_cached":"0","bank_balance_manual_adjustment":"0","show_bank_balance":"0"},'
             . '"description":"שלב 1: יצירת בית"},'
             . '{"action":"create","table":"users","data":{"first_name":"אבא","last_name":"נסיון","email":"test@gmail.com","home_id":"{{step:0}}","role":"user","nickname":"אבא"},'
             . '"description":"שלב 2: יצירת משתמש בבית החדש"},'
@@ -302,7 +302,7 @@ if (!function_exists('admin_ai_chat_build_agent_instructions')) {
             . "3. **כשיש כמה תוצאות מתאימות** (למשל שני משתמשים בשם זהה) — **אל תבחר בעצמך**. שאל את המנהל שאלת הבהרה עם QUESTIONS.\n"
             . "4. **זיהוי רשומה לפני update/delete (כל טבלה):** אם הבקשה מזכירה **ישות לפי שם אדם, אימייל, כותרת, טקסט חופשי או כינוי** — חובה לפתור את `id` באמצעות `[[DATA_QUERY]]` (`list` / `search` / `get`) **באותו סבב לפני `[[ACTION]]`**, ולוודא שהשורה שנבחרה **באמת** תואמת את מה שהמנהל אמר (שדות מזהים: שם פרטי/משפחה, email, שם רשומה וכו'). **אסור** לנחש `id` מזיכרון, ממספר \"שראית בעבר\" בהיסטוריית הצ'אט, או מספקולציה. אם השורה שנשלפה **לא** מתאימה לטקסט המנהל (למשל תיאור אומר משתמש אחד והשורה שייכת לאחר) — **אל** תמשיך ל-ACTION; שליפה נוספת או QUESTIONS.\n"
             . "5. **אל תציע update/delete בלי `id` שמקורו בשליפה או ב-`{{step:N}}`** — אם אין id ודאי, שלוף קודם.\n"
-            . "6. **שדות מוצפנים** (`homes.initial_balance`) — שלח את הערך הגולמי במספר/מחרוזת; ה-API יצפין אוטומטית. אל תשלח ערך מוצפן.\n"
+            . "6. **שדות מוצפנים** (`homes.bank_balance_ledger_cached`, `homes.bank_balance_manual_adjustment`) — שלח את הערך הגולמי במספר/מחרוזת; ה-API יצפין אוטומטית. אל תשלח ערך מוצפן.\n"
             . "7. **עדכון סיסמה של משתמש (`password`)** — שדה חסום מטעמי אבטחה (hash + salt); הפנה את המנהל למסך איפוס סיסמה הייעודי. זו החריגה היחידה — כל שאר הפעולות על טבלאות ה-whitelist **כן** נתמכות.\n"
             . "8. **שדות חסומים** (`password`, `api_token`, `remember_token`) — אסור לגעת בהם בשום פעולה.\n"
             . "9. **שדות readonly** (`id`, `created_at`, `updated_at`) — אסור לכלול ב-data של update/create.\n"

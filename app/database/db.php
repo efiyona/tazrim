@@ -375,7 +375,7 @@ function selectAll($table, $conditions = [])
     // --- מנגנון פענוח אוטומטי ---
     if ($records) {
         // רשימת העמודות שדורשות פענוח (אפשר להוסיף עוד בעתיד עם פסיק)
-        $encrypted_columns = ['initial_balance']; 
+        $encrypted_columns = ['bank_balance_ledger_cached', 'bank_balance_manual_adjustment'];
         
         foreach ($records as &$row) {
             foreach ($encrypted_columns as $col) {
@@ -411,7 +411,7 @@ function selectOne($table, $conditions)
 
     // --- מנגנון פענוח אוטומטי ---
     if ($records) {
-        $encrypted_columns = ['initial_balance']; 
+        $encrypted_columns = ['bank_balance_ledger_cached', 'bank_balance_manual_adjustment'];
         
         foreach ($encrypted_columns as $col) {
             if (array_key_exists($col, $records)) {
@@ -490,23 +490,89 @@ function addNotification($home_id, $title, $message, $type = 'info', $user_id = 
 }
 
 function encryptBalance($value) {
-    if ($value === null || $value === '') return null;
+    if ($value === null || $value === '' || (is_string($value) && trim($value) === '')) {
+        $value = 0.0;
+    } else {
+        $value = (float) $value;
+    }
     $key = ENCRYPTION_KEY;
     $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
-    $encrypted = openssl_encrypt($value, 'aes-256-cbc', $key, 0, $iv);
+    $plain = (string) $value;
+    $encrypted = openssl_encrypt($plain, 'aes-256-cbc', $key, 0, $iv);
     return base64_encode($encrypted . '::' . $iv);
 }
 
 function decryptBalance($value) {
-    if (empty($value)) return 0;
-    if (is_numeric($value)) return (float)$value; 
-    
+    if ($value === null || $value === '') {
+        return 0.0;
+    }
+    if (is_numeric($value)) {
+        return (float) $value;
+    }
+
     $key = ENCRYPTION_KEY;
-    $parts = explode('::', base64_decode($value), 2);
-    
+    $raw = @base64_decode((string) $value, true);
+    if ($raw === false || $raw === '') {
+        return 0.0;
+    }
+    $parts = explode('::', $raw, 2);
+
     if (count($parts) === 2) {
         $decrypted = openssl_decrypt($parts[0], 'aes-256-cbc', $key, 0, $parts[1]);
-        if ($decrypted !== false) return (float)$decrypted;
+        if ($decrypted !== false && is_numeric($decrypted)) {
+            return (float) $decrypted;
+        }
     }
-    return 0; 
+    return 0.0;
 }
+
+/**
+ * מיגרציית homes: שדות יתרת בנק (ledger + adjustment) והסרת initial_balance לאחר העתקה.
+ */
+function tazrim_ensure_homes_bank_balance_columns() {
+    global $conn;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    if (!$conn) {
+        return;
+    }
+
+    $r = @mysqli_query($conn, "SHOW COLUMNS FROM `homes` LIKE 'bank_balance_ledger_cached'");
+    if ($r && mysqli_num_rows($r) === 0) {
+        @mysqli_query(
+            $conn,
+            "ALTER TABLE `homes`
+             ADD COLUMN `bank_balance_ledger_cached` VARCHAR(255) NULL DEFAULT NULL AFTER `join_code`,
+             ADD COLUMN `bank_balance_manual_adjustment` VARCHAR(255) NULL DEFAULT NULL AFTER `bank_balance_ledger_cached`,
+             ADD COLUMN `show_bank_balance` TINYINT(1) NOT NULL DEFAULT 0 AFTER `bank_balance_manual_adjustment`"
+        );
+    }
+
+    $rOld = @mysqli_query($conn, "SHOW COLUMNS FROM `homes` LIKE 'initial_balance'");
+    if ($rOld && mysqli_num_rows($rOld) > 0) {
+        @set_time_limit(0);
+        $today = date('Y-m-d');
+        $res = mysqli_query($conn, 'SELECT id, initial_balance FROM homes');
+        if ($res) {
+            while ($row = mysqli_fetch_assoc($res)) {
+                $hid = (int) ($row['id'] ?? 0);
+                if ($hid <= 0) {
+                    continue;
+                }
+                tazrim_migrate_single_home_from_initial_balance(
+                    $conn,
+                    $hid,
+                    $row['initial_balance'] ?? null,
+                    $today
+                );
+            }
+        }
+        @mysqli_query($conn, 'ALTER TABLE `homes` DROP COLUMN `initial_balance`');
+    }
+}
+
+require_once ROOT_PATH . '/app/functions/home_bank_balance.php';
+tazrim_ensure_homes_bank_balance_columns();

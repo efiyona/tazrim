@@ -11,7 +11,11 @@ $user_id = $_SESSION['id'];
 
 // 1. שליפת פרטי הבית
 $home_data = selectOne('homes', ['id' => $home_id]);
-$display_balance = decryptBalance($home_data['initial_balance']);
+global $today_il;
+$today_for = isset($today_il) ? (string) $today_il : date('Y-m-d');
+$display_parts = tazrim_home_display_bank_balance($conn, (int) $home_id, $today_for);
+$display_balance = $display_parts['display'];
+$show_bank_balance = (int) ($home_data['show_bank_balance'] ?? 0);
 
 // בניית הודעת הוואטסאפ וקידוד הקישור
 $join_code = $home_data['join_code'];
@@ -138,11 +142,24 @@ $members_result = mysqli_query($conn, $members_query);
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <label>יתרת בנק עדכנית (₪)</label>
+                                    <label>יתרת בנק מוצגת (₪) — ליישור מול הבנק</label>
                                     <div class="input-with-icon">
                                         <i class="fa-solid fa-building-columns"></i>
-                                        <input type="number" step="0.01" name="initial_balance" value="<?php echo $home_data['initial_balance']; ?>" required>
+                                        <input type="number" step="0.01" name="bank_balance_display" value="<?php echo htmlspecialchars((string) $display_balance, ENT_QUOTES, 'UTF-8'); ?>">
                                     </div>
+                                    <p class="block-help" style="margin-top: 8px;">השאר ריק אם ברצונך לעדכן רק שם בית או הצגה — בלי לשנות את יישור היתרה.</p>
+                                </div>
+                                <div class="input-group">
+                                    <label class="checkbox-container" style="font-size: 0.95rem; font-weight: 600;">
+                                        <input type="checkbox" id="show_bank_balance_cb" name="show_bank_balance" value="1" <?php echo $show_bank_balance ? 'checked' : ''; ?>>
+                                        הצג כרטיס &quot;יתרה בחשבון&quot; בדף הבית ובדוחות
+                                    </label>
+                                </div>
+                                <div class="input-group">
+                                    <button type="button" class="btn-secondary" id="btn-reset-bank-balance" onclick="resetHomeBankBalance()" style="width: 100%;">
+                                        <i class="fa-solid fa-rotate-left"></i> איפוס יתרה (מאפס יישור ויתרה מחושבת)
+                                    </button>
+                                    <p class="block-help" style="margin-top: 8px;">לאחר מחיקת כל התנועות, אפשר לאפס כאן כדי למנוע &quot;יתרת רפאים&quot;.</p>
                                 </div>
                                 <div id="home-msg" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 8px; font-weight: 600; text-align: center;"></div>
                                 <button type="button" id="btn-update-home" class="btn-primary" onclick="updateHomeDetails()">שמור שינויים</button>
@@ -365,9 +382,36 @@ $members_result = mysqli_query($conn, $members_query);
         const allCategories = <?php echo json_encode($categories_array, JSON_UNESCAPED_UNICODE); ?>;
 
         // === פונקציית עדכון פרטי הבית ב-AJAX ===
+        function resetHomeBankBalance() {
+            tazrimConfirm({
+                title: 'איפוס יתרה',
+                message: 'פעולה זו תאפס את יתרת הבנק השמורה (יישור וחישוב מהתנועות) לאפס. להמשיך?',
+                confirmText: 'איפוס',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function(ok) {
+                if (!ok) return;
+                fetch('<?php echo BASE_URL; ?>/app/ajax/reset_home_balance.php', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.reload();
+                    } else {
+                        tazrimAlert({ title: 'שגיאה', message: data.message || 'לא ניתן לאפס.' });
+                    }
+                })
+                .catch(() => tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת.' }));
+            });
+        }
+
         function updateHomeDetails() {
             const form = document.getElementById('update-home-form');
             const formData = new FormData(form);
+            const showCb = document.getElementById('show_bank_balance_cb');
+            formData.set('show_bank_balance', showCb && showCb.checked ? '1' : '0');
             const btn = document.getElementById('btn-update-home');
             const msgBox = document.getElementById('home-msg');
 

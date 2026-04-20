@@ -119,8 +119,13 @@ if ($params !== []) {
 
 $items = [];
 while ($row = mysqli_fetch_assoc($result)) {
-    if ($table === 'homes' && isset($row['initial_balance'])) {
-        $row['initial_balance'] = decryptBalance($row['initial_balance']);
+    if ($table === 'homes') {
+        if (isset($row['bank_balance_ledger_cached'])) {
+            $row['bank_balance_ledger_cached'] = decryptBalance($row['bank_balance_ledger_cached']);
+        }
+        if (isset($row['bank_balance_manual_adjustment'])) {
+            $row['bank_balance_manual_adjustment'] = decryptBalance($row['bank_balance_manual_adjustment']);
+        }
     }
     $vid = isset($row[$valueCol]) ? (int) $row[$valueCol] : 0;
     if ($vid <= 0) {

@@ -23,6 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    $snap = mysqli_query($conn, "SELECT type, amount, transaction_date FROM transactions WHERE id = $trans_id AND home_id = $home_id LIMIT 1");
+    $oldRow = $snap ? mysqli_fetch_assoc($snap) : null;
+    if (!$oldRow) {
+        echo json_encode(['status' => 'error', 'message' => 'הפעולה לא נמצאה.']);
+        exit();
+    }
+
     $update_query = "UPDATE transactions 
                      SET amount = $amount, category = $category_id, description = '$description' 
                      WHERE id = $trans_id AND home_id = $home_id";
@@ -35,6 +42,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 maybeSendBudgetOverrunPush($home_id, (int) $row['category']);
             }
         }
+
+        global $today_il;
+        $today_for_ledger = isset($today_il) ? (string) $today_il : date('Y-m-d');
+        $newRow = [
+            'type' => (string) $oldRow['type'],
+            'amount' => $amount,
+            'transaction_date' => (string) $oldRow['transaction_date'],
+        ];
+        tazrim_after_transaction_row_change($conn, (int) $home_id, $oldRow, $newRow, $today_for_ledger);
 
         echo json_encode(['status' => 'success']);
     } else {

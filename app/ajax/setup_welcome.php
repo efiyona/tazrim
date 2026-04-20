@@ -18,17 +18,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // 1. עדכון פרטי הבית (שם ויתרה התחלתית)
+    // 1. עדכון פרטי הבית (שם, הצגת יתרה, יתרה מוצגת)
     $home_name = isset($_POST['home_name']) ? mysqli_real_escape_string($conn, trim($_POST['home_name'])) : '';
-    $initial_balance = isset($_POST['initial_balance']) ? (float)$_POST['initial_balance'] : 0;
+    $bank_raw = isset($_POST['initial_balance']) ? trim((string) $_POST['initial_balance']) : '';
+    $bank_val = ($bank_raw !== '' && is_numeric($bank_raw)) ? (float) $bank_raw : null;
+    $show_bank_balance = isset($_POST['show_bank_balance']) ? 1 : 0;
 
-    $encrypted_balance = encryptBalance($initial_balance);
-    
     // אם המשתמש השאיר שם בית ריק, לא נדרוס את הקיים (נשאיר את ברירת המחדל שנוצרה בהרשמה)
     if (!empty($home_name)) {
-        mysqli_query($conn, "UPDATE homes SET name = '$home_name', initial_balance = '$encrypted_balance' WHERE id = $home_id");
+        mysqli_query($conn, "UPDATE homes SET name = '$home_name', show_bank_balance = $show_bank_balance WHERE id = $home_id");
     } else {
-        mysqli_query($conn, "UPDATE homes SET initial_balance = '$encrypted_balance' WHERE id = $home_id");
+        mysqli_query($conn, "UPDATE homes SET show_bank_balance = $show_bank_balance WHERE id = $home_id");
+    }
+
+    tazrim_recompute_home_ledger_cached_from_db($conn, (int) $home_id);
+    if ($bank_val !== null) {
+        tazrim_apply_user_bank_balance_target($conn, (int) $home_id, $bank_val, date('Y-m-d'));
     }
 
     // 2. עיבוד והזרקת קטגוריות

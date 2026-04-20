@@ -119,6 +119,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         // ==========================================
 
+        global $today_il;
+        $today_for_ledger = isset($today_il) ? (string) $today_il : date('Y-m-d');
+        $newRow = [
+            'type' => $type,
+            'amount' => $amount_ils,
+            'transaction_date' => $transaction_date,
+        ];
+        tazrim_after_transaction_row_change($conn, (int) $home_id, null, $newRow, $today_for_ledger);
+
         echo json_encode(['status' => 'success']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'שגיאת שרת בשמירת הנתונים.']);
