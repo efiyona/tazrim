@@ -170,6 +170,32 @@ if (!defined('BASE_URL')) {
         handlePopupCampaignAction(form, String(act).trim());
     });
 
+    /** סגירה בלי פעולת טופס — רק סימון קריאה (כמו «קראתי»), למשל «לא מעוניין כרגע» */
+    bodyEl.addEventListener('click', function (e) {
+        var skipEl = e.target.closest('[data-tazrim-popup-dismiss]');
+        if (!skipEl) return;
+        var mode = (skipEl.getAttribute('data-tazrim-popup-dismiss') || '').trim();
+        if (mode !== 'ack') return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (idx >= queue.length) return;
+        var cid = queue[idx].id;
+        var prevDisabled = ackBtn.disabled;
+        ackBtn.disabled = true;
+        if (skipEl.disabled !== undefined) skipEl.disabled = true;
+        sendAck(cid)
+            .then(function (data) {
+                ackBtn.disabled = prevDisabled;
+                if (skipEl.disabled !== undefined) skipEl.disabled = false;
+                if (data.status !== 'ok') return;
+                advanceAfterCampaignStep();
+            })
+            .catch(function () {
+                ackBtn.disabled = prevDisabled;
+                if (skipEl.disabled !== undefined) skipEl.disabled = false;
+            });
+    });
+
     bodyEl.addEventListener('click', function (e) {
         var actEl = e.target.closest('[data-tazrim-popup-action]');
         if (!actEl) return;
