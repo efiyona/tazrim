@@ -816,5 +816,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<?php include ROOT_PATH . '/assets/includes/popup_campaigns_modal.php'; ?>
+<?php
+$popup_script = basename($_SERVER['SCRIPT_NAME'] ?? '');
+$skip_popup_campaigns = $popup_script === 'accept_tos.php' || $popup_script === 'welcome.php';
+if (!$skip_popup_campaigns) {
+    include ROOT_PATH . '/assets/includes/popup_campaigns_modal.php';
+}
 
