@@ -65,11 +65,17 @@ $ackEsc = mysqli_real_escape_string($conn, $ackPolicy);
 $startsSql = $startsAt !== null && $startsAt !== '' ? "'" . mysqli_real_escape_string($conn, (string) $startsAt) . "'" : 'NULL';
 $endsSql = $endsAt !== null && $endsAt !== '' ? "'" . mysqli_real_escape_string($conn, (string) $endsAt) . "'" : 'NULL';
 
+$formSchemaRaw = isset($row['form_schema']) ? trim((string) $row['form_schema']) : '';
+$formSchemaSql = 'NULL';
+if ($formSchemaRaw !== '') {
+    $formSchemaSql = "'" . mysqli_real_escape_string($conn, $formSchemaRaw) . "'";
+}
+
 mysqli_begin_transaction($conn);
 
 try {
-    $sql = "INSERT INTO `popup_campaigns` (`title`, `body_html`, `target_scope`, `ack_policy`, `status`, `is_active`, `sort_order`, `starts_at`, `ends_at`)
-            VALUES ('{$titleEsc}', '{$bodyEsc}', '{$scopeEsc}', '{$ackEsc}', 'draft', 1, {$sortOrder}, {$startsSql}, {$endsSql})";
+    $sql = "INSERT INTO `popup_campaigns` (`title`, `body_html`, `target_scope`, `ack_policy`, `form_schema`, `status`, `is_active`, `sort_order`, `starts_at`, `ends_at`)
+            VALUES ('{$titleEsc}', '{$bodyEsc}', '{$scopeEsc}', '{$ackEsc}', {$formSchemaSql}, 'draft', 1, {$sortOrder}, {$startsSql}, {$endsSql})";
     if (!mysqli_query($conn, $sql)) {
         throw new RuntimeException(mysqli_error($conn));
     }

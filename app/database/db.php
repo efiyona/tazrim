@@ -127,6 +127,7 @@ function tazrim_ensure_popup_campaign_tables() {
             `body_html` mediumtext NOT NULL,
             `target_scope` enum('all','homes','users') NOT NULL DEFAULT 'all',
             `ack_policy` enum('each_user','one_per_home','primary_only') NOT NULL DEFAULT 'each_user',
+            `form_schema` mediumtext DEFAULT NULL,
             `status` enum('draft','published') NOT NULL DEFAULT 'draft',
             `is_active` tinyint(1) NOT NULL DEFAULT 1,
             `sort_order` int(11) NOT NULL DEFAULT 0,
@@ -187,6 +188,34 @@ function tazrim_ensure_popup_campaign_tables() {
              ADD COLUMN `ack_policy` ENUM('each_user','one_per_home','primary_only') NOT NULL DEFAULT 'each_user' AFTER `target_scope`"
         );
     }
+
+    $colForm = @mysqli_query($conn, "SHOW COLUMNS FROM `popup_campaigns` LIKE 'form_schema'");
+    if ($colForm && mysqli_num_rows($colForm) === 0) {
+        @mysqli_query(
+            $conn,
+            "ALTER TABLE `popup_campaigns`
+             ADD COLUMN `form_schema` MEDIUMTEXT NULL COMMENT 'JSON: handler + fields' AFTER `ack_policy`"
+        );
+    }
+
+    @mysqli_query(
+        $conn,
+        "CREATE TABLE IF NOT EXISTS `popup_campaign_form_submissions` (
+            `id` bigint(20) NOT NULL AUTO_INCREMENT,
+            `campaign_id` int(11) NOT NULL,
+            `user_id` int(11) NOT NULL,
+            `home_id` int(11) DEFAULT NULL,
+            `payload_json` MEDIUMTEXT NOT NULL,
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`id`),
+            KEY `idx_pcfs_campaign` (`campaign_id`,`created_at`),
+            KEY `idx_pcfs_user` (`user_id`),
+            KEY `idx_pcfs_home` (`home_id`),
+            CONSTRAINT `fk_pcfs_campaign` FOREIGN KEY (`campaign_id`) REFERENCES `popup_campaigns` (`id`) ON DELETE CASCADE,
+            CONSTRAINT `fk_pcfs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+            CONSTRAINT `fk_pcfs_home` FOREIGN KEY (`home_id`) REFERENCES `homes` (`id`) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
 
     @mysqli_query(
         $conn,

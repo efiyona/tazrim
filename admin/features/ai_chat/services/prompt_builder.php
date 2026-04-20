@@ -91,6 +91,7 @@ if (!function_exists('admin_ai_chat_build_system_instruction')) {
         $popupBlock = $popupGuide !== ''
             ? "### מדריך מבנה HTML לקמפיין פופאפ — חובה לשימוש בפעולות על `popup_campaigns`\n"
                 . "כשאתה מציע `[[ACTION]]` של `create`/`update` בטבלה `popup_campaigns` ושדה `body_html` נכלל,\n"
+                . "אם יש טופס שמירה — כלול גם `form_schema` (JSON): `handler` = `submission_store` או `bank_balance`, ומערך `fields` עם שמות שדות; ב-HTML השתמש ב־`data-tazrim-popup-action=\"submit\"` ושמות `name` תואמים.\n"
                 . "**חובה** לבנות את ה-HTML לפי המסמך הבא בדיוק (זהה ל-AI ביצירת פופאפ מתוך עמוד הקמפיין):\n"
                 . "----- BEGIN POPUP HTML GUIDE -----\n"
                 . $popupGuide

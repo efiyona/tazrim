@@ -7,6 +7,7 @@ require '../../path.php';
 include ROOT_PATH . '/app/database/db.php';
 require_once ROOT_PATH . '/app/functions/popup_campaigns.php';
 require_once ROOT_PATH . '/app/functions/popup_campaign_actions.php';
+require_once ROOT_PATH . '/app/functions/popup_campaign_form_schema.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -53,6 +54,23 @@ if (!tazrim_popup_campaign_ack_allowed($conn, $user_id, $home_id, $campaign_id))
 
 $uid = (int) $user_id;
 $cid = (int) $campaign_id;
+
+$campaignRow = selectOne('popup_campaigns', ['id' => $cid]);
+$schema = tazrim_popup_campaign_form_schema_from_row($campaignRow ?: null);
+
+if ($schema !== null) {
+    if ($action === 'submit' || ($action === 'save_bank_balance' && ($schema['handler'] ?? '') === 'bank_balance')) {
+        echo json_encode(tazrim_popup_campaign_process_form_schema_submit($conn, $uid, $home_id, $cid, $schema, $body));
+        exit;
+    }
+    echo json_encode(['status' => 'error', 'message' => 'קמפיין זה מוגדר עם form_schema — השתמש ב־data-tazrim-popup-action="submit" (או save_bank_balance רק כשה-handler הוא bank_balance).']);
+    exit;
+}
+
+if ($action === 'submit') {
+    echo json_encode(['status' => 'error', 'message' => 'לא הוגדרה סכמת טופס לקמפיין (form_schema).']);
+    exit;
+}
 
 $result = tazrim_popup_campaign_run_action($conn, $uid, $home_id, $cid, $action, $body);
 echo json_encode($result);

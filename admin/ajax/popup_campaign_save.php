@@ -3,6 +3,7 @@
  * שמירת קמפיין פופאפ — program_admin בלבד.
  */
 require_once dirname(__DIR__) . '/includes/init_ajax.php';
+require_once ROOT_PATH . '/app/functions/popup_campaign_form_schema.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'שיטה לא מורשית.'], 405);
@@ -99,6 +100,19 @@ function tazrim_admin_popup_parse_dt_local(?string $s): ?string
 $startsAt = tazrim_admin_popup_parse_dt_local($startsRaw);
 $endsAt = tazrim_admin_popup_parse_dt_local($endsRaw);
 
+$formSchemaRaw = isset($body['form_schema']) ? trim((string) $body['form_schema']) : '';
+$formSchemaSql = 'NULL';
+if ($formSchemaRaw !== '') {
+    $decoded = json_decode($formSchemaRaw, true);
+    if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+        tazrim_admin_json_response(['status' => 'error', 'message' => 'form_schema חייב להיות JSON תקין.'], 400);
+    }
+    $shapeErr = tazrim_popup_campaign_validate_form_schema_shape($decoded);
+    if ($shapeErr !== null) {
+        tazrim_admin_json_response(['status' => 'error', 'message' => 'form_schema: ' . $shapeErr], 400);
+    }
+}
+
 global $conn;
 
 $titleEsc = mysqli_real_escape_string($conn, $title);
@@ -109,12 +123,16 @@ $statusEsc = mysqli_real_escape_string($conn, $status);
 $startsSql = $startsAt === null ? 'NULL' : "'" . mysqli_real_escape_string($conn, $startsAt) . "'";
 $endsSql = $endsAt === null ? 'NULL' : "'" . mysqli_real_escape_string($conn, $endsAt) . "'";
 
+if ($formSchemaRaw !== '') {
+    $formSchemaSql = "'" . mysqli_real_escape_string($conn, $formSchemaRaw) . "'";
+}
+
 mysqli_begin_transaction($conn);
 
 try {
     if ($id <= 0) {
-        $sql = "INSERT INTO `popup_campaigns` (`title`, `body_html`, `target_scope`, `ack_policy`, `status`, `is_active`, `sort_order`, `starts_at`, `ends_at`)
-                VALUES ('{$titleEsc}', '{$bodyEsc}', '{$scopeEsc}', '{$ackEsc}', '{$statusEsc}', {$isActive}, {$sortOrder}, {$startsSql}, {$endsSql})";
+        $sql = "INSERT INTO `popup_campaigns` (`title`, `body_html`, `target_scope`, `ack_policy`, `form_schema`, `status`, `is_active`, `sort_order`, `starts_at`, `ends_at`)
+                VALUES ('{$titleEsc}', '{$bodyEsc}', '{$scopeEsc}', '{$ackEsc}', {$formSchemaSql}, '{$statusEsc}', {$isActive}, {$sortOrder}, {$startsSql}, {$endsSql})";
         if (!mysqli_query($conn, $sql)) {
             throw new RuntimeException(mysqli_error($conn));
         }
@@ -125,6 +143,7 @@ try {
                 `body_html` = '{$bodyEsc}',
                 `target_scope` = '{$scopeEsc}',
                 `ack_policy` = '{$ackEsc}',
+                `form_schema` = {$formSchemaSql},
                 `status` = '{$statusEsc}',
                 `is_active` = {$isActive},
                 `sort_order` = {$sortOrder},

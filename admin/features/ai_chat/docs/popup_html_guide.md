@@ -3,17 +3,19 @@
 מסמך זה מתעד את התקן הוויזואלי של גוף ההודעה (`body_html`) בקמפייני פופאפ במערכת «התזרים».
 שני מקומות שצריכים להכיר אותו: יוצר התוכן ב-AI מתוך עמוד עריכת קמפיין, והסוכן החכם בפאנל ניהול כשהוא מציע פעולת `create`/`update` לטבלת `popup_campaigns`.
 
-### ארכיטקטורה: טפסים ושמירה (תמיכה כוללת, בטוחה)
+### ארכיטקטורה: טפסים ושמירה (בטוחה)
 
-- **אין** הרשאה לשמור «לאן שירצה» מתוך HTML בלבד — זה חור אבטחה. במקום זה: **רישום פעולות (whitelist) בשרת** — `app/functions/popup_campaign_actions.php`. כל מזהה ב-`data-tazrim-popup-action` מתורגם ל-handler מאומת שקובע לאיזה טבלה/לוגיקה נכנסים הנתונים.
-- **בצד המשתמש** (`assets/includes/popup_campaigns_modal.php`): לחיצה על אלמנט עם `data-tazrim-popup-action="..."` אוספת אוטומטית את כל השדות עם **`name`** באותו גוף פופאפ (או בטופס) ושולחת ל-`app/ajax/popup_campaign_action.php` יחד עם `campaign_id` ו-`action`.
-- **הסוכן / עורך HTML** ממלאים רק **מבנה ויזואלי + שמות שדות (`name`) + מזהה פעולה** — לא קוד שרת ולא `fetch` ב-`<script>`.
+- **אין** הרשאה לשמור «לאן שירצה» מתוך HTML בלבד — זה חור אבטחה.
+- **דרך מומלצת — `form_schema` (JSON בקמפיין):** בשדה `popup_campaigns.form_schema` מגדירים `handler` מאושר בשרת + רשימת `fields` (שם, סוג, חובה, אורך מקסימלי). ב־`body_html` משתמשים ב־**`data-tazrim-popup-action="submit"`** (או טופס עם אותו מאפיין); המודל שולח את כל ה־`name` ל־`app/ajax/popup_campaign_action.php` עם `action: "submit"`, והשרת מאמת מול הסכמה ומבצע:
+  - **`submission_store`** — שמירת JSON של השדות בטבלה `popup_campaign_form_submissions` (הגשות לפי קמפיין/משתמש).
+  - **`bank_balance`** — עדכון יתרת בנק (כמו בעבר), עם שדה `bank_balance` (אפשר `fields: []` — אז משתמע שדה אחד `bank_balance`).
+- **לוגיקה:** `app/functions/popup_campaign_form_schema.php` — אימות סכמה ו-handlers.
+- **מצב ישן (ללא `form_schema`):** `data-tazrim-popup-action="save_bank_balance"` עדיין נתמך לקמפיינים ישנים.
 
-**להוספת סוג טופס / שמירה חדשים (מפתחים):**
+**להוספת handler חדש בשרת (מפתחים):**
 
-1. מימוש פונקציה חדשה ורישומה ב-`tazrim_popup_campaign_action_handlers()` בקובץ `popup_campaign_actions.php`.
-2. עדכון מסמך זה: שם הפעולה, רשימת שדות `name` צפויים, והתנהגות (למשל סימון קמפיין כנקרא אחרי הצלחה).
-3. אז ניתן לבקש מהסוכן HTML שמשתמש ב-`data-tazrim-popup-action="<המזהה>"` ובשדות המתאימים.
+1. הרחבת `tazrim_popup_campaign_validate_form_schema_shape()` + `tazrim_popup_campaign_process_form_schema_submit()` ב־`popup_campaign_form_schema.php`.
+2. עדכון מסמך זה והסוכן.
 
 ### כללי תוכן (לפני HTML)
 
@@ -51,36 +53,55 @@
   כדי למרכז במסכים צרים ולשבור שורה לפי הצורך.
 - כפתורים: `flex:1 1 auto;min-width:min(100%, 10rem);` או `width:100%` בתוך העטיפה אם רוצים עמודה במובייל — לפי העיצוב.
 
-### כפתור «לא מעוניין כרגע» (רק סימון קריאה)
+### כפתור «לא עכשיו» / סגירה בלי שמירה (אופציונלי, ניסוח פר־קמפיין)
 
-מי שלא רוצה למלא טופס — יכול לסגור את ההודעה ולהמשיך לעבוד: כפתור **`type="button"`** עם **`data-tazrim-popup-dismiss="ack"`** — לחיצה מסמנת את הקמפיין כנקרא (כמו «קראתי» בתחתית), **בלי** שמירת שדות ו**בלי** קריאה ל־`save_bank_balance`.
-
-```html
-<button type="button" data-tazrim-popup-dismiss="ack" style="...">לא מעוניין כרגע</button>
-```
-
-### פעולות מובנות במערכת (במקום סקריפט)
-
-אינטראקציה (שמירת יתרה, וכו׳) מחויבת דרך **תכונות `data-*`** שמזהות את לוגיקת השרת — לא דרך JavaScript מוטמע ב-HTML.
-
-#### עדכון יתרת עו״ש (שדה + כפתור)
-
-- שדה קלט: `input` או `textarea` עם **`name="bank_balance"`** (מספר; בשרת מתקבל גם עם פסיקי אלפים וגם בלי).
-- כפתור אחד מסוג **`type="button"`** (או טופס — ראו למטה) עם **`data-tazrim-popup-action="save_bank_balance"`** — המערכת תשלח לשרת את הערך, תעדכן את יתרת הבית, ותסמן את הקמפיין כנקרא (כמו לחיצה על «קראתי»).
-
-דוגמה:
+- **מופיע רק אם מוסיפים אותו ל־`body_html`** — אין כפתור כזה בברירת מחדל; כל קמפיין יכול לכלול או לא לכלול.
+- **הטקסט על הכפתור הוא מה שתבחרו** (למשל «לא כרגע», «אמשיך אחר כך», «דלג»).
+- מי שלא רוצה למלא טופס — לוחץ כאן: **`type="button"`** + **`data-tazrim-popup-dismiss="ack"`** — רק סימון קריאה (כמו «קראתי»), **בלי** שמירת שדות.
 
 ```html
-<label for="bank_balance_input" style="display:block;color:#475569;font-size:0.9rem;margin-bottom:0.3rem;">יתרה נוכחית בבנק (₪):</label>
-<input type="text" id="bank_balance_input" name="bank_balance" inputmode="decimal" autocomplete="off" placeholder="12,299.77" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box;font-size:0.9rem;">
-<button type="button" data-tazrim-popup-action="save_bank_balance" style="display:inline-flex;align-items:center;gap:0.4rem;justify-content:center;margin-top:1rem;padding:12px 28px;border-radius:999px;background:linear-gradient(135deg,#29b669 0%,#22a55b 100%);color:#ffffff;font-weight:700;font-size:0.95rem;border:none;cursor:pointer;font-family:inherit;">
-  שמור <i class="fa-solid fa-arrow-left" style="font-size:0.85rem;"></i>
-</button>
+<button type="button" data-tazrim-popup-dismiss="ack" style="...">הטקסט שאני בוחר לקמפיין זה</button>
 ```
 
-חלופה: `<form data-tazrim-popup-action="save_bank_balance">` עם `input name="bank_balance"` ו-`<button type="submit">` — אותה פעולה.
+**שליחת טופס מוצלחת** (`submit` / `save_bank_balance` לפי הסכמה): אחרי שמירה מוצלחת בשרת הקמפיין מסומן כנקרא — **לא** מסומן אם הוולידציה נכשלה או השרת החזיר שגיאה.
 
-**פעולות רשומות כרגע בשרת:** `save_bank_balance` (יתרת עו״ש). רשימה מעודכנת: `tazrim_popup_campaign_action_handlers()` ב-`app/functions/popup_campaign_actions.php`. פעולות נוספות יתווספו שם — אותו מפתח `data-tazrim-popup-action` ב-HTML.
+### טופסים ושליחה (במקום סקריפט)
+
+- **עם `form_schema`:** כפתור/טופס עם **`data-tazrim-popup-action="submit"`** — השרת קורא את `form_schema` של הקמפיין ומאמת שדות.
+- **סוגי שדות נתמכים ב־`fields`:** `text`, `textarea`, `number`, `email`, `tel`, `checkbox`.
+- **שמות שדות:** רק אותיות אנגליות קטנות, מספרים ו־`_` (למשל `feedback`, `rating_1`).
+
+#### דוגמת `form_schema` — משוב לטבלת הגשות
+
+```json
+{
+  "handler": "submission_store",
+  "fields": [
+    {"name": "feedback", "type": "textarea", "required": false, "maxLength": 2000}
+  ]
+}
+```
+
+#### דוגמת `form_schema` — יתרת בנק
+
+```json
+{
+  "handler": "bank_balance",
+  "fields": []
+}
+```
+או עם הגדרה מפורשת: `fields: [{"name":"bank_balance","type":"text","required":true,"maxLength":40}]`
+
+#### דוגמת HTML עם `submit` (יתרה)
+
+```html
+<input type="text" name="bank_balance" inputmode="decimal" autocomplete="off" style="width:100%;box-sizing:border-box;...">
+<button type="button" data-tazrim-popup-action="submit" style="...">שמור</button>
+```
+
+#### מצב ישן — `save_bank_balance` בלי `form_schema`
+
+כפתור עם **`data-tazrim-popup-action="save_bank_balance"`** — רק כשאין `form_schema` בקמפיין, או כשקמפיין מוגדר עם `handler` `bank_balance` (השרת גם מקבל `save_bank_balance` לתאימות).
 
 ### כפתור CTA (אופציונלי, רק אם יש לינק יעד)
 

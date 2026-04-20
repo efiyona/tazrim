@@ -36,6 +36,7 @@ $campaign = [
     'sort_order' => 0,
     'starts_at' => '',
     'ends_at' => '',
+    'form_schema' => '',
 ];
 
 $home_chips = [];
@@ -57,6 +58,7 @@ if ($id > 0) {
     $campaign['sort_order'] = (int) $row['sort_order'];
     $campaign['starts_at'] = tazrim_admin_popup_dt_to_local(isset($row['starts_at']) ? (string) $row['starts_at'] : null);
     $campaign['ends_at'] = tazrim_admin_popup_dt_to_local(isset($row['ends_at']) ? (string) $row['ends_at'] : null);
+    $campaign['form_schema'] = isset($row['form_schema']) ? (string) $row['form_schema'] : '';
 
     $rq = mysqli_query($conn, 'SELECT `home_id` FROM `popup_campaign_homes` WHERE `campaign_id` = ' . (int) $id);
     if ($rq) {
@@ -158,6 +160,14 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
             <label for="pc_body" class="block font-semibold text-gray-800 mb-2">תוכן (HTML)</label>
             <textarea id="pc_body" name="body_html" rows="14" required
                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 font-mono text-sm focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 resize-y"><?php echo htmlspecialchars($campaign['body_html'], ENT_QUOTES, 'UTF-8'); ?></textarea>
+        </div>
+
+        <div>
+            <label for="pc_form_schema" class="block font-semibold text-gray-800 mb-2">סכמת טופס (JSON, אופציונלי)</label>
+            <p class="text-xs text-gray-600 mb-2">מגדירה איזה שדות נשמרים ולאן (`submission_store` או `bank_balance`). ב־HTML: `data-tazrim-popup-action="submit"` ושמות שדות תואמים. ריק = קמפיין מידע בלבד או שימוש ב־save_bank_balance ללא סכמה (מצב ישן).</p>
+            <textarea id="pc_form_schema" rows="8"
+                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 font-mono text-xs focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 resize-y"
+                placeholder='{"handler":"submission_store","fields":[{"name":"feedback","type":"textarea","required":false,"maxLength":2000}]}'><?php echo htmlspecialchars($campaign['form_schema'], ENT_QUOTES, 'UTF-8'); ?></textarea>
         </div>
 
         <fieldset class="border border-gray-100 rounded-lg p-4 bg-gray-50">
@@ -742,6 +752,7 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
             body_html: bodyHtml,
             target_scope: target,
             ack_policy: getAckPolicy(),
+            form_schema: (document.getElementById('pc_form_schema') && document.getElementById('pc_form_schema').value) ? document.getElementById('pc_form_schema').value.trim() : '',
             status: document.getElementById('pc_status').value,
             is_active: document.getElementById('pc_active').checked ? 1 : 0,
             sort_order: parseInt(document.getElementById('pc_sort').value, 10) || 0,
