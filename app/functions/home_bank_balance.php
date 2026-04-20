@@ -65,10 +65,12 @@ if (!function_exists('tazrim_home_future_expenses_sum')) {
 if (!function_exists('tazrim_recompute_home_ledger_cached_from_db')) {
     /**
      * מסנכרן את bank_balance_ledger_cached לפי SUM ממומש (לא משנה adjustment).
+     *
+     * @param string|null $today תאריך "היום" לחישוב ממומש (ברירת מחדל: היום לפי שרת)
      */
-    function tazrim_recompute_home_ledger_cached_from_db(mysqli $conn, int $home_id): void
+    function tazrim_recompute_home_ledger_cached_from_db(mysqli $conn, int $home_id, ?string $today = null): void
     {
-        $today = date('Y-m-d');
+        $today = $today ?? date('Y-m-d');
         $plain = tazrim_home_ledger_plain_from_db($conn, $home_id, $today);
         $enc = encryptBalance($plain);
         if ($enc === null) {
@@ -150,11 +152,19 @@ if (!function_exists('tazrim_reset_home_bank_balance_fields')) {
 if (!function_exists('tazrim_apply_user_bank_balance_target')) {
     /**
      * משתמש מזין את היתרה שרוצה לראות (תצוגה); מעדכן adjustment בלבד.
-     * display = ledger + adj - future  =>  adj = target - ledger + future
+     * display = ledger_cached + adj - future  =>  adj = target - ledger_cached + future
+     *
+     * חשוב: ledger חייב להיות זהה לערך ב־bank_balance_ledger_cached (אחרי פענוח), לא רק SUM נפרד —
+     * אחרת cache מפולג/NULL יגרום לערך שמוצג אחרי שמירה להיות שונה מהמטרה.
      */
     function tazrim_apply_user_bank_balance_target(mysqli $conn, int $home_id, float $target_display, string $today): void
     {
-        $ledger = tazrim_home_ledger_plain_from_db($conn, $home_id, $today);
+        tazrim_recompute_home_ledger_cached_from_db($conn, $home_id, $today);
+        $home = selectOne('homes', ['id' => $home_id]);
+        if (!$home) {
+            return;
+        }
+        $ledger = isset($home['bank_balance_ledger_cached']) ? (float) $home['bank_balance_ledger_cached'] : 0.0;
         $future = tazrim_home_future_expenses_sum($conn, $home_id, $today);
         $adj = $target_display - $ledger + $future;
         tazrim_set_home_manual_adjustment_plain($conn, $home_id, $adj);
