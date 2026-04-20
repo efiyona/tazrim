@@ -51,13 +51,6 @@ $total_income = mysqli_fetch_assoc($inc_result)['total'] ?? 0;
 
 $balance = $total_income - $total_expenses;
 
-global $today_il;
-$today_for_reports = isset($today_il) ? (string) $today_il : date('Y-m-d');
-$report_bank_display = null;
-if (!empty($home_data['show_bank_balance'])) {
-    $report_bank_display = tazrim_home_display_bank_balance($conn, (int) $home_id, $today_for_reports);
-}
-
 $days_in_month = date('t', strtotime($start_date));
 $current_day = ($current_month == date('m') && $current_year == date('Y')) ? (int)date('d') : $days_in_month;
 $daily_avg = $current_day > 0 ? $total_expenses / $current_day : 0;
@@ -321,20 +314,6 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
                     </div>
                 </div>
 
-                <?php if ($report_bank_display !== null): ?>
-                <div class="kpi-card kpi-card--home kpi-card--balance kpi-card--span-full">
-                    <div class="kpi-card__body">
-                        <div class="kpi-card__head">
-                            <span class="kpi-card__icon-wrap" aria-hidden="true"><i class="fa-solid fa-wallet"></i></span>
-                            <span class="kpi-card__label">יתרת חשבון (מוערכת)</span>
-                        </div>
-                        <div class="kpi-amount kpi-card__value <?php echo $report_bank_display['display'] >= 0 ? 'success-text' : 'error-text'; ?>">
-                            <?php echo number_format($report_bank_display['display'], 0) . '₪'; ?>
-                        </div>
-                        <p style="font-size: 0.8rem; color: #888; margin: 8px 0 0 0;">כמו בדף הבית — כולל יישור ידני והוצאות עתידיות.</p>
-                    </div>
-                </div>
-                <?php endif; ?>
             </div>
 
             <div class="charts-container">

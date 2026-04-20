@@ -33,17 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($bank_target !== '') {
-        // 12,299.77 — הסרת פסיקי אלפים; אחרת (float)"12,299.77" ב-PHP נהיה 12
-        $bank_target_norm = preg_replace('/\s+/', '', $bank_target);
-        if (preg_match('/^\d{1,3}(,\d{3})+(\.\d+)?$/', $bank_target_norm)) {
-            $bank_target_norm = str_replace(',', '', $bank_target_norm);
-        }
-        if (!is_numeric($bank_target_norm)) {
+        $parsed = tazrim_parse_bank_balance_input($bank_target);
+        if ($parsed === null) {
             echo json_encode(['status' => 'error', 'message' => 'יתרת בנק חייבת להיות מספר.']);
             exit();
         }
         $today = date('Y-m-d');
-        tazrim_apply_user_bank_balance_target($conn, $hid, (float) $bank_target_norm, $today);
+        tazrim_apply_user_bank_balance_target($conn, $hid, $parsed, $today);
     }
 
     echo json_encode(['status' => 'success']);

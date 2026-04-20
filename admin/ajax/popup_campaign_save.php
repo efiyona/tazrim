@@ -23,6 +23,7 @@ $id = isset($body['id']) ? (int) $body['id'] : 0;
 $title = trim((string) ($body['title'] ?? ''));
 $bodyHtml = (string) ($body['body_html'] ?? '');
 $targetScope = (string) ($body['target_scope'] ?? 'all');
+$ackPolicy = trim((string) ($body['ack_policy'] ?? 'each_user'));
 $status = (string) ($body['status'] ?? 'draft');
 $isActive = !empty($body['is_active']) ? 1 : 0;
 $sortOrder = isset($body['sort_order']) ? (int) $body['sort_order'] : 0;
@@ -39,6 +40,10 @@ if ($title === '') {
 
 if (!in_array($targetScope, ['all', 'homes', 'users'], true)) {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'יעד לא תקין.'], 400);
+}
+
+if (!in_array($ackPolicy, ['each_user', 'one_per_home', 'primary_only'], true)) {
+    tazrim_admin_json_response(['status' => 'error', 'message' => 'מדיניות אישור לא תקינה.'], 400);
 }
 
 if (!in_array($status, ['draft', 'published'], true)) {
@@ -99,6 +104,7 @@ global $conn;
 $titleEsc = mysqli_real_escape_string($conn, $title);
 $bodyEsc = mysqli_real_escape_string($conn, $bodyHtml);
 $scopeEsc = mysqli_real_escape_string($conn, $targetScope);
+$ackEsc = mysqli_real_escape_string($conn, $ackPolicy);
 $statusEsc = mysqli_real_escape_string($conn, $status);
 $startsSql = $startsAt === null ? 'NULL' : "'" . mysqli_real_escape_string($conn, $startsAt) . "'";
 $endsSql = $endsAt === null ? 'NULL' : "'" . mysqli_real_escape_string($conn, $endsAt) . "'";
@@ -107,8 +113,8 @@ mysqli_begin_transaction($conn);
 
 try {
     if ($id <= 0) {
-        $sql = "INSERT INTO `popup_campaigns` (`title`, `body_html`, `target_scope`, `status`, `is_active`, `sort_order`, `starts_at`, `ends_at`)
-                VALUES ('{$titleEsc}', '{$bodyEsc}', '{$scopeEsc}', '{$statusEsc}', {$isActive}, {$sortOrder}, {$startsSql}, {$endsSql})";
+        $sql = "INSERT INTO `popup_campaigns` (`title`, `body_html`, `target_scope`, `ack_policy`, `status`, `is_active`, `sort_order`, `starts_at`, `ends_at`)
+                VALUES ('{$titleEsc}', '{$bodyEsc}', '{$scopeEsc}', '{$ackEsc}', '{$statusEsc}', {$isActive}, {$sortOrder}, {$startsSql}, {$endsSql})";
         if (!mysqli_query($conn, $sql)) {
             throw new RuntimeException(mysqli_error($conn));
         }
@@ -118,6 +124,7 @@ try {
                 `title` = '{$titleEsc}',
                 `body_html` = '{$bodyEsc}',
                 `target_scope` = '{$scopeEsc}',
+                `ack_policy` = '{$ackEsc}',
                 `status` = '{$statusEsc}',
                 `is_active` = {$isActive},
                 `sort_order` = {$sortOrder},

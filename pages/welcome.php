@@ -118,7 +118,7 @@ if ($has_active_categories) {
                     </div>
                     <label class="checkbox-container" style="display: flex; align-items: center; gap: 10px; margin-top: 10px; font-weight: 600; text-align: right;">
                         <input type="checkbox" id="welcome_show_bank_balance" name="show_bank_balance" value="1">
-                        הצגת יתרת חשבון בדף הבית ובדוחות
+                        הצג לי את יתרת החשבון העדכנית
                     </label>
                 </div>
 

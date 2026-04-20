@@ -149,6 +149,27 @@ if (!function_exists('tazrim_reset_home_bank_balance_fields')) {
     }
 }
 
+if (!function_exists('tazrim_parse_bank_balance_input')) {
+    /**
+     * נרמול מחרוזת יתרה מהמשתמש (פסיקי אלפים, רווחים) למספר או null אם לא תקין/ריק.
+     */
+    function tazrim_parse_bank_balance_input(string $raw): ?float
+    {
+        $norm = preg_replace('/\s+/', '', $raw);
+        if ($norm === '') {
+            return null;
+        }
+        if (preg_match('/^\d{1,3}(,\d{3})+(\.\d+)?$/', $norm)) {
+            $norm = str_replace(',', '', $norm);
+        }
+        if (!is_numeric($norm)) {
+            return null;
+        }
+
+        return (float) $norm;
+    }
+}
+
 if (!function_exists('tazrim_apply_user_bank_balance_target')) {
     /**
      * המשתמש מזין את היתרה בפועל בעו"ש (כפי שמופיע בבנק), לא את ה-KPI אחרי הוצאות עתידיות.

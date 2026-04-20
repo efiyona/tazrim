@@ -143,21 +143,20 @@ $members_result = mysqli_query($conn, $members_query);
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <label>יתרה בפועל בעו"ש (₪) — כפי שמופיעה בבנק</label>
+                                    <label>עדכון יתרת העו״ש בחשבון</label>
                                     <div class="input-with-icon">
                                         <i class="fa-solid fa-building-columns"></i>
                                         <input type="number" step="0.01" name="bank_balance_display" value="<?php echo htmlspecialchars((string) $bank_balance_input_value, ENT_QUOTES, 'UTF-8'); ?>">
                                     </div>
-                                    <p class="block-help" style="margin-top: 8px;">בדף הבית/דוחות מוצג: יתרה זו פחות סך <strong>הוצאות</strong> עם תאריך עתידי (שכבר קיימות במערכת או חדשות). הכנסות עתידיות לא מפחיתות את המספר. השאר ריק אם ברצונך לעדכן רק שם בית או הצגה.</p>
                                 </div>
                                 <div class="input-group">
                                     <label class="checkbox-container" style="font-size: 0.95rem; font-weight: 600;">
                                         <input type="checkbox" id="show_bank_balance_cb" name="show_bank_balance" value="1" <?php echo $show_bank_balance ? 'checked' : ''; ?>>
-                                        הצג כרטיס &quot;יתרה בחשבון&quot; בדף הבית ובדוחות
+                                        הצג לי את יתרת החשבון העדכנית
                                     </label>
                                 </div>
                                 <div class="input-group">
-                                    <button type="button" class="btn-secondary" id="btn-reset-bank-balance" onclick="resetHomeBankBalance()" style="width: 100%;">
+                                    <button type="button" class="btn-primary btn-primary--outline" id="btn-reset-bank-balance" onclick="resetHomeBankBalance()" style="width: 100%;">
                                         <i class="fa-solid fa-rotate-left"></i> איפוס יתרה (מאפס יישור ויתרה מחושבת)
                                     </button>
                                     <p class="block-help" style="margin-top: 8px;">לאחר מחיקת כל התנועות, אפשר לאפס כאן כדי למנוע &quot;יתרת רפאים&quot;.</p>

@@ -63,7 +63,7 @@ return [
             'join_code' => ['type' => 'text', 'label' => 'קוד הצטרפות'],
             'bank_balance_ledger_cached' => ['type' => 'balance', 'label' => 'יתרה ממומשת (cache)'],
             'bank_balance_manual_adjustment' => ['type' => 'balance', 'label' => 'יישור ידני'],
-            'show_bank_balance' => ['type' => 'checkbox', 'label' => 'הצג יתרת בנק בדף הבית'],
+            'show_bank_balance' => ['type' => 'checkbox', 'label' => 'הצג יתרת חשבון עדכנית (דף הבית)'],
         ],
     ],
     'users' => [

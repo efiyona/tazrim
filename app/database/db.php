@@ -126,6 +126,7 @@ function tazrim_ensure_popup_campaign_tables() {
             `title` varchar(255) NOT NULL,
             `body_html` mediumtext NOT NULL,
             `target_scope` enum('all','homes','users') NOT NULL DEFAULT 'all',
+            `ack_policy` enum('each_user','one_per_home','primary_only') NOT NULL DEFAULT 'each_user',
             `status` enum('draft','published') NOT NULL DEFAULT 'draft',
             `is_active` tinyint(1) NOT NULL DEFAULT 1,
             `sort_order` int(11) NOT NULL DEFAULT 0,
@@ -175,6 +176,33 @@ function tazrim_ensure_popup_campaign_tables() {
             KEY `idx_pr_campaign` (`campaign_id`),
             CONSTRAINT `fk_pr_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
             CONSTRAINT `fk_pr_campaign` FOREIGN KEY (`campaign_id`) REFERENCES `popup_campaigns` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $colAck = @mysqli_query($conn, "SHOW COLUMNS FROM `popup_campaigns` LIKE 'ack_policy'");
+    if ($colAck && mysqli_num_rows($colAck) === 0) {
+        @mysqli_query(
+            $conn,
+            "ALTER TABLE `popup_campaigns`
+             ADD COLUMN `ack_policy` ENUM('each_user','one_per_home','primary_only') NOT NULL DEFAULT 'each_user' AFTER `target_scope`"
+        );
+    }
+
+    @mysqli_query(
+        $conn,
+        "CREATE TABLE IF NOT EXISTS `popup_home_reads` (
+            `id` int(11) NOT NULL AUTO_INCREMENT,
+            `campaign_id` int(11) NOT NULL,
+            `home_id` int(11) NOT NULL,
+            `read_by_user_id` int(11) DEFAULT NULL,
+            `read_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uniq_campaign_home` (`campaign_id`,`home_id`),
+            KEY `idx_phr_home` (`home_id`),
+            KEY `idx_phr_read_by` (`read_by_user_id`),
+            CONSTRAINT `fk_phr_campaign` FOREIGN KEY (`campaign_id`) REFERENCES `popup_campaigns` (`id`) ON DELETE CASCADE,
+            CONSTRAINT `fk_phr_home` FOREIGN KEY (`home_id`) REFERENCES `homes` (`id`) ON DELETE CASCADE,
+            CONSTRAINT `fk_phr_user` FOREIGN KEY (`read_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
     );
 }

@@ -30,6 +30,7 @@ $campaign = [
     'title' => '',
     'body_html' => '',
     'target_scope' => 'all',
+    'ack_policy' => 'each_user',
     'status' => 'draft',
     'is_active' => 1,
     'sort_order' => 0,
@@ -49,6 +50,8 @@ if ($id > 0) {
     $campaign['title'] = (string) $row['title'];
     $campaign['body_html'] = (string) $row['body_html'];
     $campaign['target_scope'] = (string) $row['target_scope'];
+    $ap = isset($row['ack_policy']) ? (string) $row['ack_policy'] : 'each_user';
+    $campaign['ack_policy'] = in_array($ap, ['each_user', 'one_per_home', 'primary_only'], true) ? $ap : 'each_user';
     $campaign['status'] = (string) $row['status'];
     $campaign['is_active'] = (int) $row['is_active'];
     $campaign['sort_order'] = (int) $row['sort_order'];
@@ -138,7 +141,7 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
 
     <div class="mb-6">
         <h2 class="text-xl font-bold text-gray-800"><?php echo $id > 0 ? 'עריכת קמפיין #' . (int) $id : 'קמפיין פופאפ חדש'; ?></h2>
-        <p class="text-sm text-gray-600 mt-1">תוכן HTML מוצג למשתמשים כפי שהוזן — השתמשו בזהירות. המשתמש חייב לאשר &quot;קראתי&quot; לפני המשך עבודה.</p>
+        <p class="text-sm text-gray-600 mt-1">תוכן HTML מוצג למשתמשים כפי שהוזן — השתמשו בזהירות. ניתן להגדיר למי נדרש אישור &quot;קראתי&quot; (ראו למטה).</p>
     </div>
 
     <div id="pc-flash" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-semibold border" role="status"></div>
@@ -171,6 +174,25 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
                 <label class="flex items-start gap-3 cursor-pointer">
                     <input type="radio" name="pc_target" value="users" class="mt-1" <?php echo $campaign['target_scope'] === 'users' ? 'checked' : ''; ?>>
                     <span><span class="font-semibold text-gray-900">משתמשים נבחרים</span></span>
+                </label>
+            </div>
+        </fieldset>
+
+        <fieldset class="border border-gray-100 rounded-lg p-4 bg-gray-50">
+            <legend class="text-sm font-bold text-gray-800 px-1">מדיניות אישור (&quot;קראתי&quot;)</legend>
+            <p class="text-xs text-gray-600 mb-3">מגדירה מי רואה את ההודעה ומי סוגר אותה — בנוסף ליעד (כל הבתים / בתים נבחרים / משתמשים נבחרים).</p>
+            <div class="space-y-3 mt-2">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="radio" name="pc_ack_policy" value="each_user" class="mt-1" <?php echo $campaign['ack_policy'] === 'each_user' ? 'checked' : ''; ?>>
+                    <span><span class="font-semibold text-gray-900">כל משתמש בנפרד</span><span class="block text-xs text-gray-600 mt-0.5">כל משתמש ביעד חייב לאשר בעצמו.</span></span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="radio" name="pc_ack_policy" value="one_per_home" class="mt-1" <?php echo $campaign['ack_policy'] === 'one_per_home' ? 'checked' : ''; ?>>
+                    <span><span class="font-semibold text-gray-900">אישור אחד לכל בית</span><span class="block text-xs text-gray-600 mt-0.5">ההודעה מוצגת לכולם בבית; אישור של המשתמש הראשון מכל בית מספיק לסגור את ההודעה לכל משתמשי אותו הבית.</span></span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="radio" name="pc_ack_policy" value="primary_only" class="mt-1" <?php echo $campaign['ack_policy'] === 'primary_only' ? 'checked' : ''; ?>>
+                    <span><span class="font-semibold text-gray-900">רק אב בית (משתמש ראשי)</span><span class="block text-xs text-gray-600 mt-0.5">רק משתמש ראשי הבית בבתים שנכללו ביעד רואה את ההודעה ומאשר בשם הבית.</span></span>
                 </label>
             </div>
         </fieldset>
@@ -242,7 +264,7 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
     <?php if ($id > 0): ?>
     <section class="mt-10 bg-white rounded-lg shadow border border-gray-100 p-4 sm:p-6">
         <h3 class="text-lg font-bold text-gray-800 mb-2">מי קרא</h3>
-        <p class="text-sm text-gray-600 mb-4">משתמשים שאישרו &quot;קראתי&quot; עבור קמפיין זה.</p>
+        <p class="text-sm text-gray-600 mb-4">אישורי משתמשים ואישורי בית (כשמדיניות הקמפיין היא «אחד לכל בית»).</p>
         <button type="button" id="pc_load_reads" class="rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold py-2 px-4 text-sm mb-4">רענון רשימה</button>
         <div id="pc_reads_table_wrap" class="overflow-x-auto text-sm">
             <p class="text-gray-500">לחצו &quot;רענון רשימה&quot; לטעינה.</p>
@@ -314,6 +336,11 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
     function getTarget() {
         var r = form.querySelector('input[name="pc_target"]:checked');
         return r ? r.value : 'all';
+    }
+
+    function getAckPolicy() {
+        var r = form.querySelector('input[name="pc_ack_policy"]:checked');
+        return r ? r.value : 'each_user';
     }
 
     function syncPanels() {
@@ -714,6 +741,7 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
             title: title,
             body_html: bodyHtml,
             target_scope: target,
+            ack_policy: getAckPolicy(),
             status: document.getElementById('pc_status').value,
             is_active: document.getElementById('pc_active').checked ? 1 : 0,
             sort_order: parseInt(document.getElementById('pc_sort').value, 10) || 0,
@@ -766,10 +794,20 @@ $listHref = BASE_URL . 'admin/popup_campaigns.php';
                         readsWrap.innerHTML = '<p class="text-gray-500">אין קריאות עדיין.</p>';
                         return;
                     }
-                    var t = '<table class="min-w-full border border-gray-100"><thead class="bg-gray-50"><tr><th class="text-right p-2 border-b">משתמש</th><th class="text-right p-2 border-b">מייל</th><th class="text-right p-2 border-b">זמן קריאה</th></tr></thead><tbody>';
+                    var t = '<table class="min-w-full border border-gray-100"><thead class="bg-gray-50"><tr><th class="text-right p-2 border-b">סוג</th><th class="text-right p-2 border-b">פרטים</th><th class="text-right p-2 border-b">מייל</th><th class="text-right p-2 border-b">זמן</th></tr></thead><tbody>';
                     rows.forEach(function (r) {
+                        var kind = r.kind === 'home' ? 'בית (אחד לכל בית)' : 'משתמש';
                         var name = (r.first_name + ' ' + r.last_name).trim();
-                        t += '<tr class="border-b border-gray-50"><td class="p-2">' + escHtml(name) + ' (#' + r.user_id + ')</td><td class="p-2">' + escHtml(r.email || '') + '</td><td class="p-2">' + escHtml(r.read_at_label || r.read_at) + '</td></tr>';
+                        var detail;
+                        if (r.kind === 'home') {
+                            detail = escHtml(r.home_name || '') + ' (בית #' + (r.home_id || '') + ')';
+                            if (r.read_by_user_id) {
+                                detail += ' — אישר: ' + escHtml(name) + ' (#' + r.read_by_user_id + ')';
+                            }
+                        } else {
+                            detail = escHtml(name) + ' (#' + r.user_id + ')';
+                        }
+                        t += '<tr class="border-b border-gray-50"><td class="p-2">' + escHtml(kind) + '</td><td class="p-2">' + detail + '</td><td class="p-2">' + escHtml(r.email || '') + '</td><td class="p-2">' + escHtml(r.read_at_label || r.read_at) + '</td></tr>';
                     });
                     t += '</tbody></table><p class="mt-2 text-gray-600">סה&quot;כ: ' + rows.length + '</p>';
                     readsWrap.innerHTML = t;

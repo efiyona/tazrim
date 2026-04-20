@@ -408,6 +408,40 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
             .catch(() => { window.location.reload(); });
     }
 
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.kpi-balance-toggle-btn');
+        if (!btn) return;
+        var core = document.getElementById('home-dashboard-core');
+        if (!core || !core.contains(btn)) return;
+        e.preventDefault();
+        var card = btn.closest('.kpi-card--balance');
+        if (!card) return;
+        var amountEl = card.querySelector('.kpi-bank-amount-display');
+        var labelEl = card.querySelector('.kpi-bank-label-toggle');
+        if (!amountEl || !labelEl) return;
+        var pressed = btn.getAttribute('aria-pressed') === 'true';
+        var next = !pressed;
+        btn.setAttribute('aria-pressed', next ? 'true' : 'false');
+        var est = amountEl.getAttribute('data-estimated') || '';
+        var raw = amountEl.getAttribute('data-raw') || '';
+        var estPos = amountEl.getAttribute('data-est-pos') === '1';
+        var rawPos = amountEl.getAttribute('data-raw-pos') === '1';
+        var icon = btn.querySelector('i');
+        if (next) {
+            amountEl.textContent = raw;
+            labelEl.textContent = labelEl.getAttribute('data-label-raw') || 'יתרה בבנק (כעת)';
+            amountEl.classList.remove('success-text', 'error-text');
+            amountEl.classList.add(rawPos ? 'success-text' : 'error-text');
+            if (icon) icon.className = 'fa-solid fa-eye-slash';
+        } else {
+            amountEl.textContent = est;
+            labelEl.textContent = labelEl.getAttribute('data-label-estimated') || 'יתרה בחשבון';
+            amountEl.classList.remove('success-text', 'error-text');
+            amountEl.classList.add(estPos ? 'success-text' : 'error-text');
+            if (icon) icon.className = 'fa-solid fa-eye';
+        }
+    });
+
     window.addEventListener('click', function(event) {
         const modal = document.getElementById('category-details-modal');
         if (modal && event.target === modal) {

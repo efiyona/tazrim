@@ -42,11 +42,7 @@ if (!tazrim_popup_campaign_ack_allowed($conn, $user_id, $home_id, $campaign_id))
     exit;
 }
 
-$uid = (int) $user_id;
-$cid = (int) $campaign_id;
-
-$sql = "INSERT IGNORE INTO `popup_reads` (`user_id`, `campaign_id`) VALUES ({$uid}, {$cid})";
-if (!mysqli_query($conn, $sql)) {
+if (!tazrim_popup_campaign_insert_ack($conn, $user_id, $home_id, $campaign_id)) {
     echo json_encode(['status' => 'error', 'message' => 'שגיאת שמירה']);
     exit;
 }

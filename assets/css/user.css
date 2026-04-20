@@ -291,6 +291,22 @@ h3 {
     transform: translateY(-1px);
 }
 
+/* כפתור משני — אותו פיל (999px) כמו btn-primary, רקoutline */
+.btn-primary.btn-primary--outline {
+    background-color: var(--white);
+    color: var(--main);
+    border: 2px solid var(--main);
+}
+@media (hover: hover) {
+    .btn-primary.btn-primary--outline:hover {
+        background-color: var(--main-light);
+        transform: translateY(-1px);
+    }
+}
+.btn-primary.btn-primary--outline:active {
+    background-color: var(--main-light);
+}
+
 .form-actions { margin: 1.5rem 0 2rem 0; font-size: 0.9rem; }
 .form-actions a, .auth-switch a { color: var(--main); text-decoration: none; font-weight: 700; }
 @media (hover: hover) {
@@ -2633,6 +2649,48 @@ body.auth-forgot .auth-switch a {
             align-items: center;
             justify-content: center;
             gap: 8px;
+        }
+        .kpi-card--home .kpi-card__label-row {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        /* טקסט משמאל, עינית מימין (סדר קריאה RTL) */
+        .kpi-card__label-row--bank-toggle {
+            flex-direction: row;
+            gap: 8px;
+        }
+        .kpi-balance-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: #e8eaed;
+            color: #5f6368;
+            font-size: 0.72rem;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+            flex-shrink: 0;
+        }
+        @media (hover: hover) {
+            .kpi-balance-toggle-btn:hover {
+                background: #dadce0;
+                color: #3c4043;
+            }
+        }
+        .kpi-balance-toggle-btn[aria-pressed="true"] {
+            background: #dadce0;
+            color: #1a1a1a;
+        }
+        .kpi-balance-toggle-btn:focus-visible {
+            outline: 2px solid #9aa0a6;
+            outline-offset: 2px;
         }
         .kpi-card--home .kpi-card__icon-wrap {
             display: inline-flex;

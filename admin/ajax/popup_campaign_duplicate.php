@@ -50,6 +50,10 @@ $scope = (string) ($row['target_scope'] ?? 'all');
 if (!in_array($scope, ['all', 'homes', 'users'], true)) {
     $scope = 'all';
 }
+$ackPolicy = (string) ($row['ack_policy'] ?? 'each_user');
+if (!in_array($ackPolicy, ['each_user', 'one_per_home', 'primary_only'], true)) {
+    $ackPolicy = 'each_user';
+}
 $sortOrder = (int) ($row['sort_order'] ?? 0);
 $startsAt = $row['starts_at'] ?? null;
 $endsAt = $row['ends_at'] ?? null;
@@ -57,14 +61,15 @@ $endsAt = $row['ends_at'] ?? null;
 $titleEsc = mysqli_real_escape_string($conn, $newTitle);
 $bodyEsc = mysqli_real_escape_string($conn, $bodyHtml);
 $scopeEsc = mysqli_real_escape_string($conn, $scope);
+$ackEsc = mysqli_real_escape_string($conn, $ackPolicy);
 $startsSql = $startsAt !== null && $startsAt !== '' ? "'" . mysqli_real_escape_string($conn, (string) $startsAt) . "'" : 'NULL';
 $endsSql = $endsAt !== null && $endsAt !== '' ? "'" . mysqli_real_escape_string($conn, (string) $endsAt) . "'" : 'NULL';
 
 mysqli_begin_transaction($conn);
 
 try {
-    $sql = "INSERT INTO `popup_campaigns` (`title`, `body_html`, `target_scope`, `status`, `is_active`, `sort_order`, `starts_at`, `ends_at`)
-            VALUES ('{$titleEsc}', '{$bodyEsc}', '{$scopeEsc}', 'draft', 1, {$sortOrder}, {$startsSql}, {$endsSql})";
+    $sql = "INSERT INTO `popup_campaigns` (`title`, `body_html`, `target_scope`, `ack_policy`, `status`, `is_active`, `sort_order`, `starts_at`, `ends_at`)
+            VALUES ('{$titleEsc}', '{$bodyEsc}', '{$scopeEsc}', '{$ackEsc}', 'draft', 1, {$sortOrder}, {$startsSql}, {$endsSql})";
     if (!mysqli_query($conn, $sql)) {
         throw new RuntimeException(mysqli_error($conn));
     }

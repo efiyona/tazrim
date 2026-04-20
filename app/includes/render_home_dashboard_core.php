@@ -14,6 +14,7 @@ function tazrim_render_home_dashboard_core(mysqli $conn, int $home_id, int $sele
 
     $balance_parts = tazrim_home_display_bank_balance($conn, $home_id, $today_il);
     $current_bank_balance = $balance_parts['display'];
+    $current_bank_balance_raw = $balance_parts['ledger_dec'] + $balance_parts['adjustment_dec'];
 
     $month_income_query = "SELECT SUM(amount) as total FROM transactions 
                        WHERE home_id = $home_id AND type = 'income' 

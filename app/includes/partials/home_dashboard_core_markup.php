@@ -64,9 +64,30 @@
                                     <span class="kpi-card__icon-wrap" aria-hidden="true">
                                         <i class="fa-solid fa-wallet"></i>
                                     </span>
-                                    <span class="kpi-card__label">יתרה בחשבון</span>
+                                    <div class="kpi-card__label-row kpi-card__label-row--bank-toggle" dir="rtl">
+                                        <button
+                                            type="button"
+                                            class="kpi-balance-toggle-btn"
+                                            aria-label="הצג יתרה בפועל בבנק (ללא הפחתת הוצאות עתידיות)"
+                                            aria-pressed="false"
+                                            title="הצג יתרה בפועל בבנק"
+                                        >
+                                            <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                                        </button>
+                                        <span
+                                            class="kpi-card__label kpi-bank-label-toggle"
+                                            data-label-estimated="יתרה בחשבון"
+                                            data-label-raw="יתרה בבנק (כעת)"
+                                        >יתרה בחשבון</span>
+                                    </div>
                                 </div>
-                                <div class="kpi-amount kpi-card__value <?php echo $current_bank_balance >= 0 ? 'success-text' : 'error-text'; ?>"><?php echo number_format($current_bank_balance, 0) . '₪'; ?></div>
+                                <div
+                                    class="kpi-amount kpi-card__value kpi-bank-amount-display <?php echo $current_bank_balance >= 0 ? 'success-text' : 'error-text'; ?>"
+                                    data-estimated="<?php echo htmlspecialchars(number_format($current_bank_balance, 0) . '₪', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-raw="<?php echo htmlspecialchars(number_format($current_bank_balance_raw, 0) . '₪', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-est-pos="<?php echo $current_bank_balance >= 0 ? '1' : '0'; ?>"
+                                    data-raw-pos="<?php echo $current_bank_balance_raw >= 0 ? '1' : '0'; ?>"
+                                ><?php echo number_format($current_bank_balance, 0) . '₪'; ?></div>
                             </div>
                         </div>
                     <?php endif; ?>

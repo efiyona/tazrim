@@ -93,6 +93,94 @@ if (!defined('BASE_URL')) {
         }).then(function (r) { return r.json(); });
     }
 
+    function advanceAfterCampaignStep() {
+        idx += 1;
+        showCurrent();
+    }
+
+    /**
+     * אוסף ערכי שדות עם name מתוך הטופס/גוף הפופאפ — נשלח לשרת יחד עם data-tazrim-popup-action.
+     * פעולות נרשמות ב-PHP (whitelist); שדות חופשיים ב-HTML, היעד למסד נקבע ב-handler.
+     */
+    function collectNamedFieldValues(container) {
+        var out = {};
+        if (!container || !container.querySelectorAll) return out;
+        var els = container.querySelectorAll('input[name], select[name], textarea[name]');
+        for (var i = 0; i < els.length; i++) {
+            var el = els[i];
+            var n = el.name;
+            if (!n || el.disabled) continue;
+            var t = (el.type || '').toLowerCase();
+            if (t === 'file') continue;
+            if (t === 'checkbox') {
+                out[n] = el.checked ? (el.value || '1') : '';
+            } else if (t === 'radio') {
+                if (el.checked) out[n] = el.value;
+            } else {
+                out[n] = el.value;
+            }
+        }
+        return out;
+    }
+
+    function handlePopupCampaignAction(triggerEl, actionName) {
+        if (idx >= queue.length) return;
+        var cid = queue[idx].id;
+        var container = triggerEl && triggerEl.closest ? triggerEl.closest('.tazrim-system-popup__html') : null;
+        if (!container) container = bodyEl;
+        var fields = collectNamedFieldValues(container);
+        var payload = { campaign_id: cid, action: actionName };
+        for (var key in fields) {
+            if (Object.prototype.hasOwnProperty.call(fields, key)) {
+                payload[key] = fields[key];
+            }
+        }
+        var prevDisabled = ackBtn.disabled;
+        ackBtn.disabled = true;
+        if (triggerEl && triggerEl.disabled !== undefined) triggerEl.disabled = true;
+        fetch(base + 'app/ajax/popup_campaign_action.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                ackBtn.disabled = prevDisabled;
+                if (triggerEl && triggerEl.disabled !== undefined) triggerEl.disabled = false;
+                if (data.status !== 'ok') {
+                    window.alert(data.message || 'לא ניתן לשמור');
+                    return;
+                }
+                advanceAfterCampaignStep();
+            })
+            .catch(function () {
+                ackBtn.disabled = prevDisabled;
+                if (triggerEl && triggerEl.disabled !== undefined) triggerEl.disabled = false;
+            });
+    }
+
+    bodyEl.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form || !form.getAttribute || form.tagName !== 'FORM') return;
+        var act = form.getAttribute('data-tazrim-popup-action');
+        if (!act || !String(act).trim()) return;
+        e.preventDefault();
+        e.stopPropagation();
+        handlePopupCampaignAction(form, String(act).trim());
+    });
+
+    bodyEl.addEventListener('click', function (e) {
+        var actEl = e.target.closest('[data-tazrim-popup-action]');
+        if (!actEl) return;
+        var act = actEl.getAttribute('data-tazrim-popup-action');
+        if (!act || !String(act).trim()) return;
+        if (actEl.tagName === 'A') return;
+        e.preventDefault();
+        e.stopPropagation();
+        handlePopupCampaignAction(actEl, String(act).trim());
+    });
+
     ackBtn.addEventListener('click', function () {
         if (idx >= queue.length) return;
         var cid = queue[idx].id;
@@ -101,8 +189,7 @@ if (!defined('BASE_URL')) {
             .then(function (data) {
                 ackBtn.disabled = false;
                 if (data.status !== 'ok') return;
-                idx += 1;
-                showCurrent();
+                advanceAfterCampaignStep();
             })
             .catch(function () {
                 ackBtn.disabled = false;
