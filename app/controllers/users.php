@@ -121,7 +121,7 @@ if (isset($_POST['register_btn'])) {
             'nickname'   => $nickname,
             'email'      => $email,
             'password'   => $hashed_password,
-            'phone'      => $phone,
+            'phone'      => tazrim_normalize_phone_key($phone),
             'role'       => ($home_action === 'create') ? 'home_admin' : 'user'
         ];
 

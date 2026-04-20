@@ -53,7 +53,7 @@ try {
                 'first_name' => $user['first_name'] ?? '',
                 'last_name' => $user['last_name'] ?? '',
                 'nickname' => $user['nickname'] ?? '',
-                'phone' => $user['phone'] ?? '',
+                'phone' => tazrim_phone_for_display($user['phone'] ?? ''),
                 'notify_home_transactions' => $notify_home ? 1 : 0,
                 'notify_budget' => $notify_budget ? 1 : 0,
                 'notify_system' => $notify_system ? 1 : 0,
@@ -94,7 +94,7 @@ try {
             'first_name' => $first_name,
             'last_name' => $last_name,
             'nickname' => $nickname,
-            'phone' => $phone,
+            'phone' => $phoneNorm,
         ];
 
         $updateResult = update('users', $user_id, $data);

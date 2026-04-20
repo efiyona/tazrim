@@ -259,7 +259,7 @@ function tazrim_admin_list_display_value(array $config, string $column, array $r
     return json_encode($raw, JSON_UNESCAPED_UNICODE);
 }
 
-function tazrim_admin_field_value(array $fieldDef, $row, string $name)
+function tazrim_admin_field_value(array $fieldDef, $row, string $name, string $sqlTable = '')
 {
     if (($fieldDef['type'] ?? '') === 'password_new') {
         return '';
@@ -272,7 +272,13 @@ function tazrim_admin_field_value(array $fieldDef, $row, string $name)
         if (($fieldDef['type'] ?? '') === 'checkbox') {
             return (int) $v ? '1' : '0';
         }
-        return (string) $v;
+        $str = (string) $v;
+        if ($sqlTable === 'users' && $name === 'phone' && $str !== '') {
+            require_once ROOT_PATH . '/app/helpers/phone_uniqueness.php';
+            $str = tazrim_phone_for_display($str);
+        }
+
+        return $str;
     }
     if (($fieldDef['type'] ?? '') === 'checkbox') {
         return '1';

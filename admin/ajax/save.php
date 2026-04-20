@@ -44,6 +44,28 @@ if ($tableKey === 'users') {
     if ($action === 'update' && empty($data['password'])) {
         unset($data['password']);
     }
+
+    if (array_key_exists('phone', $data)) {
+        require_once ROOT_PATH . '/app/helpers/phone_uniqueness.php';
+        $rawPhone = (string) $data['phone'];
+        $phoneNorm = tazrim_normalize_phone_key($rawPhone);
+        if (trim($rawPhone) !== '' && $phoneNorm === '') {
+            tazrim_admin_json_response(['status' => 'error', 'message' => 'מספר הטלפון אינו תקין.'], 400);
+        }
+        if ($phoneNorm !== '') {
+            $excludeId = null;
+            if ($action === 'update') {
+                $uid = (int) ($body['id'] ?? 0);
+                if ($uid > 0) {
+                    $excludeId = $uid;
+                }
+            }
+            if (tazrim_user_id_with_normalized_phone($phoneNorm, $excludeId)) {
+                tazrim_admin_json_response(['status' => 'error', 'message' => 'מספר הטלפון כבר רשום אצל משתמש אחר במערכת.'], 400);
+            }
+        }
+        $data['phone'] = $phoneNorm;
+    }
 }
 
 global $conn;

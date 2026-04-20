@@ -38,6 +38,7 @@ $is_ios = (bool) preg_match('/iPhone|iPad|iPod/i', $user_agent)
     || (stripos($user_agent, 'Macintosh') !== false && stripos($user_agent, 'Mobile') !== false);
 
 require_once ROOT_PATH . '/app/includes/ios_tazrim_panel_visibility.php';
+require_once ROOT_PATH . '/app/helpers/phone_uniqueness.php';
 // אזור קיצורי דרך + API: אייפון, אייפד או מק — לא באנדרואיד
 $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
 ?>
@@ -290,7 +291,7 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
                                     <label>טלפון</label>
                                     <div class="input-with-icon">
                                         <i class="fa-solid fa-phone"></i>
-                                        <input type="tel" name="phone" value="<?php echo htmlspecialchars($user_data['phone']); ?>" required>
+                                        <input type="tel" name="phone" value="<?php echo htmlspecialchars(tazrim_phone_for_display($user_data['phone'] ?? '')); ?>" required>
                                     </div>
                                 </div>
 

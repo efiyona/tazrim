@@ -1,7 +1,7 @@
 <?php foreach (($config['fields'] ?? []) as $name => $fieldDef):
     $type = $fieldDef['type'] ?? 'text';
     $label = $fieldDef['label'] ?? $name;
-    $val = tazrim_admin_field_value($fieldDef, $row ?? [], $name);
+    $val = tazrim_admin_field_value($fieldDef, $row ?? [], $name, $sqlTable ?? '');
 ?>
     <div class="admin-field mb-4 <?php echo $type === 'checkbox' ? 'admin-field--boolean' : ''; ?>">
         <?php if ($type === 'checkbox'): ?>

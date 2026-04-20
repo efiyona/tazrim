@@ -21,6 +21,20 @@ function tazrim_normalize_phone_key($phone)
 }
 
 /**
+ * ערך לתצוגה בשדות טופס: ספרות בלבד, קידומת 972 → 0. אם לא ניתן לנרמל אך הוזן טקסט — מוחזר הקלט המקורי (לתיקון ידני).
+ */
+function tazrim_phone_for_display($phone)
+{
+    $phone = trim((string) $phone);
+    if ($phone === '') {
+        return '';
+    }
+    $norm = tazrim_normalize_phone_key($phone);
+
+    return $norm !== '' ? $norm : $phone;
+}
+
+/**
  * מחזיר מזהה משתמש אחר עם אותו טלפון מנורמל, או null אם אין סתירה.
  *
  * @param string $normalizedKey תוצאת tazrim_normalize_phone_key
