@@ -7,10 +7,14 @@
 
 - **אין** הרשאה לשמור «לאן שירצה» מתוך HTML בלבד — זה חור אבטחה.
 - **דרך מומלצת — `form_schema` (JSON בקמפיין):** בשדה `popup_campaigns.form_schema` מגדירים `handler` מאושר בשרת + רשימת `fields` (שם, סוג, חובה, אורך מקסימלי). ב־`body_html` משתמשים ב־**`data-tazrim-popup-action="submit"`** (או טופס עם אותו מאפיין); המודל שולח את כל ה־`name` ל־`app/ajax/popup_campaign_action.php` עם `action: "submit"`, והשרת מאמת מול הסכמה ומבצע:
-  - **`submission_store`** — שמירת JSON של השדות בטבלה `popup_campaign_form_submissions` (הגשות לפי קמפיין/משתמש).
+  - **`submission_store`** — שמירת JSON של השדות בטבלה `popup_campaign_form_submissions` (הגשות לפי קמפיין/משתמש) — **לא** מעדכן פרופיל משתמש.
+  - **`user_profile`** — עדכון **PATCH** לטבלת `users` למשתמש המחובר: רק שדות שמופיעים ב־`fields` **וברישום המאושר בקוד** (`tazrim_popup_campaign_user_profile_field_registry()`). שדה לא חובה וריק — **לא** נכתב ל־DB. ערכים שנשמרו מסתנכרנים ל־`$_SESSION` לפי ההגדרה ברישום.
+  - **`update_user_nickname`** — תאימות לאחור: שקול ל־`user_profile` עם שדה יחיד `nickname` בלבד.
   - **`bank_balance`** — עדכון יתרת בנק (כמו בעבר), עם שדה `bank_balance` (אפשר `fields: []` — אז משתמע שדה אחד `bank_balance`).
-- **לוגיקה:** `app/functions/popup_campaign_form_schema.php` — אימות סכמה ו-handlers.
+- **לוגיקה:** `app/functions/popup_campaign_form_schema.php` — אימות סכמה, רישום שדות פרופיל, ו-handlers.
 - **מצב ישן (ללא `form_schema`):** `data-tazrim-popup-action="save_bank_balance"` עדיין נתמך לקמפיינים ישנים.
+
+**להוספת שדות לפרופיל מפופאפ (מפתחים):** הוספת מפתח ל־`tazrim_popup_campaign_user_profile_field_registry()` (עמודה, `db_max`, `allowed_types`, `session_key`) — בלי handler חדש.
 
 **להוספת handler חדש בשרת (מפתחים):**
 
@@ -91,6 +95,32 @@
 }
 ```
 או עם הגדרה מפורשת: `fields: [{"name":"bank_balance","type":"text","required":true,"maxLength":40}]`
+
+#### דוגמת `form_schema` — פרופיל משתמש (`user_profile`)
+
+רק שמות שדות מהרישום בשרת (כרגע: `nickname`, `first_name`, `last_name`).
+
+```json
+{
+  "handler": "user_profile",
+  "fields": [
+    {"name": "nickname", "type": "text", "required": true, "maxLength": 50}
+  ]
+}
+```
+
+דוגמה עם כמה שדות (כולם עם `name` תואם ב־HTML):
+
+```json
+{
+  "handler": "user_profile",
+  "fields": [
+    {"name": "first_name", "type": "text", "required": false, "maxLength": 50},
+    {"name": "last_name", "type": "text", "required": false, "maxLength": 50},
+    {"name": "nickname", "type": "text", "required": false, "maxLength": 50}
+  ]
+}
+```
 
 #### דוגמת HTML עם `submit` (יתרה)
 

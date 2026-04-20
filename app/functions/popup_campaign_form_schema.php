@@ -4,6 +4,163 @@
  */
 require_once __DIR__ . '/popup_campaign_actions.php';
 
+if (!function_exists('tazrim_popup_campaign_user_profile_field_registry')) {
+    /**
+     * שדות פרופיל שהפופאפ רשאי לעדכן — רק מה שמופיע כאן ניתן ל-form_schema (אבטחה).
+     * להרחבה: הוספת מפתח + עמודה + גבול DB + מפתח סשן (אם רלוונטי).
+     *
+     * @return array<string, array{column:string, db_max:int, allowed_types:array<int,string>, session_key:?string}>
+     */
+    function tazrim_popup_campaign_user_profile_field_registry(): array
+    {
+        return [
+            'nickname' => [
+                'column' => 'nickname',
+                'db_max' => 50,
+                'allowed_types' => ['text', 'textarea'],
+                'session_key' => 'nickname',
+            ],
+            'first_name' => [
+                'column' => 'first_name',
+                'db_max' => 50,
+                'allowed_types' => ['text', 'textarea'],
+                'session_key' => 'first_name',
+            ],
+            'last_name' => [
+                'column' => 'last_name',
+                'db_max' => 50,
+                'allowed_types' => ['text', 'textarea'],
+                'session_key' => 'last_name',
+            ],
+        ];
+    }
+}
+
+if (!function_exists('tazrim_popup_campaign_truncate_utf8')) {
+    function tazrim_popup_campaign_truncate_utf8(string $s, int $max): string
+    {
+        if ($max < 1) {
+            return '';
+        }
+        if (function_exists('mb_strlen') && mb_strlen($s, 'UTF-8') > $max) {
+            return function_exists('mb_substr') ? mb_substr($s, 0, $max, 'UTF-8') : substr($s, 0, $max);
+        }
+
+        return strlen($s) > $max ? substr($s, 0, $max) : $s;
+    }
+}
+
+if (!function_exists('tazrim_popup_campaign_user_profile_normalize_field_defs')) {
+    /**
+     * @param array<int,array<string,mixed>> $fieldDefs
+     * @return array<int,array<string,mixed>>
+     */
+    function tazrim_popup_campaign_user_profile_normalize_field_defs(array $fieldDefs): array
+    {
+        $reg = tazrim_popup_campaign_user_profile_field_registry();
+        $out = [];
+        foreach ($fieldDefs as $f) {
+            if (!is_array($f)) {
+                continue;
+            }
+            $name = isset($f['name']) ? trim((string) $f['name']) : '';
+            if ($name === '' || !isset($reg[$name])) {
+                continue;
+            }
+            $cap = (int) $reg[$name]['db_max'];
+            if ($cap < 1) {
+                $cap = 1;
+            }
+            $f2 = $f;
+            $ml = isset($f['maxLength']) ? (int) $f['maxLength'] : $cap;
+            if ($ml > $cap) {
+                $ml = $cap;
+            }
+            if ($ml < 1) {
+                $ml = $cap;
+            }
+            $f2['maxLength'] = $ml;
+            $out[] = $f2;
+        }
+
+        return $out;
+    }
+}
+
+if (!function_exists('tazrim_popup_campaign_process_user_profile_submit')) {
+    /**
+     * עדכון PATCH ל-users: רק שדות עם ערך (או חובה שמולא) — שדות ריקים ולא-חובה מדולגים.
+     *
+     * @param array<int,array<string,mixed>> $fieldDefs
+     * @param array<string,string> $clean
+     * @return array{status:string, acked?:bool, message?:string}
+     */
+    function tazrim_popup_campaign_process_user_profile_submit(
+        mysqli $conn,
+        int $user_id,
+        ?int $home_id,
+        int $campaign_id,
+        array $fieldDefs,
+        array $clean,
+        string $policy
+    ): array {
+        $reg = tazrim_popup_campaign_user_profile_field_registry();
+        $updates = [];
+        foreach ($fieldDefs as $f) {
+            if (!is_array($f)) {
+                continue;
+            }
+            $name = isset($f['name']) ? (string) $f['name'] : '';
+            if ($name === '' || !isset($reg[$name])) {
+                continue;
+            }
+            $cfg = $reg[$name];
+            $required = !empty($f['required']);
+            $val = array_key_exists($name, $clean) ? trim((string) $clean[$name]) : '';
+            if ($val === '' && !$required) {
+                continue;
+            }
+            $updates[$cfg['column']] = tazrim_popup_campaign_truncate_utf8($val, (int) $cfg['db_max']);
+        }
+
+        mysqli_begin_transaction($conn);
+        try {
+            if ($updates !== []) {
+                update('users', $user_id, $updates);
+            }
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                foreach ($fieldDefs as $f) {
+                    if (!is_array($f)) {
+                        continue;
+                    }
+                    $name = isset($f['name']) ? (string) $f['name'] : '';
+                    if ($name === '' || !isset($reg[$name])) {
+                        continue;
+                    }
+                    $sk = $reg[$name]['session_key'] ?? null;
+                    if ($sk === null || $sk === '') {
+                        continue;
+                    }
+                    $col = $reg[$name]['column'];
+                    if (array_key_exists($col, $updates)) {
+                        $_SESSION[$sk] = $updates[$col];
+                    }
+                }
+            }
+            if (!tazrim_popup_campaign_insert_ack_with_policy($conn, $user_id, $home_id, $campaign_id, $policy)) {
+                throw new RuntimeException('ack');
+            }
+            mysqli_commit($conn);
+        } catch (Throwable $e) {
+            mysqli_rollback($conn);
+
+            return ['status' => 'error', 'message' => 'שגיאת שמירה'];
+        }
+
+        return ['status' => 'ok', 'acked' => true];
+    }
+}
+
 if (!function_exists('tazrim_popup_campaign_form_schema_from_row')) {
     /**
      * @return array<string,mixed>|null
@@ -33,9 +190,9 @@ if (!function_exists('tazrim_popup_campaign_validate_form_schema_shape')) {
     function tazrim_popup_campaign_validate_form_schema_shape(array $schema): ?string
     {
         $handler = isset($schema['handler']) ? trim((string) $schema['handler']) : '';
-        $allowedHandlers = ['submission_store', 'bank_balance'];
+        $allowedHandlers = ['submission_store', 'bank_balance', 'user_profile', 'update_user_nickname'];
         if (!in_array($handler, $allowedHandlers, true)) {
-            return 'handler לא נתמך (submission_store | bank_balance)';
+            return 'handler לא נתמך (submission_store | bank_balance | user_profile | update_user_nickname)';
         }
         if (!isset($schema['fields']) || !is_array($schema['fields'])) {
             return 'חסר מערך fields';
@@ -72,6 +229,49 @@ if (!function_exists('tazrim_popup_campaign_validate_form_schema_shape')) {
             }
             if ($names !== [] && !in_array('bank_balance', $names, true)) {
                 return 'ב-handler bank_balance חובה שדה name=bank_balance';
+            }
+        }
+
+        if ($handler === 'update_user_nickname') {
+            $names = [];
+            foreach ($schema['fields'] as $f) {
+                if (is_array($f) && isset($f['name'])) {
+                    $names[] = (string) $f['name'];
+                }
+            }
+            if ($names !== ['nickname']) {
+                return 'ב-handler update_user_nickname חובה שדה יחיד: {"name":"nickname","type":"text",...}';
+            }
+        }
+
+        if ($handler === 'user_profile') {
+            $reg = tazrim_popup_campaign_user_profile_field_registry();
+            $seen = [];
+            foreach ($schema['fields'] as $f) {
+                if (!is_array($f)) {
+                    return 'שדה לא תקין';
+                }
+                $name = isset($f['name']) ? trim((string) $f['name']) : '';
+                if ($name === '') {
+                    return 'שם שדה חסר';
+                }
+                if (!isset($reg[$name])) {
+                    return 'שדה לא מותר ב-user_profile: ' . $name;
+                }
+                if (isset($seen[$name])) {
+                    return 'שדה כפול ב-user_profile: ' . $name;
+                }
+                $seen[$name] = true;
+                $type = isset($f['type']) ? trim((string) $f['type']) : 'text';
+                if (!in_array($type, $reg[$name]['allowed_types'], true)) {
+                    return 'סוג לא מתאים לשדה ' . $name;
+                }
+                if (isset($f['maxLength']) && (int) $f['maxLength'] > (int) $reg[$name]['db_max']) {
+                    return 'maxLength גדול מדי: ' . $name;
+                }
+            }
+            if ($seen === []) {
+                return 'user_profile דורש לפחות שדה אחד מהרשימה המאושרת';
             }
         }
 
@@ -185,6 +385,15 @@ if (!function_exists('tazrim_popup_campaign_process_form_schema_submit')) {
                 ['name' => 'bank_balance', 'type' => 'text', 'required' => true, 'maxLength' => 40],
             ];
         }
+        if ($handler === 'update_user_nickname' && $fieldDefs === []) {
+            $fieldDefs = [
+                ['name' => 'nickname', 'type' => 'text', 'required' => false, 'maxLength' => 50],
+            ];
+        }
+
+        if ($handler === 'user_profile' || $handler === 'update_user_nickname') {
+            $fieldDefs = tazrim_popup_campaign_user_profile_normalize_field_defs($fieldDefs);
+        }
 
         $valuesIn = tazrim_popup_campaign_extract_form_values($body);
         $chk = tazrim_popup_campaign_validate_fields_against_schema($fieldDefs, $valuesIn);
@@ -205,6 +414,18 @@ if (!function_exists('tazrim_popup_campaign_process_form_schema_submit')) {
             $merged['bank_balance'] = $clean['bank_balance'] ?? '';
 
             return tazrim_popup_action_save_bank_balance($conn, $user_id, $home_id, $campaign_id, $merged);
+        }
+
+        if ($handler === 'user_profile' || $handler === 'update_user_nickname') {
+            return tazrim_popup_campaign_process_user_profile_submit(
+                $conn,
+                $user_id,
+                $home_id,
+                $campaign_id,
+                $fieldDefs,
+                $clean,
+                $policy
+            );
         }
 
         if ($handler === 'submission_store') {
