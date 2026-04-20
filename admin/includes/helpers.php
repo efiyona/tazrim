@@ -471,6 +471,28 @@ function tazrim_admin_apply_encrypt_for_save(string $tableKey, array $data): arr
 }
 
 /**
+ * סנכרון מלא של bank_balance_ledger_cached לפי טבלת transactions (אחרי CRUD בפאנל).
+ *
+ * @param int[] $homeIds מזהי בתים (ייחודיים מסוננים)
+ */
+function tazrim_admin_recompute_ledger_for_home_ids(mysqli $conn, array $homeIds): void
+{
+    $homeIds = array_unique(array_map('intval', $homeIds));
+    $homeIds = array_values(array_filter($homeIds, static function ($n) {
+        return $n > 0;
+    }));
+    if ($homeIds === []) {
+        return;
+    }
+    if (!function_exists('tazrim_recompute_home_ledger_cached_from_db')) {
+        require_once ROOT_PATH . '/app/functions/home_bank_balance.php';
+    }
+    foreach ($homeIds as $hid) {
+        tazrim_recompute_home_ledger_cached_from_db($conn, $hid);
+    }
+}
+
+/**
  * ערכי טופס (מחרוזות) -> סוגים לשמירה ב-SQL.
  *
  * @param array $fieldDef empty_zero: מספר ריק יהפוך ל-0 (למשל sort_order)

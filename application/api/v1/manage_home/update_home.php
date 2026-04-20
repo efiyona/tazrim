@@ -44,23 +44,34 @@ try {
     }
 
     $home_name = trim((string) ($body['home_name'] ?? ''));
-    $initial_balance = isset($body['initial_balance']) ? (float) $body['initial_balance'] : 0;
-
     if ($home_name === '') {
         echo json_encode(['status' => 'error', 'message' => 'שם הבית לא יכול להיות ריק.']);
         exit();
     }
 
-    $encrypted_balance = encryptBalance($initial_balance);
     $home_name_clean = mysqli_real_escape_string($conn, $home_name);
-    $enc_esc = mysqli_real_escape_string($conn, $encrypted_balance);
+    $parts = ["name = '$home_name_clean'"];
 
-    $update_query = "UPDATE homes SET name = '$home_name_clean', initial_balance = '$enc_esc' WHERE id = $home_id";
-    if (mysqli_query($conn, $update_query)) {
-        echo json_encode(['status' => 'success']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'שגיאה במסד הנתונים.']);
+    if (array_key_exists('show_bank_balance', $body)) {
+        $show = !empty($body['show_bank_balance']) ? 1 : 0;
+        $parts[] = 'show_bank_balance = ' . $show;
     }
+
+    $update_query = 'UPDATE homes SET ' . implode(', ', $parts) . " WHERE id = $home_id";
+    if (!mysqli_query($conn, $update_query)) {
+        echo json_encode(['status' => 'error', 'message' => 'שגיאה במסד הנתונים.']);
+        exit();
+    }
+
+    if (array_key_exists('initial_balance', $body)) {
+        $target = isset($body['initial_balance']) && is_numeric($body['initial_balance'])
+            ? (float) $body['initial_balance']
+            : 0.0;
+        $today = date('Y-m-d');
+        tazrim_apply_user_bank_balance_target($conn, $home_id, $target, $today);
+    }
+
+    echo json_encode(['status' => 'success']);
 } catch (Throwable $e) {
     echo json_encode(['status' => 'error', 'message' => 'שגיאת מערכת בשרת.']);
 }

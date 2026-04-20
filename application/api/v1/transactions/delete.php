@@ -50,16 +50,26 @@ try {
         exit();
     }
 
-    if (!selectOne('transactions', ['id' => $trans_id, 'home_id' => $home_id])) {
+    $existing = selectOne('transactions', ['id' => $trans_id, 'home_id' => $home_id]);
+    if (!$existing) {
         echo json_encode(['status' => 'error', 'message' => 'הפעולה לא נמצאה.']);
         exit();
     }
+
+    $today_ledger = date('Y-m-d');
+    $oldRow = [
+        'type' => (string) ($existing['type'] ?? ''),
+        'amount' => (float) ($existing['amount'] ?? 0),
+        'transaction_date' => (string) ($existing['transaction_date'] ?? ''),
+    ];
 
     $delete_query = "DELETE FROM transactions WHERE id = $trans_id AND home_id = $home_id";
     if (!mysqli_query($conn, $delete_query)) {
         echo json_encode(['status' => 'error', 'message' => 'שגיאה במסד הנתונים.']);
         exit();
     }
+
+    tazrim_after_transaction_row_change($conn, $home_id, $oldRow, null, $today_ledger);
 
     echo json_encode(['status' => 'success', 'data' => ['message' => 'הפעולה נמחקה.']]);
     exit();

@@ -43,6 +43,16 @@ foreach ($ids as $id) {
 $sqlTable = $config['table'];
 global $conn;
 
+$txHomesBulk = [];
+if ($sqlTable === 'transactions') {
+    foreach ($ids as $tid) {
+        $rowTx = selectOne('transactions', ['id' => $tid]);
+        if ($rowTx && isset($rowTx['home_id'])) {
+            $txHomesBulk[(int) $rowTx['home_id']] = true;
+        }
+    }
+}
+
 $conn->begin_transaction();
 try {
     foreach ($ids as $id) {
@@ -55,6 +65,10 @@ try {
 } catch (Throwable $e) {
     $conn->rollback();
     tazrim_admin_json_response(['status' => 'error', 'message' => 'לא ניתן למחוק (ייתכן קשר לרשומות אחרות).'], 500);
+}
+
+if ($sqlTable === 'transactions') {
+    tazrim_admin_recompute_ledger_for_home_ids($conn, array_keys($txHomesBulk));
 }
 
 tazrim_admin_json_response(['status' => 'ok', 'deleted' => count($ids)]);

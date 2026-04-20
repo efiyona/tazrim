@@ -74,6 +74,13 @@ try {
 
     $desc_esc = mysqli_real_escape_string($conn, $description);
 
+    $oldRow = [
+        'type' => (string) ($existing['type'] ?? ''),
+        'amount' => (float) ($existing['amount'] ?? 0),
+        'transaction_date' => (string) ($existing['transaction_date'] ?? ''),
+    ];
+    $today_ledger = date('Y-m-d');
+
     $update_query = "UPDATE transactions 
                      SET amount = $amount, category = $category_id, description = '$desc_esc' 
                      WHERE id = $trans_id AND home_id = $home_id";
@@ -82,6 +89,13 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'שגיאה בשמירת הנתונים.']);
         exit();
     }
+
+    $newRow = [
+        'type' => (string) ($existing['type'] ?? ''),
+        'amount' => $amount,
+        'transaction_date' => (string) ($existing['transaction_date'] ?? ''),
+    ];
+    tazrim_after_transaction_row_change($conn, $home_id, $oldRow, $newRow, $today_ledger);
 
     $after = mysqli_query($conn, "SELECT type, category FROM transactions WHERE id = $trans_id AND home_id = $home_id LIMIT 1");
     if ($after) {

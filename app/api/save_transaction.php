@@ -94,7 +94,14 @@ $insert_query = "INSERT INTO transactions (home_id, user_id, type, amount, curre
                  VALUES ($home_id, $user_id, '$type', $amount_ils, '$currency_code_esc', $category_id, '$description', '$transaction_date')";
 
 if (mysqli_query($conn, $insert_query)) {
-    
+    $today_ledger = date('Y-m-d');
+    $newLedgerRow = [
+        'type' => $type,
+        'amount' => $amount_ils,
+        'transaction_date' => $transaction_date,
+    ];
+    tazrim_after_transaction_row_change($conn, (int) $home_id, null, $newLedgerRow, $today_ledger);
+
     mysqli_query($conn, "UPDATE api_tokens SET last_used = CURRENT_TIMESTAMP() WHERE token = '$token'");
 
     $user_data = selectOne('users', ['id' => $user_id]);

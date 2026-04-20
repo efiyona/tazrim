@@ -95,6 +95,14 @@ try {
         exit();
     }
 
+    $today_ledger = date('Y-m-d');
+    $newLedgerRow = [
+        'type' => $type,
+        'amount' => $amount_ils,
+        'transaction_date' => $transaction_date,
+    ];
+    tazrim_after_transaction_row_change($conn, $home_id, null, $newLedgerRow, $today_ledger);
+
     if ($is_recurring) {
         $day_of_month = (int) date('d', strtotime($transaction_date));
         $current_month_start = date('Y-m-01');

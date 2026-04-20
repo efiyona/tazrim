@@ -47,7 +47,10 @@ try {
         exit();
     }
 
-    $initial_balance = (float) decryptBalance($home_data['initial_balance']);
+    $today_il = date('Y-m-d');
+    $bank_disp = tazrim_home_display_bank_balance($conn, $home_id, $today_il);
+    /** @deprecated שם השדה נשמר לתאימות אפליקציה — הערך הוא יתרה מוצגת (מוערכת), לא עמודת DB ישנה */
+    $initial_balance = (float) $bank_disp['display'];
 
     $categories_query = "SELECT * FROM categories WHERE home_id = $home_id AND is_active = 1 ORDER BY type ASC, name ASC";
     $categories_result = mysqli_query($conn, $categories_query);
@@ -114,6 +117,8 @@ try {
                 'name' => $home_data['name'] ?? '',
                 'join_code' => $home_data['join_code'] ?? '',
                 'initial_balance' => $initial_balance,
+                'show_bank_balance' => (int) ($home_data['show_bank_balance'] ?? 0),
+                'bank_balance_display' => (float) $bank_disp['display'],
             ],
             'current_user_email' => $user['email'] ?? '',
             'members' => $members,

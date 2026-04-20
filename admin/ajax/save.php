@@ -57,6 +57,9 @@ if ($action === 'create') {
         tazrim_admin_json_response(['status' => 'error', 'message' => 'שגיאת מסד נתונים (בדקו שדות חובה וייחודיות).'], 500);
     }
     tazrim_admin_tos_terms_after_save($tableKey, (int) $newId, $data);
+    if ($sqlTable === 'transactions') {
+        tazrim_admin_recompute_ledger_for_home_ids($conn, [(int) ($data['home_id'] ?? 0)]);
+    }
     tazrim_admin_json_response(['status' => 'ok', 'id' => (int) $newId]);
 }
 
@@ -69,9 +72,20 @@ if (empty($data)) {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'אין שדות לעדכון.'], 400);
 }
 
+$txHomeBefore = 0;
+if ($sqlTable === 'transactions') {
+    $beforeTx = selectOne('transactions', ['id' => $id]);
+    $txHomeBefore = $beforeTx ? (int) ($beforeTx['home_id'] ?? 0) : 0;
+}
+
 update($sqlTable, $id, $data);
 if (!empty($conn->errno)) {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'שגיאת מסד נתונים (בדקו שדות חובה וייחודיות).'], 500);
 }
 tazrim_admin_tos_terms_after_save($tableKey, $id, $data);
+if ($sqlTable === 'transactions') {
+    $afterTx = selectOne('transactions', ['id' => $id]);
+    $txHomeAfter = $afterTx ? (int) ($afterTx['home_id'] ?? 0) : 0;
+    tazrim_admin_recompute_ledger_for_home_ids($conn, [$txHomeAfter, $txHomeBefore]);
+}
 tazrim_admin_json_response(['status' => 'ok', 'id' => $id]);

@@ -23,8 +23,17 @@ if ($block !== null) {
     tazrim_admin_json_response(['status' => 'error', 'message' => $block], 403);
 }
 
+$txHomeDel = 0;
+if ($sqlTable === 'transactions') {
+    $rowTx = selectOne('transactions', ['id' => $id]);
+    $txHomeDel = $rowTx ? (int) ($rowTx['home_id'] ?? 0) : 0;
+}
+
 delete($sqlTable, $id);
 if (!empty($conn->errno)) {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'לא ניתן למחוק (ייתכן קשר לרשומות אחרות).'], 500);
+}
+if ($sqlTable === 'transactions') {
+    tazrim_admin_recompute_ledger_for_home_ids($conn, [$txHomeDel]);
 }
 tazrim_admin_json_response(['status' => 'ok']);

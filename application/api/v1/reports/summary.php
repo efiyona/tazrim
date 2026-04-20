@@ -81,7 +81,22 @@ try {
                   AND transaction_date BETWEEN '$start_date' AND '$end_date'";
     $total_income = (float) (mysqli_fetch_assoc(mysqli_query($conn, $inc_query))['total'] ?? 0);
 
-    $balance = $total_income - $total_expenses;
+    // מאזן החודש הנבחר בלבד (הכנסות − הוצאות בטווח התאריכים) — לא יתרת בנק גלובלית
+    $month_net = $total_income - $total_expenses;
+
+    $home_row = selectOne('homes', ['id' => $home_id]);
+    $show_bank_balance = $home_row && !empty($home_row['show_bank_balance']);
+    $today_il = date('Y-m-d');
+    $bank_balance_block = null;
+    if ($show_bank_balance) {
+        $disp = tazrim_home_display_bank_balance($conn, $home_id, $today_il);
+        $bank_balance_block = [
+            'display' => (float) $disp['display'],
+            'ledger' => (float) $disp['ledger_dec'],
+            'adjustment' => (float) $disp['adjustment_dec'],
+            'future_expenses' => (float) $disp['future_expenses_sum'],
+        ];
+    }
 
     $days_in_month = (int) date('t', strtotime($start_date));
     $current_day = ($selected_month === (int) date('m') && $selected_year === (int) date('Y'))
@@ -154,12 +169,16 @@ try {
                 'current_month' => (int) date('m'),
                 'current_year' => (int) date('Y'),
             ],
+            // kpis.balance / month_net = מאזן החודש הנבחר בלבד (לא יתרת בנק גלובלית)
             'kpis' => [
                 'income' => $total_income,
                 'expense' => $total_expenses,
-                'balance' => $balance,
+                'balance' => $month_net,
+                'month_net' => $month_net,
                 'daily_avg_expense' => $daily_avg,
             ],
+            'show_bank_balance' => $show_bank_balance ? 1 : 0,
+            'bank_balance_estimated' => $bank_balance_block,
             'pie' => [
                 'labels' => $pie_labels,
                 'values' => $pie_values,

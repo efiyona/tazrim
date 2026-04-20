@@ -60,19 +60,9 @@ try {
     ];
     $month_name = $hebrew_months[$selected_month];
 
-    // שליפת נתוני בית ליתרה התחלתית
     $home_data = selectOne('homes', ['id' => $home_id]);
-    $initial_balance = $home_data ? ($home_data['initial_balance'] ?? 0) : 0;
-
-    // חישוב יתרה ריאלית
-    $real_balance_query = "SELECT 
-        COALESCE(SUM(CASE WHEN type = 'income' AND transaction_date <= '$today_il' THEN amount ELSE 0 END), 0) - 
-        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as net_balance
-        FROM transactions 
-        WHERE home_id = $home_id";
-    $balance_result = mysqli_query($conn, $real_balance_query);
-    $balance_data = mysqli_fetch_assoc($balance_result);
-    $current_bank_balance = $initial_balance + ($balance_data['net_balance'] ?? 0);
+    $bank_disp = tazrim_home_display_bank_balance($conn, (int) $home_id, $today_il);
+    $current_bank_balance = (float) $bank_disp['display'];
 
     // חישוב הכנסות
     $month_income_query = "SELECT COALESCE(SUM(amount), 0) as total FROM transactions 
@@ -202,8 +192,13 @@ try {
             ],
             'home' => [
                 'name' => $home_data['name'] ?? '',
+                'show_bank_balance' => (int) (!empty($home_data['show_bank_balance'])),
             ],
-            'balances' => ['current' => $current_bank_balance, 'monthly_income' => $month_income, 'monthly_expense' => $month_expense],
+            'balances' => [
+                'current' => $current_bank_balance,
+                'monthly_income' => $month_income,
+                'monthly_expense' => $month_expense,
+            ],
             'pending_transactions' => $pending_transactions,
             'recent_transactions' => $recent_transactions,
             'categories' => $categories,
