@@ -14,7 +14,8 @@ $home_data = selectOne('homes', ['id' => $home_id]);
 global $today_il;
 $today_for = isset($today_il) ? (string) $today_il : date('Y-m-d');
 $display_parts = tazrim_home_display_bank_balance($conn, (int) $home_id, $today_for);
-$display_balance = $display_parts['display'];
+/** יתרה בפועל בעו"ש לטופס: ledger + adjustment (ללא הפחתת עתידי) — כדי להתאים למה שהמשתמש מזין מהבנק */
+$bank_balance_input_value = $display_parts['ledger_dec'] + $display_parts['adjustment_dec'];
 $show_bank_balance = (int) ($home_data['show_bank_balance'] ?? 0);
 
 // בניית הודעת הוואטסאפ וקידוד הקישור
@@ -142,12 +143,12 @@ $members_result = mysqli_query($conn, $members_query);
                                     </div>
                                 </div>
                                 <div class="input-group">
-                                    <label>יתרת בנק מוצגת (₪) — ליישור מול הבנק</label>
+                                    <label>יתרה בפועל בעו"ש (₪) — כפי שמופיעה בבנק</label>
                                     <div class="input-with-icon">
                                         <i class="fa-solid fa-building-columns"></i>
-                                        <input type="number" step="0.01" name="bank_balance_display" value="<?php echo htmlspecialchars((string) $display_balance, ENT_QUOTES, 'UTF-8'); ?>">
+                                        <input type="number" step="0.01" name="bank_balance_display" value="<?php echo htmlspecialchars((string) $bank_balance_input_value, ENT_QUOTES, 'UTF-8'); ?>">
                                     </div>
-                                    <p class="block-help" style="margin-top: 8px;">השאר ריק אם ברצונך לעדכן רק שם בית או הצגה — בלי לשנות את יישור היתרה.</p>
+                                    <p class="block-help" style="margin-top: 8px;">בדף הבית/דוחות מוצג: יתרה זו פחות סך <strong>הוצאות</strong> עם תאריך עתידי (שכבר קיימות במערכת או חדשות). הכנסות עתידיות לא מפחיתות את המספר. השאר ריק אם ברצונך לעדכן רק שם בית או הצגה.</p>
                                 </div>
                                 <div class="input-group">
                                     <label class="checkbox-container" style="font-size: 0.95rem; font-weight: 600;">

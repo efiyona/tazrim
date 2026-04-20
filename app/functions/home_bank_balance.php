@@ -151,13 +151,13 @@ if (!function_exists('tazrim_reset_home_bank_balance_fields')) {
 
 if (!function_exists('tazrim_apply_user_bank_balance_target')) {
     /**
-     * משתמש מזין את היתרה שרוצה לראות (תצוגה); מעדכן adjustment בלבד.
-     * display = ledger_cached + adj - future  =>  adj = target - ledger_cached + future
+     * המשתמש מזין את היתרה בפועל בעו"ש (כפי שמופיע בבנק), לא את ה-KPI אחרי הוצאות עתידיות.
+     * תצוגה במערכת: display = ledger + adj − future_expenses
+     * ⇒ adj = יתרה_בבנק − ledger (בלי +future) ⇒ display = יתרה_בבנק − future
      *
-     * חשוב: ledger חייב להיות זהה לערך ב־bank_balance_ledger_cached (אחרי פענוח), לא רק SUM נפרד —
-     * אחרת cache מפולג/NULL יגרום לערך שמוצג אחרי שמירה להיות שונה מהמטרה.
+     * הכנסות עתידיות לא נכנסות ל־future (רק הוצאות עם transaction_date > היום).
      */
-    function tazrim_apply_user_bank_balance_target(mysqli $conn, int $home_id, float $target_display, string $today): void
+    function tazrim_apply_user_bank_balance_target(mysqli $conn, int $home_id, float $target_bank_balance_plain, string $today): void
     {
         tazrim_recompute_home_ledger_cached_from_db($conn, $home_id, $today);
         $home = selectOne('homes', ['id' => $home_id]);
@@ -165,8 +165,7 @@ if (!function_exists('tazrim_apply_user_bank_balance_target')) {
             return;
         }
         $ledger = isset($home['bank_balance_ledger_cached']) ? (float) $home['bank_balance_ledger_cached'] : 0.0;
-        $future = tazrim_home_future_expenses_sum($conn, $home_id, $today);
-        $adj = $target_display - $ledger + $future;
+        $adj = $target_bank_balance_plain - $ledger;
         tazrim_set_home_manual_adjustment_plain($conn, $home_id, $adj);
     }
 }
