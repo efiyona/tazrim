@@ -1117,7 +1117,7 @@ $members_result = mysqli_query($conn, $members_query);
                     }
                 })
                 .catch(() => {
-                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת.' });
+                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת עם השרת' });
                 });
             });
         }
