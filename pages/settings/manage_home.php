@@ -157,9 +157,9 @@ $members_result = mysqli_query($conn, $members_query);
                                 </div>
                                 <div class="input-group">
                                     <button type="button" class="btn-primary btn-primary--outline" id="btn-reset-bank-balance" onclick="resetHomeBankBalance()" style="width: 100%;">
-                                        <i class="fa-solid fa-rotate-left"></i> איפוס יתרה (מאפס יישור ויתרה מחושבת)
+                                        <i class="fa-solid fa-rotate-left"></i> איפוס יתרה שמורה במערכת
                                     </button>
-                                    <p class="block-help" style="margin-top: 8px;">לאחר מחיקת כל התנועות, אפשר לאפס כאן כדי למנוע &quot;יתרת רפאים&quot;.</p>
+                                    <p class="block-help" style="margin-top: 8px;">לרוב לא נדרש: מחיקת תנועות ושמירת יתרה מעדכנות את החישוב אוטומטית. כאן מאפסים יישור ויתרה שמורים רק אם משהו נראה שגוי (בלי למחוק תנועות), ואז אפשר להזין יתרה מחדש.</p>
                                 </div>
                                 <div id="home-msg" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 8px; font-weight: 600; text-align: center;"></div>
                                 <button type="button" id="btn-update-home" class="btn-primary" onclick="updateHomeDetails()">שמור שינויים</button>
@@ -384,8 +384,8 @@ $members_result = mysqli_query($conn, $members_query);
         // === פונקציית עדכון פרטי הבית ב-AJAX ===
         function resetHomeBankBalance() {
             tazrimConfirm({
-                title: 'איפוס יתרה',
-                message: 'פעולה זו תאפס את יתרת הבנק השמורה (יישור וחישוב מהתנועות) לאפס. להמשיך?',
+                title: 'איפוס יתרה שמורה',
+                message: 'ייאפסו היישור והיתרה השמורים במערכת. התנועות לא יימחקו. להמשיך?',
                 confirmText: 'איפוס',
                 cancelText: 'ביטול',
                 danger: true
