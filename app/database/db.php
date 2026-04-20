@@ -535,7 +535,6 @@ function tazrim_ensure_homes_bank_balance_columns() {
     if ($done) {
         return;
     }
-    $done = true;
     if (!$conn) {
         return;
     }
@@ -553,25 +552,14 @@ function tazrim_ensure_homes_bank_balance_columns() {
 
     $rOld = @mysqli_query($conn, "SHOW COLUMNS FROM `homes` LIKE 'initial_balance'");
     if ($rOld && mysqli_num_rows($rOld) > 0) {
-        @set_time_limit(0);
-        $today = date('Y-m-d');
-        $res = mysqli_query($conn, 'SELECT id, initial_balance FROM homes');
-        if ($res) {
-            while ($row = mysqli_fetch_assoc($res)) {
-                $hid = (int) ($row['id'] ?? 0);
-                if ($hid <= 0) {
-                    continue;
-                }
-                tazrim_migrate_single_home_from_initial_balance(
-                    $conn,
-                    $hid,
-                    $row['initial_balance'] ?? null,
-                    $today
-                );
-            }
+        $result = tazrim_run_homes_bank_balance_data_migration($conn);
+        if (empty($result['ok'])) {
+            error_log('tazrim homes bank migration: ' . ($result['message'] ?? 'unknown'));
+            return;
         }
-        @mysqli_query($conn, 'ALTER TABLE `homes` DROP COLUMN `initial_balance`');
     }
+
+    $done = true;
 }
 
 require_once ROOT_PATH . '/app/functions/home_bank_balance.php';

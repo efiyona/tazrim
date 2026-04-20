@@ -214,7 +214,7 @@ if (!function_exists('tazrim_migrate_single_home_from_initial_balance')) {
     /**
      * מיגרציה מ־initial_balance גולמי (מוצפן) לשדות החדשים.
      */
-    function tazrim_migrate_single_home_from_initial_balance(mysqli $conn, int $home_id, ?string $raw_initial_balance, string $today): void
+    function tazrim_migrate_single_home_from_initial_balance(mysqli $conn, int $home_id, ?string $raw_initial_balance, string $today): bool
     {
         $old_initial = decryptBalance($raw_initial_balance);
         $ledger_plain = tazrim_home_ledger_plain_from_db($conn, $home_id, $today);
@@ -232,9 +232,71 @@ if (!function_exists('tazrim_migrate_single_home_from_initial_balance')) {
         $ae_esc = mysqli_real_escape_string($conn, $ae);
         $show = (abs($old_initial) > 1e-9) ? 1 : 0;
         $hid = (int) $home_id;
-        mysqli_query(
+        $ok = mysqli_query(
             $conn,
             "UPDATE homes SET bank_balance_ledger_cached = '$le_esc', bank_balance_manual_adjustment = '$ae_esc', show_bank_balance = $show WHERE id = $hid LIMIT 1"
         );
+        if (!$ok || mysqli_errno($conn)) {
+            return false;
+        }
+        return true;
+    }
+}
+
+if (!function_exists('tazrim_run_homes_bank_balance_data_migration')) {
+    /**
+     * מריץ העתקה מ־initial_balance לשדות החדשים ומוחק את העמודה רק אם כל ה־UPDATE הצליחו.
+     *
+     * @return array{ok:bool,message:string,dropped?:bool,homes_ok?:int,homes_fail?:int}
+     */
+    function tazrim_run_homes_bank_balance_data_migration(mysqli $conn): array
+    {
+        $rOld = @mysqli_query($conn, "SHOW COLUMNS FROM `homes` LIKE 'initial_balance'");
+        if (!$rOld || mysqli_num_rows($rOld) === 0) {
+            return ['ok' => true, 'message' => 'אין עמודת initial_balance — כבר הומר או לא קיים.', 'dropped' => false];
+        }
+        @set_time_limit(0);
+        $today = date('Y-m-d');
+        $res = mysqli_query($conn, 'SELECT id, initial_balance FROM homes');
+        if (!$res) {
+            return ['ok' => false, 'message' => 'SELECT מ־homes נכשל: ' . mysqli_error($conn)];
+        }
+        $nOk = 0;
+        $nFail = 0;
+        while ($row = mysqli_fetch_assoc($res)) {
+            $hid = (int) ($row['id'] ?? 0);
+            if ($hid <= 0) {
+                continue;
+            }
+            if (tazrim_migrate_single_home_from_initial_balance($conn, $hid, $row['initial_balance'] ?? null, $today)) {
+                $nOk++;
+            } else {
+                $nFail++;
+            }
+        }
+        if ($nFail > 0) {
+            return [
+                'ok' => false,
+                'message' => "עדכון נכשל ב־{$nFail} בתים (הצליחו {$nOk}). בדוק error_log / הרשאות / אורך VARCHAR.",
+                'dropped' => false,
+                'homes_ok' => $nOk,
+                'homes_fail' => $nFail,
+            ];
+        }
+        $drop = mysqli_query($conn, 'ALTER TABLE `homes` DROP COLUMN `initial_balance`');
+        if (!$drop) {
+            return [
+                'ok' => false,
+                'message' => 'DROP initial_balance נכשל: ' . mysqli_error($conn),
+                'dropped' => false,
+                'homes_ok' => $nOk,
+            ];
+        }
+        return [
+            'ok' => true,
+            'message' => "הומרו {$nOk} בתים ונמחקה עמודת initial_balance.",
+            'dropped' => true,
+            'homes_ok' => $nOk,
+        ];
     }
 }
