@@ -3568,6 +3568,13 @@ body.auth-forgot .auth-switch a {
 }
 .shopping-tab-chip-main {
     transition: padding-left 0.22s ease, background-color 0.2s ease, border-color 0.2s ease;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+.shopping-tab-chip-main span {
+    -webkit-user-select: none;
+    user-select: none;
 }
 .shopping-tab-chip i {
     color: var(--main);

@@ -936,10 +936,10 @@ $is_setup_needed = ($cats_count == 0);
                 shoppingStoreTabLongPressTriggered = false;
                 clearTimeout(shoppingStoreTabLongPressTimer);
                 shoppingStoreTabLongPressTimer = setTimeout(function () {
+                    shoppingTryHapticFeedback();
                     shoppingCloseAllTouchStoreActions();
                     $item.addClass('touch-actions-open');
                     shoppingStoreTabLongPressTriggered = true;
-                    shoppingTryHapticFeedback();
                 }, shoppingStoreTabLongPressMs);
             });
 
@@ -1359,14 +1359,6 @@ function handleEmptyCategoryClick(id, name, icon, element) {
                     '<i class="fa-solid fa-trash-alt"></i></button>';
             }
 
-            let editStoreHtml = '';
-            if (tabView) {
-                editStoreHtml =
-                    '<button type="button" class="btn-edit-store" title="עריכת חנות" aria-label="עריכת חנות" onclick="openShoppingStoreEditFromHeader(' +
-                    category.id +
-                    ', event)"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>';
-            }
-
             const ic = shoppingEscapeHtml(String(category.icon || 'fa-cart-shopping').replace(/[^a-z0-9\-]/gi, ''));
             const nm = shoppingEscapeHtml(category.name || '');
             const headCls = 'category-header' + (tabView ? ' category-header--tabs' : '');
@@ -1388,7 +1380,6 @@ function handleEmptyCategoryClick(id, name, icon, element) {
                 '">' +
                 titleHtml +
                 '<div class="shopping-category-header-actions" dir="ltr">' +
-                editStoreHtml +
                 clearCatHtml +
                 aiButtonHtml +
                 arrowHtml +
