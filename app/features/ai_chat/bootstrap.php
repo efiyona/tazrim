@@ -51,6 +51,33 @@ if (!function_exists('ai_chat_get_context')) {
     }
 }
 
+if (!function_exists('ai_chat_assets_version_token')) {
+    /** ערך גרסה לשבירת מטמון (חותמת שינוי קבצי JS/CSS) */
+    function ai_chat_assets_version_token(): string
+    {
+        static $v = null;
+        if ($v !== null) {
+            return $v;
+        }
+        $js = __DIR__ . '/assets/ai-chat.js';
+        $css = __DIR__ . '/assets/ai-chat.css';
+        $t = max((int) @filemtime($js), (int) @filemtime($css));
+        $v = $t > 0 ? (string) $t : '';
+
+        return $v;
+    }
+}
+
+if (!function_exists('ai_chat_assets_cache_query')) {
+    /** פרמטר query (?v=…) לשבירת מטמון CDN/דפדפן */
+    function ai_chat_assets_cache_query(): string
+    {
+        $tok = ai_chat_assets_version_token();
+
+        return $tok !== '' ? '?v=' . rawurlencode($tok) : '';
+    }
+}
+
 if (!function_exists('ai_chat_render_launcher_button')) {
     function ai_chat_render_launcher_button(): void
     {
@@ -96,13 +123,8 @@ if (!function_exists('ai_chat_render_modal')) {
         echo '      </aside>';
         echo '      <main class="ai-chat-main">';
         echo '        <div class="ai-chat-chat-title ai-chat-chat-title--hidden" id="aiChatCurrentTitle" aria-live="polite"></div>';
-        echo '        <div class="ai-chat-messages" id="aiChatMessages" aria-live="polite"></div>';
+        echo '        <div class="ai-chat-messages" id="aiChatMessages" aria-live="polite"><div class="ai-chat-empty">שאלו כאן — המערכת תנתב את השאלה אוטומטית.</div></div>';
         echo '        <div class="ai-chat-composer" id="aiChatComposer">';
-        echo '          <div class="ai-chat-topic-strip" id="aiChatTopicStrip" role="group" aria-label="סוג השיחה">';
-        echo '            <span class="ai-chat-topic-strip-label">סוג השיחה</span>';
-        echo '            <button type="button" class="shopping-tab-chip" data-topic="financial" title="נתוני תזרים (חודשים אחרונים)">תזרים וכסף</button>';
-        echo '            <button type="button" class="shopping-tab-chip" data-topic="system" title="מסכים וניווט במערכת">המערכת</button>';
-        echo '          </div>';
         echo '          <form id="aiChatForm" class="ai-chat-form">';
         echo '            <input type="text" id="aiChatInput" class="ai-chat-input" maxlength="1500" autocomplete="off" placeholder="מה תרצו לשאול?" enterkeyhint="send">';
         echo '            <button type="submit" class="ai-chat-send" id="aiChatSendBtn" aria-label="שליחת הודעה"><i class="fa-solid fa-paper-plane"></i></button>';
@@ -118,11 +140,16 @@ if (!function_exists('ai_chat_render_modal')) {
 if (!function_exists('ai_chat_render_assets')) {
     function ai_chat_render_assets(): void
     {
+        require_once __DIR__ . '/services/allowed_chat_pages.php';
+        $pageAllow = json_encode(ai_chat_allowed_page_paths(), JSON_UNESCAPED_UNICODE);
         echo '<script>window.AI_CHAT_BASE_URL = ' . json_encode(BASE_URL, JSON_UNESCAPED_UNICODE) . ';';
-        echo 'window.AI_CHAT_ASSISTANT_NAME = ' . json_encode(AI_CHAT_ASSISTANT_NAME, JSON_UNESCAPED_UNICODE) . ';</script>';
-        echo '<script>window.AI_CHAT_USER_INITIALS = ' . json_encode(ai_chat_user_initials(), JSON_UNESCAPED_UNICODE) . ';</script>';
-        echo '<link rel="stylesheet" href="' . BASE_URL . 'app/features/ai_chat/assets/ai-chat.css">';
-        echo '<script src="' . BASE_URL . 'app/features/ai_chat/assets/ai-chat.js" defer></script>';
+        echo 'window.AI_CHAT_ASSISTANT_NAME = ' . json_encode(AI_CHAT_ASSISTANT_NAME, JSON_UNESCAPED_UNICODE) . ';';
+        echo 'window.AI_CHAT_USER_INITIALS = ' . json_encode(ai_chat_user_initials(), JSON_UNESCAPED_UNICODE) . ';';
+        echo 'window.AI_CHAT_ASSETS_VER=' . json_encode(ai_chat_assets_version_token(), JSON_UNESCAPED_UNICODE) . ';';
+        echo 'window.AI_CHAT_PAGE_ALLOWLIST=' . $pageAllow . ';</script>';
+        $vq = ai_chat_assets_cache_query();
+        echo '<link rel="stylesheet" href="' . BASE_URL . 'app/features/ai_chat/assets/ai-chat.css' . $vq . '">';
+        echo '<script src="' . BASE_URL . 'app/features/ai_chat/assets/ai-chat.js' . $vq . '" defer></script>';
     }
 }
 
@@ -130,9 +157,15 @@ if (!function_exists('ai_chat_render_assets')) {
 if (!function_exists('ai_chat_render_lazy_loader')) {
     function ai_chat_render_lazy_loader(): void
     {
+        require_once __DIR__ . '/services/allowed_chat_pages.php';
+        $pageAllowLazy = json_encode(ai_chat_allowed_page_paths(), JSON_UNESCAPED_UNICODE);
         echo '<script>window.AI_CHAT_BASE_URL = ' . json_encode(BASE_URL, JSON_UNESCAPED_UNICODE) . ';';
-        echo 'window.AI_CHAT_ASSISTANT_NAME = ' . json_encode(AI_CHAT_ASSISTANT_NAME, JSON_UNESCAPED_UNICODE) . ';</script>';
-        echo '<script>window.AI_CHAT_USER_INITIALS = ' . json_encode(ai_chat_user_initials(), JSON_UNESCAPED_UNICODE) . ';</script>';
-        echo '<script src="' . BASE_URL . 'app/features/ai_chat/assets/ai-chat-loader.js" defer></script>';
+        echo 'window.AI_CHAT_ASSISTANT_NAME = ' . json_encode(AI_CHAT_ASSISTANT_NAME, JSON_UNESCAPED_UNICODE) . ';';
+        echo 'window.AI_CHAT_USER_INITIALS = ' . json_encode(ai_chat_user_initials(), JSON_UNESCAPED_UNICODE) . ';';
+        echo 'window.AI_CHAT_ASSETS_VER=' . json_encode(ai_chat_assets_version_token(), JSON_UNESCAPED_UNICODE) . ';';
+        echo 'window.AI_CHAT_PAGE_ALLOWLIST=' . $pageAllowLazy . ';</script>';
+        $lv = (int) @filemtime(__DIR__ . '/assets/ai-chat-loader.js');
+        $lq = $lv > 0 ? '?v=' . rawurlencode((string) $lv) : '';
+        echo '<script src="' . BASE_URL . 'app/features/ai_chat/assets/ai-chat-loader.js' . $lq . '" defer></script>';
     }
 }

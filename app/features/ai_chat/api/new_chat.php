@@ -10,16 +10,7 @@ if (!is_array($payload)) {
     $payload = [];
 }
 
-$scope = $payload['scope'] ?? ['topic' => 'system'];
-if (!is_array($scope)) {
-    $scope = ['topic' => 'system'];
-}
-$t = (string) ($scope['topic'] ?? 'system');
-$scope = ['topic' => $t === 'financial' ? 'financial' : 'system'];
-$scopeSnapshot = json_encode($scope, JSON_UNESCAPED_UNICODE);
-if ($scopeSnapshot === false) {
-    $scopeSnapshot = '{"topic":"system"}';
-}
+$scopeSnapshot = '{}';
 
 $chatId = ai_chat_repo_create($conn, $userId, $scopeSnapshot, 'שיחה חדשה');
 $chat = ai_chat_repo_get($conn, $chatId, $userId);

@@ -9,6 +9,11 @@
     return b.endsWith("/") ? b : b + "/";
   }
 
+  function assetsVerQuery() {
+    const v = typeof window.AI_CHAT_ASSETS_VER === "string" ? window.AI_CHAT_ASSETS_VER.trim() : "";
+    return v !== "" ? "?v=" + encodeURIComponent(v) : "";
+  }
+
   function loadCss(href) {
     if (document.querySelector("link[data-ai-chat-css]")) return;
     const l = document.createElement("link");
@@ -49,13 +54,14 @@
 
   async function loadModule() {
     const base = baseUrl();
-    loadCss(base + "app/features/ai_chat/assets/ai-chat.css");
+    const vq = assetsVerQuery();
+    loadCss(base + "app/features/ai_chat/assets/ai-chat.css" + vq);
     const shellUrl = base + "app/features/ai_chat/chat_shell.php";
     const res = await fetch(shellUrl, { credentials: "same-origin", cache: "no-store" });
     if (!res.ok) throw new Error("shell");
     const html = await res.text();
     injectShell(html);
-    await loadScript(base + "app/features/ai_chat/assets/ai-chat.js");
+    await loadScript(base + "app/features/ai_chat/assets/ai-chat.js" + vq);
     if (typeof window.AIChatBootstrap !== "function") {
       throw new Error("bootstrap_fn");
     }

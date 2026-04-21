@@ -41,6 +41,26 @@ require_once ROOT_PATH . '/app/includes/ios_tazrim_panel_visibility.php';
 require_once ROOT_PATH . '/app/helpers/phone_uniqueness.php';
 // אזור קיצורי דרך + API: אייפון, אייפד או מק — לא באנדרואיד
 $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
+
+require_once ROOT_PATH . '/app/features/ai_chat/services/user_preferences_repository.php';
+$ai_prefs_flash = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ai_pref_delete'], $_POST['ai_pref_key']) && is_string($_POST['ai_pref_key'])) {
+    $delKey = trim($_POST['ai_pref_key']);
+    if ($delKey !== '' && ai_user_pref_delete($conn, (int) $user_id, $delKey)) {
+        $ai_prefs_flash = 'ok';
+    }
+}
+$ai_prefs_rows = [];
+if ($conn instanceof mysqli) {
+    $apStmt = $conn->prepare('SELECT pref_key, pref_value, updated_at FROM ai_user_preferences WHERE user_id = ? ORDER BY updated_at DESC');
+    if ($apStmt) {
+        $apStmt->bind_param('i', $user_id);
+        $apStmt->execute();
+        $apRes = $apStmt->get_result();
+        $ai_prefs_rows = $apRes ? $apRes->fetch_all(MYSQLI_ASSOC) : [];
+        $apStmt->close();
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -441,6 +461,46 @@ $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
                                 </div>
                             </div>
 
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>תזרי — מה נשמר בשבילך</h3>
+                        </div>
+                        <div class="card-body-padding">
+                            <p class="block-help" style="margin-bottom: 14px;">
+                                העדפות ויעדים שהעוזר תזרי שמר בשיחה (למשל יעדי חיסכון). אפשר למחוק כאן — המחיקה משפיעה רק עליך.
+                            </p>
+                            <?php if ($ai_prefs_flash === 'ok'): ?>
+                                <p class="block-help" style="margin-bottom: 12px; color: var(--success, #15803d);">הפריט נמחק.</p>
+                            <?php endif; ?>
+                            <?php if ($ai_prefs_rows === []): ?>
+                                <p class="block-help" style="margin-bottom: 0;">אין כרגע העדפות שמורות מהעוזר.</p>
+                            <?php else: ?>
+                                <ul style="list-style: none; padding: 0; margin: 0;">
+                                    <?php foreach ($ai_prefs_rows as $apr): ?>
+                                        <?php
+                                        $pk = htmlspecialchars((string) ($apr['pref_key'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                        $pv = htmlspecialchars((string) ($apr['pref_value'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                        $pu = htmlspecialchars((string) ($apr['updated_at'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                        ?>
+                                        <li style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;">
+                                            <div style="font-weight: 700; margin-bottom: 6px;"><?php echo $pk; ?></div>
+                                            <pre style="white-space: pre-wrap; margin: 0 0 10px 0; font-size: 0.85rem; color: #475569;"><?php echo $pv; ?></pre>
+                                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                                <span style="font-size: 0.8rem; color: #94a3b8;">עודכן: <?php echo $pu; ?></span>
+                                                <form method="post" action="" style="margin: 0;" onsubmit="return confirm('למחוק את ההעדפה הזו?');">
+                                                    <input type="hidden" name="ai_pref_key" value="<?php echo $pk; ?>">
+                                                    <button type="submit" name="ai_pref_delete" value="1" class="btn-secondary-light" style="padding: 6px 12px; font-size: 0.85rem;">
+                                                        מחיקה
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php endif; ?>
                         </div>
                     </div>
 

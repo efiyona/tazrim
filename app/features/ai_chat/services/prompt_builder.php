@@ -46,11 +46,13 @@ if (!function_exists('ai_chat_scope_topic')) {
 if (!function_exists('ai_chat_build_system_instruction')) {
     function ai_chat_build_system_instruction(array $scope, string $userFirstName = ''): string
     {
+        require_once __DIR__ . '/allowed_chat_pages.php';
         $topic = ai_chat_scope_topic($scope);
         $pageFormat = "כשאתה מפנה למסך או לעמוד באתר, השתמש בפורמט המדויק:\n"
             . "[[PAGE:/נתיב/מלא|טקסט קצר לכפתור]]\n"
             . "דוגמה: [[PAGE:/pages/reports.php|מעבר לדוחות]]\n"
-            . "הנתיב חייב להתחיל ב־/.\n\n";
+            . "הנתיב חייב להתחיל ב־/. **אסור** להמציא דפים; מותרים **אך ורק** הנתיבים הבאים:\n"
+            . ai_chat_format_allowed_pages_for_prompt() . "\n\n";
 
         $personal = '';
         if ($userFirstName !== '') {
@@ -117,7 +119,10 @@ if (!function_exists('ai_chat_build_deep_system_layer_suffix')) {
             . "1) **תקציר** — משפט אחד עד שניים.\n"
             . "2) **ניתוח** — בולטים קצרים (נתונים/השוואות/הנחות). אם חסר מידע — ציין במפורש.\n"
             . "3) **מה לעשות** — צעדים או מסקנה מעשית.\n"
-            . "שמור על עברית ברורה. אם רלוונטי, השתמש ב־[[PAGE:...|...]] לניווט.\n";
+            . "אל תחשוף מזהים טכניים (id, category_id) או שדות JSON למשתמש — רק שמות וסכומים קריאים.\n"
+            . "**סיום פלט:** חובה לסיים כל משפט במלואו — מספרים, תאריכים וסוגריים. אם נשאר מעט מקום — תעדף תקציר וניתוח תמציתי, ואל תחתוך באמצע מילה או באמצע תאריך (למשל אל תסיים ב־«20» או ב־«30 ביוני 20»).\n"
+            . "**עיצוב לתשובות ארוכות:** כותרות משנה בשורה עם **הכותרת**; פסקאות מופרדות בשורה ריקה; רשימות עם * או - בתחילת שורה — לא גוש טקסט רציף.\n"
+            . "אם רלוונטי לניווט, השתמש ב־[[PAGE:...|...]] **רק** לנתיבים מהרשימה המותרת בהוראות הבסיס.\n";
     }
 }
 
@@ -317,5 +322,373 @@ if (!function_exists('ai_chat_build_model_context_block')) {
         }
 
         return $instruction . "\n\n(במצב זה לא נשלחו נתוני פעולות גולמיים — ענה לפי מדריך המערכת למעלה.)";
+    }
+}
+
+if (!function_exists('ai_chat_build_session_identity_block')) {
+    /**
+     * פרטי משתמש מהסשן בלבד (ללא טלפון/אימייל) — כדי לענות על «מה הפרטים שלי» בלי להמציא.
+     */
+    function ai_chat_build_session_identity_block(string $userFirstName, string $nickname): string
+    {
+        $nick = trim($nickname);
+        if (function_exists('mb_substr')) {
+            $nick = mb_substr($nick, 0, 80, 'UTF-8');
+        } else {
+            $nick = substr($nick, 0, 80);
+        }
+        $fn = trim($userFirstName);
+        if ($fn === '' && $nick === '') {
+            return '';
+        }
+        $lines = [
+            '### פרטי המשתמש המחובר (מהסשן — לקריאה בלבד)',
+            'אלה הנתונים שמותר להציג בצ\'אט לפי בקשת המשתמש. **אין** כאן טלפון, אימייל או מזהים רגישים — להפניה לשדות אלה השתמש ב־[[PAGE:/pages/settings/user_profile.php|הגדרות החשבון]].',
+        ];
+        if ($fn !== '') {
+            $lines[] = '- שם פרטי (לפנייה): ' . $fn;
+        }
+        if ($nick !== '') {
+            $lines[] = '- כינוי במערכת: ' . $nick;
+        }
+        $lines[] = 'לשינוי כינוי — רק אחרי בקשה מפורשת: הצע ACTION מסוג `update_user_nickname` (יאושר ע"י המשתמש לפני ביצוע).';
+
+        return implode("\n", $lines) . "\n";
+    }
+}
+
+if (!function_exists('ai_chat_build_server_time_anchor_block')) {
+    function ai_chat_build_server_time_anchor_block(): string
+    {
+        $tz = new DateTimeZone('Asia/Jerusalem');
+        $now = new DateTimeImmutable('now', $tz);
+        $dow = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'][(int) $now->format('w')];
+        $dateHe = $now->format('d/m/Y');
+        $time = $now->format('H:i');
+
+        return "### עוגן זמן (שרת)\n"
+            . "היום הוא יום {$dow}, {$dateHe}, השעה {$time}, אזור זמן: Asia/Jerusalem.\n"
+            . "השתמש בזה לביטויים יחסיים כמו «בחודש שעבר» או «שבוע הבא».\n";
+    }
+}
+
+if (!function_exists('ai_chat_format_current_view_for_router')) {
+    /**
+     * @param array<string,mixed>|null $cv
+     */
+    function ai_chat_format_current_view_for_router(?array $cv): string
+    {
+        if (!is_array($cv) || $cv === []) {
+            return '';
+        }
+        $path = trim((string) ($cv['path'] ?? ''));
+        $title = trim(strip_tags((string) ($cv['title'] ?? '')));
+        $vm = isset($cv['view_month']) ? (int) $cv['view_month'] : 0;
+        $vy = isset($cv['view_year']) ? (int) $cv['view_year'] : 0;
+        $lines = ["### מסך ותצוגה נוכחיים (לניתוב בלבד — לא מחליף נתוני בית)"];
+        if ($path !== '') {
+            $lines[] = '- נתיב: ' . mb_substr($path, 0, 240, 'UTF-8');
+        }
+        if ($title !== '') {
+            $lines[] = '- כותרת דף: ' . mb_substr($title, 0, 200, 'UTF-8');
+        }
+        if ($vm >= 1 && $vm <= 12 && $vy >= 2000 && $vy <= 2100) {
+            $lines[] = "- חודש/שנה בתצוגה בממשק: {$vm}/{$vy}";
+        }
+        if (isset($cv['active_tab']) && is_string($cv['active_tab'])) {
+            $lines[] = '- טאב פעיל: ' . mb_substr(trim($cv['active_tab']), 0, 80, 'UTF-8');
+        }
+
+        return implode("\n", $lines) . "\n";
+    }
+}
+
+/**
+ * רשימת מדדים בטוחה לניתוב — משפיעה על עומס בלוק הפיננסי (לא על אבטחה).
+ *
+ * @return list<string>
+ */
+if (!function_exists('ai_chat_normalize_route_metrics')) {
+    function ai_chat_normalize_route_metrics(mixed $raw): array
+    {
+        $allowed = ['balances', 'period_totals', 'category_breakdown', 'budgets', 'sample_transactions'];
+        $out = [];
+        if (is_array($raw)) {
+            foreach ($raw as $item) {
+                $s = is_string($item) ? trim($item) : '';
+                if ($s !== '' && in_array($s, $allowed, true) && !in_array($s, $out, true)) {
+                    $out[] = $s;
+                }
+            }
+        }
+
+        return $out === [] ? $allowed : $out;
+    }
+}
+
+if (!function_exists('ai_chat_router_defaults')) {
+    /** @return array<string,mixed> */
+    function ai_chat_router_defaults(): array
+    {
+        return [
+            'query_focus' => 'mixed',
+            'date_intent' => 'last_two_calendar_months',
+            'range_start' => '',
+            'range_end' => '',
+            'analysis_mode' => 'historical',
+            'metrics' => ai_chat_normalize_route_metrics(null),
+            'needs_deep' => false,
+            'needs_full_transactions' => false,
+            'reason_code' => 'simple',
+            'user_hint' => '',
+            'suggest_goal_followup' => false,
+        ];
+    }
+}
+
+if (!function_exists('ai_chat_router_normalize')) {
+    /**
+     * @param array<string,mixed>|null $parsed
+     * @param array<string,mixed>|null $currentView
+     * @return array<string,mixed>
+     */
+    function ai_chat_router_normalize(?array $parsed, ?array $currentView): array
+    {
+        $d = ai_chat_router_defaults();
+        if (!is_array($parsed)) {
+            return $d;
+        }
+        $qf = (string) ($parsed['query_focus'] ?? '');
+        if (in_array($qf, ['product_help', 'financial', 'mixed'], true)) {
+            $d['query_focus'] = $qf;
+        }
+        $di = (string) ($parsed['date_intent'] ?? '');
+        if (in_array($di, ['last_two_calendar_months', 'ytd', 'all_time', 'custom_range', 'single_month'], true)) {
+            $d['date_intent'] = $di;
+        }
+        $rs = trim((string) ($parsed['range_start'] ?? ''));
+        $re = trim((string) ($parsed['range_end'] ?? ''));
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $rs)) {
+            $d['range_start'] = $rs;
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $re)) {
+            $d['range_end'] = $re;
+        }
+        $am = (string) ($parsed['analysis_mode'] ?? '');
+        if (in_array($am, ['historical', 'what_if_simulation'], true)) {
+            $d['analysis_mode'] = $am;
+        }
+        $d['metrics'] = ai_chat_normalize_route_metrics($parsed['metrics'] ?? null);
+        foreach (['needs_deep', 'needs_full_transactions', 'suggest_goal_followup'] as $bk) {
+            if (array_key_exists($bk, $parsed)) {
+                $v = $parsed[$bk];
+                if (is_bool($v)) {
+                    $d[$bk] = $v;
+                } elseif (is_int($v) || is_float($v)) {
+                    $d[$bk] = ((int) $v) === 1;
+                } elseif (is_string($v)) {
+                    $d[$bk] = in_array(strtolower(trim($v)), ['1', 'true', 'yes'], true);
+                }
+            }
+        }
+        $d['reason_code'] = trim((string) ($parsed['reason_code'] ?? 'simple')) ?: 'simple';
+        $hint = trim((string) ($parsed['user_hint'] ?? ''));
+        $d['user_hint'] = function_exists('mb_substr') ? mb_substr($hint, 0, 48, 'UTF-8') : substr($hint, 0, 48);
+        if (!empty($d['needs_deep']) && $d['user_hint'] === '') {
+            $d['user_hint'] = 'מנתח את השאלה לעומק';
+        }
+
+        return $d;
+    }
+}
+
+if (!function_exists('ai_chat_build_router_instruction_v2')) {
+    function ai_chat_build_router_instruction_v2(string $timeAnchor, string $currentViewBlock): string
+    {
+        $schema = '{"query_focus":"product_help|financial|mixed",'
+            . '"date_intent":"last_two_calendar_months|ytd|all_time|custom_range|single_month",'
+            . '"range_start":"YYYY-MM-DD או ריק","range_end":"YYYY-MM-DD או ריק",'
+            . '"analysis_mode":"historical|what_if_simulation",'
+            . '"metrics":["balances","period_totals","category_breakdown","budgets","sample_transactions"],'
+            . '"needs_deep":boolean,"needs_full_transactions":boolean,'
+            . '"reason_code":"simple|compare_periods|trend|budget_scenario|scenario|multi_part|ambiguous|other",'
+            . '"user_hint":"עברית עד 48 תווים","suggest_goal_followup":boolean}';
+
+        return $timeAnchor . "\n"
+            . ($currentViewBlock !== '' ? $currentViewBlock . "\n" : '')
+            . "אתה מסווג בקשות למערכת «התזרים». החזר **אובייקט JSON בלבד** — בלי markdown, בלי ```.\n"
+            . "סכמה:\n{$schema}\n\n"
+            . "כללים:\n"
+            . "- query_focus: product_help = איך עושים/איפה במערכת; financial = נתונים/תזרים/תקציב; mixed = שניהם.\n"
+            . "- אם המשתמש מבקש **להוסיף** הוצאה/הכנסה/פעולה — בחר financial או mixed (לא product_help בלבד), כדי שיישלחו נתוני תזרים.\n"
+            . "- analysis_mode: what_if_simulation כשהמשתמש מתאר הוצאות/הכנסות **היפותטיות** («מה אם», «אם אקנה») — בלי לבקש כתיבה לדאטהבייס.\n"
+            . "- metrics: מערך מחרוזות מתוך balances | period_totals | category_breakdown | budgets | sample_transactions — מה לכלול בבלוק הנתונים. לשאלה כללית השאר את כולן; לשאלת «יתרה בלבד» אפשר רק balances ו-period_totals; אם חסר או לא תקין — המערכת תשתמש בברירת מחדל מלאה.\n"
+            . "- date_intent: last_two_calendar_months ברירת מחדל; single_month כשהכוונה לחודש תצוגה או חודש ספציפי; ytd; all_time; custom_range עם טווחים.\n"
+            . "- needs_deep / needs_full_transactions / user_hint: כמו קודם (user_hint רק כש־needs_deep=true).\n"
+            . "- suggest_goal_followup: true רק אם יש כאן הקשר פיננסי שמצדיק להזכיר יעד שמור (אל תשתמש true בלי סיבה).\n";
+    }
+}
+
+if (!function_exists('ai_chat_build_goals_memory_block')) {
+    /**
+     * @param list<array{pref_key:string,pref_value:string}> $prefs
+     */
+    function ai_chat_build_goals_memory_block(array $prefs): string
+    {
+        if ($prefs === []) {
+            return '';
+        }
+        $lines = ["### עובדות ויעדים שמורים (של המשתמש בלבד)"];
+        foreach ($prefs as $row) {
+            $lines[] = '- ' . $row['pref_key'] . ': ' . mb_substr($row['pref_value'], 0, 500, 'UTF-8');
+        }
+        $lines[] = "אל תזכיר יעדים בכל תשובה — רק כשההקשר ממש מצדיק (יתרה עודפת, חיסכון, שאלה על יעד).\n";
+
+        return implode("\n", $lines) . "\n";
+    }
+}
+
+if (!function_exists('ai_chat_build_unified_agent_instruction')) {
+    /**
+     * הוראות מערכת לשלב תשובה (אחרי ניתוב).
+     *
+     * @param array<string,mixed> $route
+     */
+    function ai_chat_build_unified_agent_instruction(array $route, string $userFirstName = ''): string
+    {
+        require_once __DIR__ . '/allowed_chat_pages.php';
+        $assistantName = defined('AI_CHAT_ASSISTANT_NAME') ? AI_CHAT_ASSISTANT_NAME : 'התזרים החכם';
+        $pageFormat = "כשאתה מפנה למסך או לעמוד באתר, השתמש בפורמט המדויק:\n"
+            . "[[PAGE:/נתיב/מלא|טקסט קצר לכפתור]]\n"
+            . "הנתיב חייב להתחיל ב־/. **אסור** להמציא דפים או נתיבי הגדרות שלא קיימים; מותרים **אך ורק** הנתיבים הבאים:\n"
+            . ai_chat_format_allowed_pages_for_prompt() . "\n\n";
+
+        $personal = '';
+        if ($userFirstName !== '') {
+            $personal = "פנייה למשתמש: השם הפרטי הוא «{$userFirstName}». מדי פעם, כשזה טבעי — אפשר לפנות בשם הפרטי.\n\n";
+        }
+
+        $base = "שמך הוא {$assistantName}. תפקידך לסייע במערכת \"התזרים\" בלבד.\n"
+            . $personal
+            . "מותר לענות על שימוש במערכת, נתונים פיננסיים של הבית (כשנשלחו), או הכוונה זהירה לפי נתונים.\n"
+            . "אסור לענות על נושאים לא קשורים. אם השאלה מחוץ לתחום — סרב בנימוס במשפט אחד.\n"
+            . "אל תמציא נתונים שלא נשלחו אליך.\n"
+            . "**אסור למשתמש:** מזהי קטגוריה, מספרי id, המילה category_id, JSON טכני או שמות שדות מסד — גם כששואלים \"אילו קטגוריות יש\". הצג רק שמות קריאים וממוינים.\n"
+            . "תשובות בעברית, קצרות ופרקטיות אלא אם נדרש אחרת.\n"
+            . "להדגשה: **טקסט** (Markdown). מבנה: קטעים עם כותרות משנה מודגשות, רשימות עם * בשורה נפרדת, ריווח בין נושאים.\n"
+            . $pageFormat
+            . "הבהרה: זה לא ייעוץ פיננסי מחייב.\n\n";
+
+        $qf = (string) ($route['query_focus'] ?? 'mixed');
+        $am = (string) ($route['analysis_mode'] ?? 'historical');
+        $modeLines = "### ניתוב אוטומטי\n- מיקוד: {$qf}\n- מצב ניתוח: {$am}\n";
+        if ($am === 'what_if_simulation') {
+            $modeLines .= "מצב **מה אם**: השתמש בנתוני האמת שסופקו ובחשבון וירטואלי בלבד. הדגש שמדובר בהערכה. **אל** תכתוב לדאטהבייס; אל תציג בלוקי ACTION אלא אם המשתמש ביקש במפורש לבצע פעולה במערכת.\n";
+        }
+        if (!empty($route['suggest_goal_followup'])) {
+            $modeLines .= "הניתוב מאשר אזכור עדין ליעד שמור (משפט אחד לכל היותר) **רק** אם הוא באמת משתלב בתשובה; אל תחזור על יעדים שלא נשאלת עליהם.\n";
+        }
+
+        $toolRules = "### כלים לפלט מובנה (רק כשחייבים)\n"
+            . "אם חסר מידע קריטי — בלוק:\n"
+            . "[[QUESTIONS]]\n"
+            . "[{\"id\":\"q1\",\"text\":\"...\",\"options\":[\"אופציה א\",\"אופציה ב\"]}]\n"
+            . "[[/QUESTIONS]]\n\n"
+            . "פעולות במערכת (אחרי אישור משתמש) — בלוק יחיד:\n"
+            . "[[ACTION]]\n"
+            . "{\"kind\":\"create_category\",\"name\":\"שם הקטגוריה\",\"type\":\"expense\",\"icon\":\"fa-bolt\",\"budget_limit\":0,\"initial_transaction\":{\"amount\":50,\"description\":\"טלפון\",\"transaction_date\":\"YYYY-MM-DD\"}}\n"
+            . "(אפשר `create_category` בלי `initial_transaction` — רק קטגוריה חדשה. אייקון אופציונלי בפורמט fa-xxx.)\n"
+            . "או {\"kind\":\"create_transaction\",\"type\":\"expense\",\"amount\":120.5,\"category_id\":<מספר מהמיפוי הפנימי>,\"description\":\"תיאור\",\"transaction_date\":\"YYYY-MM-DD\"}\n"
+            . "או {\"kind\":\"save_user_preference\",\"pref_key\":\"goal_example\",\"pref_value\":\"JSON או טקסט\"}\n"
+            . "או {\"kind\":\"update_user_nickname\",\"nickname\":\"הכינוי החדש\"}\n"
+            . "[[/ACTION]]\n"
+            . "כללים ל־create_transaction: `category_id` חייב להופיע במיפוי הפנימי של הקטגוריות; `type` חייב להתאים לסוג הקטגוריה (expense/income). אל תציג מזהים אלה בטקסט למשתמש.\n"
+            . "מפתחות save_user_preference: רק goal_* או fact_* (אותיות קטנות, מספרים, קו תחתון).\n"
+            . "גרפים: אין רינדור גרף בצ'אט — הפנה לדוחות/דף הבית והסבר בטקסט.\n"
+            . "אם אין צורך בכלים — ענה בעברית רגילה בלבד.\n";
+
+        return $base . $modeLines . $toolRules;
+    }
+}
+
+if (!function_exists('ai_chat_compose_system_context')) {
+    /**
+     * @param array<string,mixed> $route
+     * @param array<string,mixed>|null $currentView
+     * @param list<array{pref_key:string,pref_value:string}> $prefs
+     */
+    function ai_chat_compose_system_context(
+        mysqli $conn,
+        int $homeId,
+        array $route,
+        ?array $currentView,
+        array $prefs,
+        string $userFirstName,
+        array $options = []
+    ): string {
+        require_once __DIR__ . '/financial_context_builder.php';
+        require_once __DIR__ . '/help_retrieval.php';
+
+        $anchor = ai_chat_build_server_time_anchor_block();
+        $parts = [$anchor];
+
+        $idBlock = trim((string) ($options['identity_context_block'] ?? ''));
+        if ($idBlock !== '') {
+            $parts[] = $idBlock;
+        }
+
+        $cvRouter = ai_chat_format_current_view_for_router($currentView);
+        if ($cvRouter !== '') {
+            $parts[] = $cvRouter;
+        }
+
+        $goals = ai_chat_build_goals_memory_block($prefs);
+        if ($goals !== '') {
+            $parts[] = $goals;
+        }
+
+        $parts[] = ai_chat_build_unified_agent_instruction($route, $userFirstName);
+
+        $qf = (string) ($route['query_focus'] ?? 'mixed');
+        $userMsg = (string) ($options['user_message_for_rag'] ?? '');
+
+        if ($qf === 'product_help' || $qf === 'mixed') {
+            if ($userMsg !== '') {
+                $parts[] = ai_chat_help_retrieve_top_k($userMsg, 5, 28000, $conn);
+            } else {
+                $parts[] = "### מדריך מערכת\n" . ai_chat_load_product_knowledge();
+            }
+        }
+
+        if ($qf === 'financial' || $qf === 'mixed') {
+            $fin = ai_chat_financial_build_snapshot($conn, $homeId, $route, $currentView, $options);
+            $parts[] = "---\nנתוני תזרים (לשימושך בלבד):\n" . $fin;
+        }
+
+        if ($homeId > 0) {
+            $catB = ai_chat_financial_categories_catalog_block($conn, $homeId);
+            if ($catB !== '') {
+                $parts[] = $catB;
+            }
+        }
+
+        if (($route['analysis_mode'] ?? '') === 'what_if_simulation') {
+            $parts[] = "### הנחיות נוספות למצב מה אם\n"
+                . "חשב בזהירות השפעה על יתרה ותזרים עתידי; ציין הנחות. אין לבצע שינוי במסד.\n";
+        }
+
+        $pageBlock = '';
+        if (is_array($currentView)) {
+            $pp = trim((string) ($currentView['path'] ?? ''));
+            $tt = trim(strip_tags((string) ($currentView['title'] ?? '')));
+            if ($pp !== '' || $tt !== '') {
+                $pageBlock = ai_chat_format_client_page_context($pp, $tt);
+            }
+        }
+        if ($pageBlock !== '') {
+            $parts[] = $pageBlock;
+        }
+
+        return implode("\n\n", array_filter($parts, static fn ($x) => trim((string) $x) !== ''));
     }
 }

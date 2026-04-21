@@ -608,25 +608,20 @@ $is_setup_needed = ($cats_count == 0);
                 }
             });
 
-            // שורת רפאים: אנטר מוסיף מוצר מתחת לשורה הריקה (לא יוצא מהשדה בכל תו)
-            $(document).on('keydown', '.ghost-row input', function(e) {
-                if (e.key !== 'Enter') return;
-                e.preventDefault();
-                const $ghost = $(this).closest('.ghost-row');
+            function addItemsFromGhostInput($ghost, names) {
                 const catId = $ghost.data('cat-id');
-                const name = $ghost.find('.item-input').val().trim();
-                if (!name) return;
+                names.forEach(function(name) {
+                    const newRowHtml = buildItemRowHtml({ id: 'new', item_name: name, quantity: '1' }, catId, false);
+                    $(newRowHtml).insertAfter($ghost).hide().css('opacity', 0).slideDown(220, function() {
+                        $(this).animate({ opacity: 1 }, 180);
+                    });
 
-                const newRowHtml = buildItemRowHtml({ id: 'new', item_name: name, quantity: '1' }, catId, false);
-                $(newRowHtml).insertAfter($ghost).hide().css('opacity', 0).slideDown(220, function() {
-                    $(this).animate({ opacity: 1 }, 180);
+                    const $newRow = $ghost.next('.item-row');
+                    saveItemToDB($newRow);
                 });
 
                 $ghost.find('.item-input').val('');
                 $ghost.find('.item-qty-input').val('1');
-
-                const $newRow = $ghost.next('.item-row');
-                saveItemToDB($newRow);
 
                 setTimeout(function() {
                     $ghost.find('.item-input').focus();
@@ -634,6 +629,32 @@ $is_setup_needed = ($cats_count == 0);
 
                 updateCategoryHeaderActions(catId);
                 updatePlusMenuUI();
+            }
+
+            // שורת רפאים: אנטר מוסיף מוצר מתחת לשורה הריקה (לא יוצא מהשדה בכל תו)
+            $(document).on('keydown', '.ghost-row input', function(e) {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                const $ghost = $(this).closest('.ghost-row');
+                const name = $ghost.find('.item-input').val().trim();
+                if (!name) return;
+                addItemsFromGhostInput($ghost, [name]);
+            });
+
+            $(document).on('paste', '.ghost-row .item-input', function(e) {
+                const clipboardData = e.originalEvent && e.originalEvent.clipboardData;
+                const pastedText = clipboardData ? clipboardData.getData('text') : '';
+                if (!pastedText || !/\r?\n/.test(pastedText)) return;
+
+                const lines = pastedText
+                    .split(/\r?\n/)
+                    .map(function(line) { return line.trim(); })
+                    .filter(function(line) { return line !== ''; });
+                if (!lines.length) return;
+
+                e.preventDefault();
+                const $ghost = $(this).closest('.ghost-row');
+                addItemsFromGhostInput($ghost, lines);
             });
 
             $(document).on('focus', '.active-row .item-input', function() {
