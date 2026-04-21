@@ -3664,7 +3664,7 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
         box-shadow: none;
     }
     .shopping-tab-item:hover .shopping-tab-chip-main {
-        padding-left: 92px;
+        padding-left: 60px;
     }
     .shopping-tab-item:hover .shopping-tab-actions {
         opacity: 1;
@@ -3676,7 +3676,7 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
         overflow: visible;
     }
     .shopping-tab-item.touch-actions-open .shopping-tab-chip-main {
-        padding-left: 92px;
+        padding-left: 60px;
     }
     .shopping-tab-item.touch-actions-open .shopping-tab-actions {
         position: absolute;

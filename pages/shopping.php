@@ -96,12 +96,6 @@ $is_setup_needed = ($cats_count == 0);
                 <div class="page-header-actions" style="margin-bottom: 20px;">
                     <h1 class="section-title" style="margin-bottom: 0;">רשימת קניות</h1>
                     <p style="color: var(--text-light); font-size: 0.9rem; margin-top: 5px;">מה חסר בבית?</p>
-                    <div class="shopping-recipe-entry">
-                        <button type="button" class="btn-primary shopping-recipe-entry__btn" onclick="openRecipeToShoppingModal()">
-                            <i class="fa-solid fa-utensils" aria-hidden="true"></i>
-                            ממתכון לרשימה
-                        </button>
-                    </div>
                 </div>
 
                 <div id="shopping-tabs-bar" class="shopping-tabs-bar" style="display: none;" aria-label="חנויות">
@@ -399,9 +393,6 @@ $is_setup_needed = ($cats_count == 0);
                 '<button type="button" class="shopping-tab-action-btn shopping-tab-action-btn--edit" title="עריכת חנות" aria-label="עריכת חנות" onclick="openShoppingStoreEditFromHeader(' +
                 sid +
                 ', event)"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>' +
-                '<button type="button" class="shopping-tab-action-btn shopping-tab-action-btn--delete" title="מחיקת חנות" aria-label="מחיקת חנות" onclick="openShoppingStoreDeleteFromTab(' +
-                sid +
-                ', event)"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>' +
                 '</div>' +
                 '</div>'
             );
@@ -870,25 +861,7 @@ $is_setup_needed = ($cats_count == 0);
         }
 
         function renderShoppingDeleteMenu() {
-            const plusWrapper = document.querySelector('.detached-plus-wrapper');
-            if (!plusWrapper) return;
-            let submenu = plusWrapper.querySelector('.submenu-popup-container');
-            if (!submenu) {
-                submenu = document.createElement('div');
-                submenu.className = 'submenu-popup-container';
-                plusWrapper.appendChild(submenu);
-            }
-            const hasSelectedStore = !!window.shoppingSelectedStoreId;
-
-            submenu.innerHTML = `
-                <a href="javascript:void(0);" onclick="clearCurrentShoppingList()" class="submenu-action-btn danger-solid-btn ${hasSelectedStore ? '' : 'submenu-action-btn--disabled'}">
-                    <i class="fa-solid fa-trash"></i> מחיקת הרשימה
-                </a>
-                <a href="javascript:void(0);" onclick="clearEntireList()" class="submenu-action-btn danger-solid-btn">
-                    <i class="fa-solid fa-trash-can"></i> מחיקת כל הרשימות
-                </a>
-            `;
-            plusWrapper.style.display = 'flex';
+            // בדף קניות כפתור ה-FAB משמש לפתיחת "ממתכון לרשימה", ללא תפריט משנה.
         }
 
         function updatePlusMenuUI() {
@@ -1274,17 +1247,20 @@ $is_setup_needed = ($cats_count == 0);
 
                     const plusWrapper = document.querySelector('.detached-plus-wrapper');
                     if (plusWrapper) {
-                        plusWrapper.classList.add('has-submenu');
+                        plusWrapper.classList.remove('has-submenu', 'open', 'detached-plus-wrapper--danger');
                         const plusBtn = plusWrapper.querySelector('.plus-btn-detached');
                         if (plusBtn) {
+                            plusBtn.classList.remove('plus-btn-detached--danger');
+                            plusBtn.setAttribute('aria-label', 'ממתכון לרשימה');
+                            plusBtn.setAttribute('title', 'ממתכון לרשימה');
+                            plusBtn.innerHTML = '<i class="fa-solid fa-image" aria-hidden="true" style="color:#fff;"></i>';
                             plusBtn.onclick = function (e) {
                                 e.preventDefault();
-                                const popup = plusWrapper.querySelector('.submenu-popup-container');
-                                if (typeof calculateAlignment === 'function') calculateAlignment(plusWrapper, popup);
-                                plusWrapper.classList.toggle('open');
+                                openRecipeToShoppingModal();
                             };
                         }
-                        renderShoppingDeleteMenu();
+                        const existingSubmenu = plusWrapper.querySelector('.submenu-popup-container');
+                        if (existingSubmenu) existingSubmenu.remove();
                     }
                 } catch (e) {
                     console.error('שגיאה בטעינת הרשימה:', e);
