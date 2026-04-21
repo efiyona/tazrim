@@ -4010,14 +4010,33 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
     margin: 12px 0 8px;
     font-size: 0.9rem;
     font-weight: 700;
+    width: 100%;
+}
+.shopping-recipe-list-actions {
+    margin-right: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 .shopping-recipe-link-btn {
-    border: none;
-    background: transparent;
-    color: var(--main);
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: var(--text);
     font-weight: 700;
     cursor: pointer;
-    padding: 0;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+@media (hover: hover) {
+    .shopping-recipe-link-btn:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+    }
 }
 .shopping-recipe-items-list {
     max-height: 260px;

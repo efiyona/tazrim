@@ -160,8 +160,10 @@ $is_setup_needed = ($cats_count == 0);
                                 <div id="shopping-recipe-store-grid" class="shopping-recipe-store-grid"></div>
                                 <div class="shopping-recipe-list-head">
                                     <span>בחירת פריטים להוספה</span>
-                                    <button type="button" class="shopping-recipe-link-btn" onclick="shoppingRecipeSelectAll(true)">סמן הכל</button>
-                                    <button type="button" class="shopping-recipe-link-btn" onclick="shoppingRecipeSelectAll(false)">נקה הכל</button>
+                                    <div class="shopping-recipe-list-actions">
+                                        <button type="button" class="shopping-recipe-link-btn" onclick="shoppingRecipeSelectAll(true)">סמן הכל</button>
+                                        <button type="button" class="shopping-recipe-link-btn" onclick="shoppingRecipeSelectAll(false)">נקה הכל</button>
+                                    </div>
                                 </div>
                                 <div id="shopping-recipe-items-list" class="shopping-recipe-items-list"></div>
                                 <div id="shopping-recipe-review-msg" class="shopping-modal-msg" style="display: none;"></div>
@@ -294,6 +296,28 @@ $is_setup_needed = ($cats_count == 0);
 
         function shoppingCloseAllTouchStoreActions() {
             $('#shopping-store-tabs .shopping-tab-item').removeClass('touch-actions-open');
+        }
+
+        function shoppingRecipeReleasePreviewUrls() {
+            (shoppingRecipeState.selectedFiles || []).forEach(function (entry) {
+                const u = entry && entry.previewUrl ? String(entry.previewUrl) : '';
+                if (!u) return;
+                if (u.indexOf('blob:') === 0) {
+                    try { URL.revokeObjectURL(u); } catch (e) {}
+                }
+            });
+        }
+
+        function shoppingRecipeWrapFiles(files) {
+            return (files || []).map(function (file) {
+                let previewUrl = '';
+                try {
+                    previewUrl = URL.createObjectURL(file);
+                } catch (e) {
+                    previewUrl = '';
+                }
+                return { file: file, previewUrl: previewUrl };
+            });
         }
 
         function shoppingReadStorePanelMeta(storeId) {
@@ -500,6 +524,7 @@ $is_setup_needed = ($cats_count == 0);
         function openRecipeToShoppingModal() {
             shoppingRecipeState.items = [];
             shoppingRecipeState.lastSourceMode = '';
+            shoppingRecipeReleasePreviewUrls();
             shoppingRecipeState.selectedFiles = [];
             shoppingRecipeState.selectedStoreId = null;
             $('#shopping-recipe-images').val('');
@@ -530,8 +555,8 @@ $is_setup_needed = ($cats_count == 0);
 
         function extractRecipeItemsFromModal() {
             if (shoppingRecipeState.loading) return;
-            const files = shoppingRecipeState.selectedFiles || [];
-            if (!files.length) {
+            const entries = shoppingRecipeState.selectedFiles || [];
+            if (!entries.length) {
                 shoppingRecipeShowMessage('#shopping-recipe-msg', 'יש לצרף לפחות תמונה אחת.', true);
                 return;
             }
@@ -539,8 +564,8 @@ $is_setup_needed = ($cats_count == 0);
             shoppingRecipeShowMessage('#shopping-recipe-msg', '', true);
             shoppingRecipeSetLoading(true, 'מעבד תמונות...');
             const fd = new FormData();
-            files.forEach(function (f) {
-                fd.append('recipe_images[]', f);
+            entries.forEach(function (entry) {
+                if (entry && entry.file) fd.append('recipe_images[]', entry.file);
             });
 
             $.ajax({
@@ -589,23 +614,39 @@ $is_setup_needed = ($cats_count == 0);
 
         function shoppingRecipeRenderFilesList() {
             const list = $('#shopping-recipe-files-list');
-            const files = shoppingRecipeState.selectedFiles || [];
-            if (!files.length) {
+            const entries = shoppingRecipeState.selectedFiles || [];
+            if (!entries.length) {
                 list.html('');
                 return;
             }
-            let html = '';
-            files.forEach(function (f, i) {
-                const previewUrl = URL.createObjectURL(f);
-                html +=
-                    '<div class="shopping-recipe-file-chip">' +
-                    '<img src="' + previewUrl + '" alt="תצוגה מקדימה">' +
-                    '<button type="button" class="shopping-recipe-file-remove" data-idx="' + i + '" aria-label="מחיקת תמונה">' +
-                    '<i class="fa-solid fa-xmark"></i>' +
-                    '</button>' +
-                    '</div>';
+            list.empty();
+            entries.forEach(function (entry, i) {
+                if (entry && !entry.previewUrl && entry.file) {
+                    try { entry.previewUrl = URL.createObjectURL(entry.file); } catch (e) {}
+                }
+                const $chip = $('<div class="shopping-recipe-file-chip"></div>');
+                const $img = $('<img alt="תצוגה מקדימה">');
+                if (entry && entry.previewUrl) $img.attr('src', String(entry.previewUrl));
+                $img.on('error', function () {
+                    if (!(entry && entry.file && typeof FileReader !== 'undefined')) return;
+                    const reader = new FileReader();
+                    reader.onload = function (ev) {
+                        const result = ev && ev.target ? ev.target.result : '';
+                        if (typeof result === 'string' && result !== '') {
+                            entry.previewUrl = result;
+                            $img.attr('src', result);
+                        }
+                    };
+                    try { reader.readAsDataURL(entry.file); } catch (e) {}
+                });
+                const $btn = $(
+                    '<button type="button" class="shopping-recipe-file-remove" data-idx="' +
+                    i +
+                    '" aria-label="מחיקת תמונה"><i class="fa-solid fa-xmark"></i></button>'
+                );
+                $chip.append($img, $btn);
+                list.append($chip);
             });
-            list.html(html);
         }
 
         function populateRecipeStoreSelect() {
@@ -937,14 +978,22 @@ $is_setup_needed = ($cats_count == 0);
             $(document).on('change', '#shopping-recipe-images', function () {
                 let incoming = this.files ? Array.from(this.files) : [];
                 if (!incoming.length) return;
-                const merged = (shoppingRecipeState.selectedFiles || []).concat(incoming).slice(0, 5);
-                if (merged.length < (shoppingRecipeState.selectedFiles || []).length + incoming.length) {
+                const existing = shoppingRecipeState.selectedFiles || [];
+                const wrappedIncoming = shoppingRecipeWrapFiles(incoming);
+                const all = existing.concat(wrappedIncoming);
+                const merged = all.slice(0, 5);
+                const dropped = all.slice(5);
+                dropped.forEach(function (entry) {
+                    const u = entry && entry.previewUrl ? String(entry.previewUrl) : '';
+                    if (!u) return;
+                    try { URL.revokeObjectURL(u); } catch (e) {}
+                });
+                if (merged.length < all.length) {
                     shoppingRecipeShowMessage('#shopping-recipe-msg', 'ניתן לצרף עד 5 תמונות. נשמרו הראשונות.', false);
                 } else {
                     shoppingRecipeShowMessage('#shopping-recipe-msg', '', true);
                 }
-                const files = merged;
-                shoppingRecipeState.selectedFiles = files;
+                shoppingRecipeState.selectedFiles = merged;
                 shoppingRecipeRenderFilesList();
                 this.value = '';
             });
@@ -958,9 +1007,18 @@ $is_setup_needed = ($cats_count == 0);
                 if (shoppingRecipeState.loading) return;
                 const idx = parseInt($(this).data('idx'), 10);
                 if (Number.isNaN(idx)) return;
-                shoppingRecipeState.selectedFiles = shoppingRecipeState.selectedFiles.filter(function (_, i) {
-                    return i !== idx;
+                const next = [];
+                (shoppingRecipeState.selectedFiles || []).forEach(function (entry, i) {
+                    if (i === idx) {
+                        const u = entry && entry.previewUrl ? String(entry.previewUrl) : '';
+                        if (u) {
+                            try { URL.revokeObjectURL(u); } catch (e) {}
+                        }
+                    } else {
+                        next.push(entry);
+                    }
                 });
+                shoppingRecipeState.selectedFiles = next;
                 shoppingRecipeRenderFilesList();
             });
 
