@@ -22,7 +22,8 @@ foreach ($items_data as $item) {
     $items_list_for_ai .= "ID: {$item['id']}, Name: {$item['name']}\n";
 }
 
-$prompt = "Return ONLY a JSON array of integers representing the sorted IDs of these items by supermarket aisles path:
+$prompt = "Return ONLY a JSON array of integers representing the sorted IDs of these items by supermarket aisles path.
+Important: ignore quantities/units when understanding each item name (example: \"2 כוסות חלב\" should be treated as \"חלב\"):
 $items_list_for_ai";
 
 $data = [

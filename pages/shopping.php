@@ -96,6 +96,12 @@ $is_setup_needed = ($cats_count == 0);
                 <div class="page-header-actions" style="margin-bottom: 20px;">
                     <h1 class="section-title" style="margin-bottom: 0;">רשימת קניות</h1>
                     <p style="color: var(--text-light); font-size: 0.9rem; margin-top: 5px;">מה חסר בבית?</p>
+                    <div class="shopping-recipe-entry">
+                        <button type="button" class="btn-primary shopping-recipe-entry__btn" onclick="openRecipeToShoppingModal()">
+                            <i class="fa-solid fa-utensils" aria-hidden="true"></i>
+                            ממתכון לרשימה
+                        </button>
+                    </div>
                 </div>
 
                 <div id="shopping-tabs-bar" class="shopping-tabs-bar" style="display: none;" aria-label="חנויות">
@@ -127,6 +133,48 @@ $is_setup_needed = ($cats_count == 0);
                             <div id="shopping-page-store-actions-row" class="shopping-page-store-actions-row">
                                 <button type="button" class="btn-primary shopping-modal-submit" id="shopping-page-store-save" onclick="submitShoppingPageStoreForm()">שמור</button>
                                 <button type="button" class="shopping-modal-delete-btn" id="shopping-page-store-delete-btn" onclick="shoppingPageStoreDeleteFromModal()" aria-label="מחיקת חנות">מחיקה <i class="fa-solid fa-trash-alt" aria-hidden="true"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="shopping-recipe-modal" class="modal shopping-recipe-modal" style="display: none;" aria-hidden="true">
+                    <div class="modal-content shopping-recipe-modal__content">
+                        <div class="modal-header shopping-recipe-modal__header">
+                            <h3>ממתכון לרשימת קניות</h3>
+                            <button type="button" class="close-modal-btn" id="shopping-recipe-close-btn" onclick="closeRecipeToShoppingModal()" aria-label="סגור" title="סגור">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body shopping-recipe-modal__body">
+                            <div class="shopping-recipe-step" id="shopping-recipe-step-input">
+                                <input type="file" id="shopping-recipe-images" class="shopping-recipe-file-input" accept="image/png,image/jpeg,image/webp" multiple>
+                                <button type="button" class="shopping-recipe-upload-btn" id="shopping-recipe-upload-btn">
+                                    <i class="fa-regular fa-images" aria-hidden="true"></i>
+                                    צירוף תמונות
+                                </button>
+                                <div class="shopping-recipe-file-help">ניתן לצרף מספר תמונות</div>
+                                <div id="shopping-recipe-files-list" class="shopping-recipe-files-list"></div>
+                                <div id="shopping-recipe-msg" class="shopping-modal-msg" style="display: none;"></div>
+                                <div class="shopping-recipe-status" id="shopping-recipe-status" style="display: none;"></div>
+                                <div class="shopping-recipe-actions">
+                                    <button type="button" class="btn-primary shopping-modal-submit" id="shopping-recipe-extract-btn" onclick="extractRecipeItemsFromModal()">חילוץ מצרכים</button>
+                                </div>
+                            </div>
+
+                            <div class="shopping-recipe-step" id="shopping-recipe-step-review" style="display: none;">
+                                <div id="shopping-recipe-store-grid" class="shopping-recipe-store-grid"></div>
+                                <div class="shopping-recipe-list-head">
+                                    <span>בחירת פריטים להוספה</span>
+                                    <button type="button" class="shopping-recipe-link-btn" onclick="shoppingRecipeSelectAll(true)">סמן הכל</button>
+                                    <button type="button" class="shopping-recipe-link-btn" onclick="shoppingRecipeSelectAll(false)">נקה הכל</button>
+                                </div>
+                                <div id="shopping-recipe-items-list" class="shopping-recipe-items-list"></div>
+                                <div id="shopping-recipe-review-msg" class="shopping-modal-msg" style="display: none;"></div>
+                                <div class="shopping-recipe-actions shopping-recipe-actions--review">
+                                    <button type="button" class="shopping-recipe-secondary-btn" onclick="backToRecipeInputStep()">חזרה</button>
+                                    <button type="button" class="btn-primary shopping-modal-submit" id="shopping-recipe-add-btn" onclick="addSelectedRecipeItemsToShopping()">הוסף לרשימה</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -222,6 +270,9 @@ $is_setup_needed = ($cats_count == 0);
     <?php else: ?>
     <script>
         window.shoppingSelectedStoreId = window.shoppingSelectedStoreId || null;
+        let shoppingStoreTabLongPressTimer = null;
+        let shoppingStoreTabLongPressTriggered = false;
+        const shoppingStoreTabLongPressMs = 420;
 
         const SHOPPING_STORE_ICONS = [
             'fa-cart-shopping', 'fa-store', 'fa-leaf', 'fa-basket-shopping', 'fa-shop', 'fa-bag-shopping',
@@ -234,6 +285,21 @@ $is_setup_needed = ($cats_count == 0);
                 .replace(/</g, '&lt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
+        }
+
+        function shoppingIsDesktopHoverMode() {
+            return window.matchMedia('(min-width: 1100px) and (hover: hover)').matches;
+        }
+
+        function shoppingTryHapticFeedback() {
+            if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+            try {
+                navigator.vibrate([12, 25, 12]);
+            } catch (e) {}
+        }
+
+        function shoppingCloseAllTouchStoreActions() {
+            $('#shopping-store-tabs .shopping-tab-item').removeClass('touch-actions-open');
         }
 
         function shoppingReadStorePanelMeta(storeId) {
@@ -267,6 +333,12 @@ $is_setup_needed = ($cats_count == 0);
         function shoppingPageStoreDeleteFromModal() {
             const sid = $('#shopping-page-store-id').val();
             if (!sid) return;
+            shoppingDeleteStoreById(sid);
+        }
+
+        function shoppingDeleteStoreById(storeId) {
+            const sid = parseInt(storeId, 10);
+            if (!sid) return;
             tazrimConfirm({
                 title: 'מחיקת חנות',
                 message:
@@ -291,31 +363,56 @@ $is_setup_needed = ($cats_count == 0);
             });
         }
 
+        function openShoppingStoreDeleteFromTab(storeId, ev) {
+            if (ev) {
+                ev.preventDefault();
+                ev.stopPropagation();
+            }
+            shoppingDeleteStoreById(storeId);
+        }
+
         function selectShoppingStoreTab(storeId) {
             window.shoppingSelectedStoreId = storeId;
-            $('#shopping-store-tabs .shopping-tab-chip').removeClass('active');
-            $('#shopping-store-tabs .shopping-tab-chip[data-store-id="' + storeId + '"]').addClass('active');
+            $('#shopping-store-tabs .shopping-tab-item').removeClass('active');
+            $('#shopping-store-tabs .shopping-tab-item[data-store-id="' + storeId + '"]').addClass('active');
             $('.shopping-panel').removeClass('shopping-panel--active');
             const $p = $('#shopping-panel-' + storeId);
             if ($p.length) $p.addClass('shopping-panel--active');
         }
 
-        function shoppingAppendTabChip(storeId, name, icon) {
+        function shoppingBuildStoreTabHtml(storeId, name, icon) {
+            const sid = String(storeId);
             const ic = shoppingEscapeHtml(icon || 'fa-cart-shopping');
             const nm = shoppingEscapeHtml(name);
-            const html =
-                '<button type="button" class="shopping-tab-chip" data-store-id="' +
-                storeId +
+            return (
+                '<div class="shopping-tab-item" data-store-id="' +
+                sid +
+                '">' +
+                '<button type="button" class="shopping-tab-chip shopping-tab-chip-main" data-store-id="' +
+                sid +
                 '"><i class="fa-solid ' +
                 ic +
                 '"></i><span>' +
                 nm +
-                '</span></button>';
-            $('#shopping-store-tabs').append(html);
+                '</span></button>' +
+                '<div class="shopping-tab-actions" aria-hidden="true">' +
+                '<button type="button" class="shopping-tab-action-btn shopping-tab-action-btn--edit" title="עריכת חנות" aria-label="עריכת חנות" onclick="openShoppingStoreEditFromHeader(' +
+                sid +
+                ', event)"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>' +
+                '<button type="button" class="shopping-tab-action-btn shopping-tab-action-btn--delete" title="מחיקת חנות" aria-label="מחיקת חנות" onclick="openShoppingStoreDeleteFromTab(' +
+                sid +
+                ', event)"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>' +
+                '</div>' +
+                '</div>'
+            );
+        }
+
+        function shoppingAppendTabChip(storeId, name, icon) {
+            $('#shopping-store-tabs').append(shoppingBuildStoreTabHtml(storeId, name, icon));
         }
 
         function shoppingRemoveTabChip(storeId) {
-            $('#shopping-store-tabs .shopping-tab-chip[data-store-id="' + storeId + '"]').remove();
+            $('#shopping-store-tabs .shopping-tab-item[data-store-id="' + storeId + '"]').remove();
         }
 
         function buildShoppingTabsFromCategories(cats) {
@@ -323,17 +420,7 @@ $is_setup_needed = ($cats_count == 0);
                 '<button type="button" class="shopping-tab-chip shopping-tab-add" id="shopping-tab-add" title="חנות חדשה">' +
                 '<i class="fa-solid fa-plus"></i><span>חנות</span></button>';
             (cats || []).forEach(function (cat) {
-                const id = cat.id;
-                const ic = shoppingEscapeHtml(cat.icon || 'fa-cart-shopping');
-                const nm = shoppingEscapeHtml(cat.name || '');
-                h +=
-                    '<button type="button" class="shopping-tab-chip" data-store-id="' +
-                    id +
-                    '"><i class="fa-solid ' +
-                    ic +
-                    '"></i><span>' +
-                    nm +
-                    '</span></button>';
+                h += shoppingBuildStoreTabHtml(cat.id, cat.name || '', cat.icon || 'fa-cart-shopping');
             });
             $('#shopping-store-tabs').html(h);
         }
@@ -343,7 +430,9 @@ $is_setup_needed = ($cats_count == 0);
             const tOpen = t && window.getComputedStyle(t).display !== 'none';
             const m = $('#shopping-page-store-modal');
             const mOpen = m.length && m.is(':visible');
-            document.body.classList.toggle('no-scroll', !!(tOpen || mOpen));
+            const rm = $('#shopping-recipe-modal');
+            const rmOpen = rm.length && rm.is(':visible');
+            document.body.classList.toggle('no-scroll', !!(tOpen || mOpen || rmOpen));
         }
 
         function initShoppingPageIconGrid() {
@@ -378,6 +467,272 @@ $is_setup_needed = ($cats_count == 0);
             $('#shopping-page-store-msg').hide().text('');
             $('#shopping-page-store-actions-row').removeClass('shopping-page-store-actions-row--edit');
             shoppingTryBodyScrollLock();
+        }
+
+        const shoppingRecipeState = {
+            loading: false,
+            items: [],
+            lastSourceMode: '',
+            selectedFiles: [],
+            selectedStoreId: null
+        };
+
+        function shoppingRecipeSetLoading(isLoading, statusText) {
+            shoppingRecipeState.loading = !!isLoading;
+            $('#shopping-recipe-extract-btn').prop('disabled', !!isLoading);
+            $('#shopping-recipe-add-btn').prop('disabled', !!isLoading);
+            $('#shopping-recipe-close-btn').prop('disabled', !!isLoading);
+            $('#shopping-recipe-upload-btn').prop('disabled', !!isLoading);
+            const statusEl = $('#shopping-recipe-status');
+            if (isLoading) {
+                statusEl.text(statusText || 'טוען...').show();
+            } else {
+                statusEl.hide().text('');
+            }
+        }
+
+        function shoppingRecipeShowMessage(targetId, message, isError) {
+            const el = $(targetId);
+            if (!message) {
+                el.hide().text('');
+                return;
+            }
+            el
+                .css({
+                    display: 'block',
+                    background: isError ? '#fee2e2' : '#ecfdf3',
+                    color: isError ? 'var(--error)' : 'var(--main)'
+                })
+                .text(message);
+        }
+
+        function openRecipeToShoppingModal() {
+            shoppingRecipeState.items = [];
+            shoppingRecipeState.lastSourceMode = '';
+            shoppingRecipeState.selectedFiles = [];
+            shoppingRecipeState.selectedStoreId = null;
+            $('#shopping-recipe-images').val('');
+            $('#shopping-recipe-files-list').html('');
+            $('#shopping-recipe-step-input').show();
+            $('#shopping-recipe-step-review').hide();
+            shoppingRecipeShowMessage('#shopping-recipe-msg', '', true);
+            shoppingRecipeShowMessage('#shopping-recipe-review-msg', '', true);
+            $('#shopping-recipe-modal').show();
+            shoppingTryBodyScrollLock();
+            setTimeout(function () {
+                $('#shopping-recipe-images').trigger('focus');
+            }, 80);
+        }
+
+        function closeRecipeToShoppingModal() {
+            if (shoppingRecipeState.loading) return;
+            $('#shopping-recipe-modal').hide();
+            shoppingTryBodyScrollLock();
+        }
+
+        function backToRecipeInputStep() {
+            if (shoppingRecipeState.loading) return;
+            $('#shopping-recipe-step-review').hide();
+            $('#shopping-recipe-step-input').show();
+            shoppingRecipeShowMessage('#shopping-recipe-review-msg', '', true);
+        }
+
+        function extractRecipeItemsFromModal() {
+            if (shoppingRecipeState.loading) return;
+            const files = shoppingRecipeState.selectedFiles || [];
+            if (!files.length) {
+                shoppingRecipeShowMessage('#shopping-recipe-msg', 'יש לצרף לפחות תמונה אחת.', true);
+                return;
+            }
+
+            shoppingRecipeShowMessage('#shopping-recipe-msg', '', true);
+            shoppingRecipeSetLoading(true, 'מעבד תמונות...');
+            const fd = new FormData();
+            files.forEach(function (f) {
+                fd.append('recipe_images[]', f);
+            });
+
+            $.ajax({
+                url: '../app/ajax/extract_recipe_items.php',
+                type: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (raw) {
+                    let res = raw;
+                    if (typeof raw === 'string') {
+                        try {
+                            res = JSON.parse(raw);
+                        } catch (e) {
+                            res = {};
+                        }
+                    }
+
+                    if (res.status !== 'success') {
+                        shoppingRecipeSetLoading(false, '');
+                        shoppingRecipeShowMessage('#shopping-recipe-msg', res.message || 'לא הצלחנו לחלץ מצרכים מהתמונות.', true);
+                        return;
+                    }
+
+                    shoppingRecipeSetLoading(true, 'מחלץ מצרכים...');
+                    shoppingRecipeState.items = Array.isArray(res.items) ? res.items : [];
+                    shoppingRecipeState.lastSourceMode = String(res.source_mode || '');
+                    if (!shoppingRecipeState.items.length) {
+                        shoppingRecipeSetLoading(false, '');
+                        shoppingRecipeShowMessage('#shopping-recipe-msg', 'לא נמצאו מצרכים בתמונות שהועלו.', true);
+                        return;
+                    }
+
+                    populateRecipeStoreSelect();
+                    renderRecipeItemsReview(shoppingRecipeState.items);
+                    $('#shopping-recipe-step-input').hide();
+                    $('#shopping-recipe-step-review').show();
+                    shoppingRecipeSetLoading(false, '');
+                },
+                error: function () {
+                    shoppingRecipeSetLoading(false, '');
+                    shoppingRecipeShowMessage('#shopping-recipe-msg', 'שגיאת תקשורת עם השרת.', true);
+                }
+            });
+        }
+
+        function shoppingRecipeRenderFilesList() {
+            const list = $('#shopping-recipe-files-list');
+            const files = shoppingRecipeState.selectedFiles || [];
+            if (!files.length) {
+                list.html('');
+                return;
+            }
+            let html = '';
+            files.forEach(function (f, i) {
+                const previewUrl = URL.createObjectURL(f);
+                html +=
+                    '<div class="shopping-recipe-file-chip">' +
+                    '<img src="' + previewUrl + '" alt="תצוגה מקדימה">' +
+                    '<button type="button" class="shopping-recipe-file-remove" data-idx="' + i + '" aria-label="מחיקת תמונה">' +
+                    '<i class="fa-solid fa-xmark"></i>' +
+                    '</button>' +
+                    '</div>';
+            });
+            list.html(html);
+        }
+
+        function populateRecipeStoreSelect() {
+            const grid = $('#shopping-recipe-store-grid');
+            const options = [];
+            $('#shopping-store-tabs .shopping-tab-chip:not(.shopping-tab-add)').each(function () {
+                const sid = $(this).data('store-id');
+                const iconClass = ($(this).find('i').attr('class') || 'fa-solid fa-cart-shopping').replace('fa-solid ', '');
+                const label = ($(this).find('span').text() || '').trim();
+                if (sid) options.push({ id: sid, name: label, icon: iconClass });
+            });
+            if (!options.length) {
+                grid.html('');
+                return;
+            }
+            let html = '';
+            options.forEach(function (s) {
+                html +=
+                    '<button type="button" class="shopping-recipe-store-chip" data-store-id="' + String(s.id) + '">' +
+                    '<i class="fa-solid ' + shoppingEscapeHtml(s.icon || 'fa-cart-shopping') + '"></i>' +
+                    '<span>' + shoppingEscapeHtml(s.name) + '</span>' +
+                    '</button>';
+            });
+            grid.html(html);
+            const picked = window.shoppingSelectedStoreId || options[0].id;
+            shoppingRecipeSelectStore(picked);
+        }
+
+        function shoppingRecipeSelectStore(storeId) {
+            shoppingRecipeState.selectedStoreId = parseInt(storeId, 10) || null;
+            $('#shopping-recipe-store-grid .shopping-recipe-store-chip').removeClass('active');
+            $('#shopping-recipe-store-grid .shopping-recipe-store-chip[data-store-id="' + String(storeId) + '"]').addClass('active');
+        }
+
+        function renderRecipeItemsReview(items) {
+            const list = $('#shopping-recipe-items-list');
+            let html = '';
+            items.forEach(function (item, idx) {
+                const name = shoppingEscapeHtml(item.name || '');
+                const staple = !!item.is_staple;
+                const checked = staple ? '' : 'checked';
+                html +=
+                    '<label class="shopping-recipe-item-row" data-idx="' +
+                    idx +
+                    '">' +
+                    '<input type="checkbox" class="shopping-recipe-item-check" data-idx="' +
+                    idx +
+                    '" ' +
+                    checked +
+                    '>' +
+                    '<span class="shopping-recipe-item-custom-check" aria-hidden="true"><i class="fa-solid fa-check"></i></span>' +
+                    '<input type="text" class="shopping-recipe-item-input" value="' + name + '" data-idx="' + idx + '">' +
+                    (staple ? '<span class="shopping-recipe-item-badge">מוצר יסוד</span>' : '') +
+                    '</label>';
+            });
+            list.html(html);
+            shoppingRecipeShowMessage('#shopping-recipe-review-msg', '', true);
+        }
+
+        function shoppingRecipeSelectAll(flag) {
+            $('#shopping-recipe-items-list .shopping-recipe-item-check').prop('checked', !!flag);
+        }
+
+        function addSelectedRecipeItemsToShopping() {
+            if (shoppingRecipeState.loading) return;
+            const selectedStoreId = parseInt(shoppingRecipeState.selectedStoreId || 0, 10);
+            if (!selectedStoreId) {
+                shoppingRecipeShowMessage('#shopping-recipe-review-msg', 'יש לבחור חנות.', true);
+                return;
+            }
+            const selected = [];
+            $('#shopping-recipe-items-list .shopping-recipe-item-check').each(function () {
+                if (!this.checked) return;
+                const idx = parseInt($(this).data('idx'), 10);
+                const editedName = ($('#shopping-recipe-items-list .shopping-recipe-item-input[data-idx="' + String(idx) + '"]').val() || '').trim();
+                if (!editedName) return;
+                selected.push({ name: editedName });
+            });
+            if (!selected.length) {
+                shoppingRecipeShowMessage('#shopping-recipe-review-msg', 'לא נבחרו פריטים להוספה.', true);
+                return;
+            }
+
+            shoppingRecipeShowMessage('#shopping-recipe-review-msg', '', true);
+            shoppingRecipeSetLoading(true, 'מוסיף לרשימת הקניות...');
+            $.post(
+                '../app/ajax/add_recipe_items_to_shopping.php',
+                {
+                    category_id: selectedStoreId,
+                    items: JSON.stringify(selected)
+                },
+                function (raw) {
+                    let res = raw;
+                    if (typeof raw === 'string') {
+                        try {
+                            res = JSON.parse(raw);
+                        } catch (e) {
+                            res = {};
+                        }
+                    }
+                    shoppingRecipeSetLoading(false, '');
+                    if (res.status !== 'success') {
+                        shoppingRecipeShowMessage('#shopping-recipe-review-msg', res.message || 'שמירת הפריטים נכשלה.', true);
+                        return;
+                    }
+                    closeRecipeToShoppingModal();
+                    loadShoppingLists(selectedStoreId);
+                    if (typeof tazrimAlert === 'function') {
+                        tazrimAlert({
+                            title: 'בוצע בהצלחה',
+                            message: 'נוספו ' + String(res.inserted_count || selected.length) + ' פריטים לרשימה.'
+                        });
+                    }
+                }
+            ).fail(function () {
+                shoppingRecipeSetLoading(false, '');
+                shoppingRecipeShowMessage('#shopping-recipe-review-msg', 'שגיאת תקשורת עם השרת.', true);
+            });
         }
 
         function openShoppingPageAddStoreModal() {
@@ -443,7 +798,7 @@ $is_setup_needed = ($cats_count == 0);
                     $('#shopping-panel-' + sid + ' .category-title-label').html(
                         '<i class="fa-solid ' + shoppingEscapeHtml(storeIcon) + '"></i> ' + shoppingEscapeHtml(storeName)
                     );
-                    const $tab = $('#shopping-store-tabs .shopping-tab-chip[data-store-id="' + sid + '"] span');
+                    const $tab = $('#shopping-store-tabs .shopping-tab-item[data-store-id="' + sid + '"] .shopping-tab-chip-main span');
                     if ($tab.length) $tab.text(storeName);
                 } else if (res.new_store_id) {
                     const nid = parseInt(res.new_store_id, 10);
@@ -561,14 +916,85 @@ $is_setup_needed = ($cats_count == 0);
                 openShoppingPageAddStoreModal();
             });
 
-            $(document).on('click', '#shopping-store-tabs .shopping-tab-chip:not(.shopping-tab-add)', function (e) {
+            $(document).on('click', '#shopping-store-tabs .shopping-tab-chip-main', function (e) {
+                const isDesktop = shoppingIsDesktopHoverMode();
+                if (!isDesktop && shoppingStoreTabLongPressTriggered) {
+                    e.preventDefault();
+                    shoppingStoreTabLongPressTriggered = false;
+                    return;
+                }
                 e.preventDefault();
                 const sid = $(this).data('store-id');
+                if (!isDesktop) shoppingCloseAllTouchStoreActions();
                 if (sid) selectShoppingStoreTab(sid);
+            });
+
+            $(document).on('touchstart', '#shopping-store-tabs .shopping-tab-chip-main', function () {
+                if (shoppingIsDesktopHoverMode()) return;
+                const $chip = $(this);
+                const $item = $chip.closest('.shopping-tab-item');
+                shoppingStoreTabLongPressTriggered = false;
+                clearTimeout(shoppingStoreTabLongPressTimer);
+                shoppingStoreTabLongPressTimer = setTimeout(function () {
+                    shoppingCloseAllTouchStoreActions();
+                    $item.addClass('touch-actions-open');
+                    shoppingStoreTabLongPressTriggered = true;
+                    shoppingTryHapticFeedback();
+                }, shoppingStoreTabLongPressMs);
+            });
+
+            $(document).on('touchend touchcancel touchmove', '#shopping-store-tabs .shopping-tab-chip-main', function () {
+                clearTimeout(shoppingStoreTabLongPressTimer);
+            });
+
+            $(document).on('touchstart', function (e) {
+                if (shoppingIsDesktopHoverMode()) return;
+                if ($(e.target).closest('#shopping-store-tabs .shopping-tab-item').length) return;
+                shoppingCloseAllTouchStoreActions();
             });
 
             $(document).on('click', '#shopping-page-store-modal', function (e) {
                 if (e.target === this) closeShoppingPageStoreModal();
+            });
+
+            $(document).on('click', '#shopping-recipe-modal', function (e) {
+                if (e.target === this && !shoppingRecipeState.loading) closeRecipeToShoppingModal();
+            });
+
+            $(document).on('change', '#shopping-recipe-images', function () {
+                let incoming = this.files ? Array.from(this.files) : [];
+                if (!incoming.length) return;
+                const merged = (shoppingRecipeState.selectedFiles || []).concat(incoming).slice(0, 5);
+                if (merged.length < (shoppingRecipeState.selectedFiles || []).length + incoming.length) {
+                    shoppingRecipeShowMessage('#shopping-recipe-msg', 'ניתן לצרף עד 5 תמונות. נשמרו הראשונות.', false);
+                } else {
+                    shoppingRecipeShowMessage('#shopping-recipe-msg', '', true);
+                }
+                const files = merged;
+                shoppingRecipeState.selectedFiles = files;
+                shoppingRecipeRenderFilesList();
+                this.value = '';
+            });
+
+            $(document).on('click', '#shopping-recipe-upload-btn', function () {
+                if (shoppingRecipeState.loading) return;
+                $('#shopping-recipe-images').trigger('click');
+            });
+
+            $(document).on('click', '.shopping-recipe-file-remove', function () {
+                if (shoppingRecipeState.loading) return;
+                const idx = parseInt($(this).data('idx'), 10);
+                if (Number.isNaN(idx)) return;
+                shoppingRecipeState.selectedFiles = shoppingRecipeState.selectedFiles.filter(function (_, i) {
+                    return i !== idx;
+                });
+                shoppingRecipeRenderFilesList();
+            });
+
+            $(document).on('click', '#shopping-recipe-store-grid .shopping-recipe-store-chip', function () {
+                const sid = $(this).data('store-id');
+                if (!sid) return;
+                shoppingRecipeSelectStore(sid);
             });
 
             // חסימת תווים שאינם מספרים (השדה הפך חזרה ל-number כדי שיהיה אנטר במקלדת)

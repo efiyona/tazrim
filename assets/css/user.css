@@ -3562,11 +3562,18 @@ body.auth-forgot .auth-switch a {
     max-width: 200px;
     font-family: inherit;
 }
+.shopping-tab-item {
+    position: relative;
+    flex: 0 0 auto;
+}
+.shopping-tab-chip-main {
+    transition: padding-left 0.22s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
 .shopping-tab-chip i {
     color: var(--main);
     font-size: 0.95rem;
 }
-.shopping-tab-chip.active {
+.shopping-tab-item.active .shopping-tab-chip-main {
     background: var(--main);
     border-color: var(--main);
     color: #fff;
@@ -3574,11 +3581,46 @@ body.auth-forgot .auth-switch a {
 .shopping-tab-chip span {
     color: inherit;
 }
-.shopping-tab-chip.active span {
+.shopping-tab-item.active .shopping-tab-chip-main span {
     color: #fff !important;
 }
-.shopping-tab-chip.active i {
+.shopping-tab-item.active .shopping-tab-chip-main i {
     color: #fff;
+}
+.shopping-tab-actions {
+    display: none;
+}
+.shopping-tab-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: 0;
+    background: var(--gray-light);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.shopping-tab-action-btn--edit {
+    color: var(--main);
+    background: #f1f5f9;
+}
+.shopping-tab-action-btn--delete {
+    color: var(--error);
+    background: #fee2e2;
+}
+@media (hover: hover) {
+    .shopping-tab-action-btn:hover {
+        background-color: var(--gray);
+        transform: translateY(-1px);
+    }
+}
+.shopping-tab-action-btn:active {
+    background-color: var(--gray);
+    transform: translateY(-1px);
 }
 a.shopping-tab-chip {
     text-decoration: none;
@@ -3590,6 +3632,56 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
     a.shopping-tab-chip:not(.active):not(.shopping-tab-add):hover {
         background: var(--gray-light);
         border-color: #cbd5e1;
+    }
+}
+@media (min-width: 1100px) and (hover: hover) {
+    .shopping-tab-item {
+        overflow: visible;
+    }
+    .shopping-tab-item .shopping-tab-actions {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s ease;
+        z-index: 140;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 0;
+        box-shadow: none;
+    }
+    .shopping-tab-item:hover .shopping-tab-chip-main {
+        padding-left: 92px;
+    }
+    .shopping-tab-item:hover .shopping-tab-actions {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+@media (max-width: 1099px), (hover: none) {
+    .shopping-tab-item.touch-actions-open {
+        overflow: visible;
+    }
+    .shopping-tab-item.touch-actions-open .shopping-tab-chip-main {
+        padding-left: 92px;
+    }
+    .shopping-tab-item.touch-actions-open .shopping-tab-actions {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        opacity: 1;
+        pointer-events: auto;
+        z-index: 140;
     }
 }
 /* תא מרכזי: גובה השורה = צ'יפ החודש בלבד; "היום" מחוץ לזרימה כדי שלא יזיז את החיצים */
@@ -3778,6 +3870,230 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
     border-radius: 8px;
     text-align: center;
     font-weight: 700;
+}
+.shopping-recipe-entry {
+    margin-top: 12px;
+}
+.shopping-recipe-entry__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    font-weight: 700;
+    padding: 10px 16px;
+}
+.shopping-recipe-modal .modal-content {
+    max-width: 560px;
+}
+.shopping-recipe-modal__header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+.shopping-recipe-manual-wrap {
+    margin-top: 10px;
+}
+.shopping-recipe-manual-text {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--gray-light);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+}
+.shopping-recipe-file-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+.shopping-recipe-upload-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1.5px dashed #cbd5e1;
+    background: #f8fafc;
+    color: var(--text);
+    font-weight: 700;
+    cursor: pointer;
+}
+.shopping-recipe-file-help {
+    margin-top: 8px;
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+.shopping-recipe-files-list {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+.shopping-recipe-file-chip {
+    position: relative;
+    height: 88px;
+    background: #eef2f7;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.shopping-recipe-file-chip img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.shopping-recipe-file-remove {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(17, 24, 39, 0.75);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.shopping-recipe-status {
+    margin-top: 12px;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 700;
+}
+.shopping-recipe-actions {
+    margin-top: 18px;
+}
+.shopping-recipe-store-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.shopping-recipe-store-chip {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: var(--text);
+    border-radius: 999px;
+    padding: 8px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.shopping-recipe-store-chip.active {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: var(--main);
+}
+.shopping-recipe-list-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 12px 0 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+.shopping-recipe-link-btn {
+    border: none;
+    background: transparent;
+    color: var(--main);
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+}
+.shopping-recipe-items-list {
+    max-height: 260px;
+    overflow: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+}
+.shopping-recipe-item-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+}
+.shopping-recipe-item-row:last-child {
+    border-bottom: none;
+}
+.shopping-recipe-item-check {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.shopping-recipe-item-custom-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1.5px solid #cbd5e1;
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+}
+.shopping-recipe-item-custom-check i {
+    font-size: 0.72rem;
+    opacity: 0;
+}
+.shopping-recipe-item-check:checked + .shopping-recipe-item-custom-check {
+    background: #16a34a;
+    border-color: #16a34a;
+}
+.shopping-recipe-item-check:checked + .shopping-recipe-item-custom-check i {
+    opacity: 1;
+}
+.shopping-recipe-item-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    background: #fff;
+    text-align: right;
+}
+.shopping-recipe-item-input:focus {
+    outline: none;
+    border-color: #86efac;
+    box-shadow: 0 0 0 3px rgba(134, 239, 172, 0.22);
+}
+.shopping-recipe-item-badge {
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.shopping-recipe-actions--review {
+    display: flex;
+    gap: 10px;
+}
+.shopping-recipe-secondary-btn {
+    border: 1px solid var(--gray-light);
+    background: #fff;
+    border-radius: 999px;
+    padding: 12px 18px;
+    font-weight: 700;
+    cursor: pointer;
 }
 
 /* אשף רשימת קניות — צ'יפים וכרטיס כמו באפליקציה */
