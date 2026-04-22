@@ -186,13 +186,13 @@ if (!function_exists('tazrim_admin_mass_email_send_one')) {
             $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
             $mail->Port = 465;
             $mail->CharSet = 'UTF-8';
-            $fromAddress = defined('MAIL_FROM_ADDRESS') && trim((string) constant('MAIL_FROM_ADDRESS')) !== ''
-                ? trim((string) constant('MAIL_FROM_ADDRESS'))
-                : trim((string) MAIL_USERNAME);
+            // SMTP providers like Hostinger may reject MAIL FROM unless it exactly matches the authenticated user.
+            $fromAddress = trim((string) MAIL_USERNAME);
             $fromName = defined('MAIL_FROM_NAME') && trim((string) constant('MAIL_FROM_NAME')) !== ''
                 ? trim((string) constant('MAIL_FROM_NAME'))
                 : 'התזרים';
             $mail->setFrom($fromAddress, $fromName);
+            $mail->Sender = $fromAddress;
             $mail->Subject = $subject;
             $mail->clearAddresses();
             $mail->addAddress($toEmail);
