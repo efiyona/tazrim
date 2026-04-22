@@ -387,9 +387,6 @@
                 </div>
             </div>
 
-            <a href="<?php echo BASE_URL; ?>landing/index.php" class="back-home">
-                <i class="fa-solid fa-house"></i> חזרה לדף הבית
-            </a>
         </section>
 
         <section class="auth-visual-side">
