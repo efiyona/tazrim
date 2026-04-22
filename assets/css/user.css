@@ -484,6 +484,10 @@ body.auth-cp .form-container {
 }
 
 @media (min-width: 601px) {
+    body.auth-cp {
+        padding: 44px 48px;
+    }
+
     body.auth-cp .form-container {
         padding: 44px 48px;
     }

@@ -295,7 +295,9 @@ if (isset($_SESSION['id'])) {
 
             .auth-layout {
                 grid-template-columns: 1fr;
-                width: 95%;
+                width: min(520px, calc(100% - 36px));
+                max-width: 520px;
+
                 padding: 20px;
             }
 

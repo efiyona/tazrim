@@ -84,20 +84,16 @@
 
 @media (max-width: 520px) {
     .floating-header {
-        padding: 8px 10px 8px 14px;
+        padding: 10px;
     }
 
     .header-logo img {
-        height: 40px;
+        height: 25px;
     }
 
     .header-btn {
         padding: 8px 13px;
         font-size: 0.85rem;
-    }
-
-    .header-btn--ghost .header-btn-label {
-        display: none;
     }
 
     .header-btn--ghost {

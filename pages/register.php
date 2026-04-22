@@ -484,7 +484,9 @@ $prefilled_code = isset($_GET['join_code']) ? htmlspecialchars($_GET['join_code'
 
             .auth-layout {
                 grid-template-columns: 1fr;
-                width: 95%;
+                width: min(520px, calc(100% - 36px));
+                max-width: 520px;
+
                 padding: 20px;
             }
 

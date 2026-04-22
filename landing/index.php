@@ -547,6 +547,13 @@
         .cta-section .btn-primary:hover { background-color: var(--gray-light); }
         @media (min-width: 900px) { .cta-section { margin: 0 auto 60px; max-width: 1160px; } }
 
+        @media (max-width: 700px) {
+
+            .hero {
+                padding-top: 60px;
+            }
+        }
+
     </style>
 </head>
 <body>
