@@ -338,7 +338,13 @@ if (!function_exists('admin_ai_agent_send_mail_execute')) {
             $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
             $mail->Port = 465;
             $mail->CharSet = 'UTF-8';
-            $mail->setFrom('support@trofaplus.com', 'התזרים');
+            $fromAddress = defined('MAIL_FROM_ADDRESS') && trim((string) constant('MAIL_FROM_ADDRESS')) !== ''
+                ? trim((string) constant('MAIL_FROM_ADDRESS'))
+                : trim((string) MAIL_USERNAME);
+            $fromName = defined('MAIL_FROM_NAME') && trim((string) constant('MAIL_FROM_NAME')) !== ''
+                ? trim((string) constant('MAIL_FROM_NAME'))
+                : 'התזרים';
+            $mail->setFrom($fromAddress, $fromName);
             $mail->Subject = $subject;
 
             if (empty($emails)) {
@@ -346,7 +352,7 @@ if (!function_exists('admin_ai_agent_send_mail_execute')) {
             }
             
             // תיקון מס' 2: פתרון בעיית הפרטיות. שמים את המייל של המערכת ב-To ואת כל השאר ב-Bcc.
-            $mail->addAddress('support@trofaplus.com', 'התזרים'); // הנמען הראשי הגלוי
+            $mail->addAddress($fromAddress, $fromName); // הנמען הראשי הגלוי
             
             foreach ($emails as $bcc) {
                 $mail->addBCC($bcc); // כל המשתמשים יקבלו בעותק נסתר
