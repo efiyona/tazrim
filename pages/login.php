@@ -48,7 +48,7 @@ if (isset($_SESSION['id'])) {
                     </defs>
                 </svg>
             </div>
-            <h1 class="cp-login-brand">תזריםםםם</h1>
+            <h1 class="cp-login-brand">תזריםםםdם</h1>
             <p class="cp-login-tagline">התחברות למערכת ניהול תקציב הבית</p>
         </div>
 
