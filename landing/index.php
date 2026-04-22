@@ -761,7 +761,7 @@
                     </div>
                 </div>
                 
-                <a href="<?php echo BASE_URL . 'pages/register.php'; ?>" class="btn-primary animated-btn">אני רוצה להתחיל עכשיו</a>
+                <a href="<?php echo BASE_URL . 'pages/login.php'; ?>" class="btn-primary animated-btn">אני רוצה להתחיל עכשיו</a>
             </div>
         </section>
 
@@ -890,11 +890,11 @@
             </div>
         </section>
 
-        <section id="register" class="section-pad">
+        <section id="login" class="section-pad">
             <div class="cta-section">
                 <h2>מוכנים לסיים את החודש בשליטה?</h2>
                 <p>הצטרפו עכשיו ל"התזרים" ותתחילו לנהל את ההוצאות וההכנסות שלכם בצורה פשוטה וברורה.</p>
-                <a href="<?php echo BASE_URL . 'pages/register.php'; ?>" class="btn-primary animated-btn" style="background-color: var(--white); color: var(--main);">בואו נתחיל עכשיו</a>
+                <a href="<?php echo BASE_URL . 'pages/login.php'; ?>" class="btn-primary animated-btn" style="background-color: var(--white); color: var(--main);">בואו נתחיל עכשיו</a>
                 <span style="display:block; margin-top:15px; font-size:0.9rem; font-weight:600; color:rgba(255,255,255,0.8);">מתחילים בקלות, בלי מורכבות ובלי התחייבות.</span>
             </div>
         </section>

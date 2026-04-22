@@ -12,7 +12,7 @@
                 <h4>המערכת</h4>
                 <ul>
                     <li><a href="<?php echo BASE_URL . 'pages/register.php'; ?>"><i class="fa-solid fa-angle-left"></i> פתיחת חשבון</a></li>
-                    <li><a href="<?php echo BASE_URL . 'pages/login.php'; ?>"><i class="fa-solid fa-angle-left"></i> התחברות</a></li>
+                    <li><a href="<?php echo BASE_URL . 'pages/login.php'; ?>"><i class="fa-solid fa-angle-left"></i> כניסה למערכת</a></li>
                     <li><a href="#steps"><i class="fa-solid fa-angle-left"></i> איך זה עובד</a></li>
                 </ul>
             </nav>

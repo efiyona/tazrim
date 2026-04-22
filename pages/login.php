@@ -29,403 +29,420 @@ if (isset($_SESSION['id'])) {
 <html lang="he" dir="rtl">
 <head>
     <?php include(ROOT_PATH . '/assets/includes/setup_meta_data.php'); ?>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>התחברות | תזרים</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap');
+
         :root {
-            --bg-1: #f4fff8;
-            --bg-2: #e8f9ee;
-            --card-bg: rgba(255, 255, 255, 0.92);
-            --text-main: #113126;
-            --text-muted: #587469;
-            --accent: #21a95d;
-            --accent-hover: #1a8d4d;
-            --border: #d7e8de;
-            --danger-bg: #fff2f2;
-            --danger-border: #ffcccc;
-            --danger-text: #a92525;
-            --shadow: 0 24px 60px rgba(25, 67, 48, 0.15);
+            --primary: #21a95d; /* הירוק של תזרים */
+            --primary-dark: #1a8d4d;
+            --bg-light: #f8fafc; /* רקע כללי בהיר */
+            --bg-card: #ffffff; /* רקע טופס לבן */
+            --text-main: #0f172a; /* טקסט כהה */
+            --text-muted: #64748b; /* טקסט אפור */
+            --border-color: #e2e8f0; /* גבולות בהירים */
         }
 
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
+            font-family: 'Heebo', sans-serif;
         }
 
         body {
-            margin: 0;
             min-height: 100vh;
-            font-family: "Heebo", "Assistant", Arial, sans-serif;
+            background-color: var(--bg-light);
             color: var(--text-main);
-            background:
-                radial-gradient(circle at 20% 15%, #d8f4e3 0%, transparent 45%),
-                radial-gradient(circle at 80% 85%, #d5efe4 0%, transparent 40%),
-                linear-gradient(135deg, var(--bg-1), var(--bg-2));
-            display: grid;
-            place-items: center;
-            padding: 24px;
+            overflow-x: hidden;
+            padding: 0 !important;
         }
 
-        .auth-layout {
-            width: min(980px, 100%);
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 28px;
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(8px);
-            overflow: hidden;
-            display: grid;
-            grid-template-columns: 1fr 1.1fr;
-        }
-
-        .auth-side {
-            background: var(--white);
-            color: #fff;
-            padding: 22px;
+        .auth-wrapper {
             display: flex;
-            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* ----- Form Section (Right Side in RTL) ----- */
+        .auth-form-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            z-index: 10;
+            position: relative;
+            background-color: #f8fafc;
         }
 
-        .side-logo {
-            display: block;
+        .auth-container {
             width: 100%;
-            height: 100%;
-            max-height: 300px;
-            object-fit: contain;
+            max-width: 420px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+            animation: slideIn 0.6s ease-out;
         }
 
-        .side-logo-mobile {
-            display: none;
-        }
-
-        .auth-panel {
-            padding: 44px clamp(22px, 4vw, 40px);
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .auth-header {
-            margin-bottom: 22px;
-        }
-
-        .auth-header h2 {
-            margin: auto;
             text-align: center;
-            font-size: clamp(1.4rem, 2.2vw, 1.75rem);
-            font-weight: 800;
+            margin-bottom: 2.5rem;
         }
 
-        .auth-header span {
+        .auth-header h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .auth-header p {
             color: var(--text-muted);
-            font-size: 0.95rem;
+            font-size: 1.05rem;
         }
 
+        /* Alerts */
         .alert-error {
-            background: var(--danger-bg);
-            border: 1px solid var(--danger-border);
-            color: var(--danger-text);
-            border-radius: 14px;
-            padding: 10px 14px;
-            margin-bottom: 16px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
         }
-
+        
         .alert-error ul {
+            padding-inline-start: 1.2rem;
             margin: 0;
-            padding-right: 18px;
         }
 
-        .auth-form {
-            display: grid;
-            gap: 14px;
-        }
-
+        /* Form Inputs */
         .form-group {
-            display: grid;
-            gap: 8px;
+            margin-bottom: 1.5rem;
         }
 
         .form-group label {
-            font-weight: 700;
+            display: block;
+            margin-bottom: 0.6rem;
             font-size: 0.95rem;
-        }
-
-        .input-shell {
-            position: relative;
-        }
-
-        .input-shell svg {
-            position: absolute;
-            top: 50%;
-            right: 12px;
-            transform: translateY(-50%);
-            color: #679080;
-            pointer-events: none;
-        }
-
-        .input-shell input {
-            width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #d1d5db;
-            background: #f8fafc;
-            padding-inline-start: 48px;
-            font-size: 16px;
             color: var(--text-main);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            font-weight: 600;
         }
 
-        .input-shell input:focus {
-            outline: none;
-            border-color: var(--accent);
-            background: #fff;
-            box-shadow: 0 0 0 3px rgba(33, 169, 93, 0.18);
-        }
-
-        .meta-row {
+        .input-icon-wrapper {
+            position: relative;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-top: 2px;
-            gap: 10px;
-            flex-wrap: wrap;
         }
 
-        .remember-wrap {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-muted);
-            font-size: 0.94rem;
+        .input-icon-wrapper i.icon-main {
+            position: absolute;
+            right: 1.2rem;
+            color: #94a3b8;
+            transition: color 0.3s ease;
         }
 
-        .remember-wrap input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--accent);
-            cursor: pointer;
-        }
-
-        .remember-wrap label {
-            cursor: pointer;
-        }
-
-        .link-inline,
-        .signup-link a {
-            color: var(--accent);
-            font-weight: 700;
-            font-size: 0.94rem;
-            text-decoration: none;
-        }
-
-        .link-inline:hover {
-            text-decoration: underline;
-        }
-
-        .submit-btn {
-            margin-top: 10px;
+        .form-control {
             width: 100%;
-            padding: 16px;
-            border: 0;
-            border-radius: 999px;
-            background: var(--accent);
-            color: #fff;
-            font-weight: 700;
-            font-size: 16px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: var(--text-main);
+            padding: 0.9rem 2.8rem 0.9rem 2.8rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(33, 169, 93, 0.15);
+        }
+
+        .form-control:focus ~ i.icon-main {
+            color: var(--primary);
+        }
+
+        /* Toggle Password Eye */
+        .toggle-password {
+            position: absolute;
+            left: 1.2rem;
+            color: #94a3b8;
             cursor: pointer;
-            transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-            letter-spacing: 0.02em;
-            position: relative;
+            transition: color 0.2s;
         }
 
-        .submit-btn:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(41, 182, 105, 0.28);
+        .toggle-password:hover {
+            color: var(--primary);
         }
 
-        .submit-btn::after {
-            content: "\f060";
-            font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome";
-            font-weight: 900;
-            font-size: 0.9em;
-            line-height: 1;
-            display: inline-block;
-            max-width: 0;
-            opacity: 0;
-            margin-inline-start: 0;
-            transform: translateX(6px);
-            overflow: hidden;
-            white-space: nowrap;
-            vertical-align: -0.05em;
-            transition:
-                max-width 0.3s ease,
-                opacity 0.25s ease,
-                margin-inline-start 0.3s ease,
-                transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Options Row */
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
         }
 
-        .submit-btn:hover::after,
-        .submit-btn:focus-visible::after {
-            max-width: 1.2em;
-            opacity: 1;
-            margin-inline-start: 8px;
-            transform: translateX(0);
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-weight: 500;
         }
 
-        @media (prefers-reduced-motion: reduce) {
-            .submit-btn::after,
-            .submit-btn:hover::after,
-            .submit-btn:focus-visible::after {
-                transition: none;
-                transform: none;
-            }
+        .remember-me input {
+            accent-color: var(--primary);
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
         }
 
-        .signup-link {
-            margin: 18px 0 0;
+        .forgot-pass {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .forgot-pass:hover {
+            color: var(--primary-dark);
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 999px; /* כפתור מעוגל לחלוטין לפי הבקשה */
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(33, 169, 93, 0.4);
+        }
+
+        /* Footer */
+        .auth-footer {
+            margin-top: 2rem;
             text-align: center;
             color: var(--text-muted);
-            font-size: 0.94rem;
+            font-weight: 500;
         }
 
-        .signup-link a:hover {
+        .auth-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .auth-footer a:hover {
             text-decoration: underline;
         }
 
-        @media (max-width: 860px) {
-            body {
-                padding-top: 36px;
-            }
-
-            .auth-layout {
-                grid-template-columns: 1fr;
-                width: min(520px, calc(100% - 36px));
-                max-width: 520px;
-
-                padding: 20px;
-            }
-
-            .auth-side {
-                order: -1;
-                min-height: 150px;
-            }
-
-            .auth-panel {
-                padding: 0 20px;
-                padding-bottom: 20px;
-            }
-
-            .side-logo {
-                max-width: 300px;
-            }
-
-            .side-logo-desktop {
-                display: none;
-            }
-
-            .side-logo-mobile {
-                display: block;
-            }
-
-            .auth-header h2 {
-                font-size: clamp(1.55rem, 5.4vw, 1.9rem);
-            }
-        }
-
-        .back-btn {
+        .back-home {
+            position: absolute;
+            bottom: 2rem;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 28px;
-            border: 2px solid var(--border);
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.6);
+            gap: 0.5rem;
             color: var(--text-muted);
-            font-weight: 700;
-            font-size: 0.95rem;
             text-decoration: none;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(4px);
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 0.6rem 1.2rem;
+            border-radius: 999px; /* מעוגל גם פה שיתאים */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
 
-        .back-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: var(--white);
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(33, 169, 93, 0.12);
-        }
-        
-        .back-btn i {
-            font-size: 0.9em;
-            transition: transform 0.2s ease;
+        .back-home:hover {
+            color: var(--primary);
+            border-color: var(--primary);
         }
 
-        .back-btn:hover i {
-            transform: translateX(3px); /* אפקט חמוד של תזוזה לכיוון הטקסט ב-RTL */
+        /* ----- Visual Section (Left Side) ----- */
+        .auth-visual-side {
+            flex: 1.2;
+            display: none;
+            /* החלפנו לרקע ירוק חי ויפה שמתאים לתזרים במקום השחור-משעמם */
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (min-width: 992px) {
+            .auth-visual-side {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        /* Animated Background Elements */
+        .glass-orb {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: float 8s infinite ease-in-out alternate;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            bottom: -50px;
+            right: 10%;
+            animation-delay: -4s;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-30px) scale(1.05); }
+        }
+
+        .visual-content {
+            z-index: 2;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .visual-logo {
+            max-width: 280px;
+            margin-bottom: 2rem;
         }
 
     </style>
 </head>
 <body>
-    <main class="auth-layout" role="main">
-        <section class="auth-side" aria-label="מיתוג והסבר">
-            <img src="<?php echo BASE_URL; ?>assets/images/tazrim-logo-ver.png" alt="תזרים" class="side-logo side-logo-desktop">
-            <img src="<?php echo BASE_URL; ?>assets/images/logo-header.png" alt="תזרים" class="side-logo side-logo-mobile">
+
+    <main class="auth-wrapper">
+        
+        <section class="auth-form-side">
+            <div class="auth-container">
+                <header class="auth-header">
+                    <h1>ברוכים הבאים</h1>
+                    <p>התחברו כדי להמשיך לנהל את התזרים</p>
+                </header>
+
+                <?php if (count($errors) > 0): ?>
+                    <div class="alert-error">
+                        <ul>
+                            <?php foreach ($errors as $error): ?>
+                                <li><?php echo $error; ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <form action="login.php" method="POST">
+                    <div class="form-group">
+                        <label for="email">כתובת אימייל</label>
+                        <div class="input-icon-wrapper">
+                            <input type="email" name="email" id="email" class="form-control" value="<?php echo isset($email) ? $email : ''; ?>" placeholder="name@example.com" required autocomplete="email">
+                            <i class="fa-regular fa-envelope icon-main"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">סיסמה</label>
+                        <div class="input-icon-wrapper">
+                            <input type="password" name="password" id="password" class="form-control" placeholder="הזינו סיסמה" required autocomplete="current-password">
+                            <i class="fa-solid fa-lock icon-main"></i>
+                            <i class="fa-regular fa-eye toggle-password" id="togglePassword" title="הצג/הסתר סיסמה"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="remember-me">
+                            <input type="checkbox" name="remember_me" id="remember_me">
+                            זכור אותי
+                        </label>
+                        <a href="<?php echo BASE_URL; ?>pages/forgot_password.php" class="forgot-pass">שכחת סיסמה?</a>
+                    </div>
+
+                    <button type="submit" name="login_btn" class="btn-submit">
+                        התחברות <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    אין לך חשבון? <a href="<?php echo BASE_URL; ?>pages/register.php">הרשמה כאן</a>
+                </div>
+            </div>
+
+            <a href="<?php echo BASE_URL; ?>landing/index.php" class="back-home">
+                <i class="fa-solid fa-house"></i> חזרה לדף הבית
+            </a>
         </section>
 
-        <section class="auth-panel">
-            <header class="auth-header">
-                <h2>ברוכים הבאים</h2>
-            </header>
-
-            <?php if (count($errors) > 0): ?>
-                <div class="alert-error">
-                    <ul>
-                        <?php foreach ($errors as $error): ?>
-                            <li><?php echo $error; ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-            <?php endif; ?>
-
-            <form action="login.php" method="POST" class="auth-form">
-                <div class="form-group">
-                    <label for="email">כתובת אימייל</label>
-                    <div class="input-shell">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                        <input type="email" name="email" id="email" class="form-control" value="<?php echo isset($email) ? $email : ''; ?>" placeholder="name@example.com" required autocomplete="email">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="password">סיסמה</label>
-                    <div class="input-shell">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        <input type="password" name="password" id="password" class="form-control" placeholder="הזינו סיסמה" required autocomplete="current-password">
-                    </div>
-                </div>
-
-                <div class="meta-row">
-                    <div class="remember-wrap">
-                        <input type="checkbox" name="remember_me" id="remember_me">
-                        <label for="remember_me">זכור אותי</label>
-                    </div>
-                    <a href="<?php echo BASE_URL; ?>pages/forgot_password.php" class="link-inline">שכחת סיסמה?</a>
-                </div>
-
-                <button type="submit" name="login_btn" class="submit-btn">התחברות</button>
-            </form>
-
-            <p class="signup-link">
-                אין לך חשבון? <a href="<?php echo BASE_URL; ?>pages/register.php">הרשמה כאן</a>
-            </p>
+        <section class="auth-visual-side">
+            <div class="glass-orb orb-1"></div>
+            <div class="glass-orb orb-2"></div>
+            
+            <div class="visual-content">
+                <img src="<?php echo BASE_URL; ?>assets/images/tazrim-logo-ver-white.png" alt="תזרים" class="visual-logo" onerror="this.style.display='none'">
+                <p style="color: rgba(255,255,255,0.85); font-size: 1.2rem; margin-top: 1rem; max-width: 400px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    שליטה מלאה על ההוצאות, ההכנסות והתקציב הביתי שלך במקום אחד.
+                </p>
+            </div>
         </section>
+
     </main>
 
-    <div style="text-align: center; margin-top: 24px;">
-        <a href="<?php echo BASE_URL; ?>landing/index.php" class="back-btn">
-            <i class="fa-solid fa-house" aria-hidden="true"></i>
-            חזרה לדף הבית
-        </a>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
 
+            togglePassword.addEventListener('click', function () {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+                
+                this.style.color = type === 'text' ? 'var(--primary)' : '#94a3b8';
+            });
+        });
+    </script>
 </body>
 </html>

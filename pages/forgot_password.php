@@ -3,111 +3,107 @@
 <html lang="he" dir="rtl">
 <head>
     <?php include(ROOT_PATH . '/assets/includes/setup_meta_data.php'); ?>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>שחזור סיסמה | תזרים</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap');
+
         :root {
-            --bg-1: #f4fff8;
-            --bg-2: #e8f9ee;
-            --card-bg: rgba(255, 255, 255, 0.92);
-            --text-main: #113126;
-            --text-muted: #587469;
-            --accent: #21a95d;
-            --accent-hover: #1a8d4d;
-            --border: #d1d5db;
-            --danger-text: #a92525;
-            --shadow: 0 24px 60px rgba(25, 67, 48, 0.15);
+            --primary: #21a95d;
+            --primary-dark: #1a8d4d;
+            --bg-light: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
         }
 
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
+            font-family: 'Heebo', sans-serif;
         }
 
         body {
-            margin: 0;
             min-height: 100vh;
-            font-family: "Heebo", "Assistant", Arial, sans-serif;
+            background-color: var(--bg-light);
             color: var(--text-main);
-            background:
-                radial-gradient(circle at 20% 15%, #d8f4e3 0%, transparent 45%),
-                radial-gradient(circle at 80% 85%, #d5efe4 0%, transparent 40%),
-                linear-gradient(135deg, var(--bg-1), var(--bg-2));
-            display: grid;
-            place-items: center;
-            padding: 24px;
+            overflow-x: hidden;
+            padding: 0 !important;
         }
 
-        .auth-layout {
-            width: min(980px, 100%);
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 28px;
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(8px);
-            overflow: hidden;
-            display: grid;
-            grid-template-columns: 1fr 1.1fr;
-        }
-
-        .auth-side {
-            background: var(--white);
-            color: #fff;
-            padding: 22px;
+        .auth-wrapper {
             display: flex;
-            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* ----- Form Section ----- */
+        .auth-form-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            z-index: 10;
+            position: relative;
+            background-color: #f8fafc;
         }
 
-        .side-logo {
-            display: block;
+        .auth-container {
             width: 100%;
-            height: 100%;
-            max-height: 300px;
-            object-fit: contain;
+            max-width: 480px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 2.5rem 2.5rem;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+            animation: slideIn 0.6s ease-out;
+            margin-bottom: 3rem;
         }
 
-        .side-logo-mobile {
-            display: none;
-        }
-
-        .auth-panel {
-            padding: 44px clamp(22px, 4vw, 40px);
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .auth-header {
-            margin-bottom: 22px;
+            text-align: center;
+            margin-bottom: 2rem;
         }
 
-        .auth-header h2 {
-            margin: auto;
-            text-align: center;
-            font-size: clamp(1.4rem, 2.2vw, 1.75rem);
-            font-weight: 800;
+        .auth-header h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
         }
 
         .auth-header p {
-            margin: 10px 0 0;
-            text-align: center;
             color: var(--text-muted);
-            font-size: 0.95rem;
+            font-size: 1.05rem;
         }
 
+        /* Alerts */
         .cp-forgot-alert {
             display: none;
-            border: 1px solid rgba(245, 101, 101, 0.35);
             border-radius: 12px;
-            padding: 10px 14px;
-            margin-bottom: 14px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
             font-weight: 600;
-        }
-
-        .auth-form {
-            display: grid;
-            gap: 14px;
+            text-align: center;
+            font-size: 0.95rem;
         }
 
         .step-hidden {
             display: none;
         }
 
+        /* Form Inputs */
         .cp-reg-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -115,294 +111,315 @@
         }
 
         .form-group {
-            display: grid;
-            gap: 8px;
+            margin-bottom: 1.5rem;
         }
 
         .form-group label {
-            margin: 0;
+            display: block;
+            margin-bottom: 0.6rem;
+            font-size: 0.95rem;
             color: var(--text-main);
-            font-size: 14px;
             font-weight: 600;
-            text-align: right;
         }
 
-        .input-with-icon {
+        .input-icon-wrapper {
             position: relative;
-        }
-
-        .cp-login-input-icon {
-            position: absolute;
-            inset-inline-start: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #64748b;
             display: flex;
             align-items: center;
-            justify-content: center;
-            pointer-events: none;
+        }
+
+        .input-icon-wrapper i.icon-main {
+            position: absolute;
+            right: 1.2rem;
+            color: #94a3b8;
+            transition: color 0.3s ease;
         }
 
         .form-control {
             width: 100%;
-            padding: 16px;
-            padding-inline-start: 48px;
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
             color: var(--text-main);
-            font-size: 16px;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            padding: 0.9rem 2.8rem 0.9rem 1rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
 
         .form-control:focus {
             outline: none;
-            border-color: var(--accent);
-            background: #fff;
-            box-shadow: 0 0 0 3px rgba(33, 169, 93, 0.18);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(33, 169, 93, 0.15);
+        }
+
+        .form-control:focus ~ i.icon-main {
+            color: var(--primary);
         }
 
         .cp-forgot-code-input {
             text-align: center;
-            letter-spacing: 0.32em;
-            padding-inline-start: 16px;
+            letter-spacing: 0.3em;
+            padding-inline-start: 1rem;
+            padding-inline-end: 1rem;
             font-weight: 700;
+            font-size: 1.2rem;
         }
 
-        .submit-btn {
+        .toggle-password {
+            position: absolute;
+            left: 1.2rem;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary);
+        }
+
+        /* Submit Buttons */
+        .btn-submit {
             width: 100%;
-            padding: 16px;
-            background: var(--accent);
-            color: #fff;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
             border: none;
             border-radius: 999px;
-            font-size: 16px;
+            font-size: 1.05rem;
             font-weight: 700;
             cursor: pointer;
-            transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-            letter-spacing: 0.02em;
-            position: relative;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .submit-btn:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(41, 182, 105, 0.28);
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(33, 169, 93, 0.4);
         }
 
-        .submit-btn::after {
-            content: "\f060";
-            font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome";
-            font-weight: 900;
-            font-size: 0.9em;
-            line-height: 1;
-            display: inline-block;
-            max-width: 0;
-            opacity: 0;
-            margin-inline-start: 0;
-            transform: translateX(6px);
-            overflow: hidden;
-            white-space: nowrap;
-            vertical-align: -0.05em;
-            transition: max-width 0.3s ease, opacity 0.25s ease, margin-inline-start 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .submit-btn:hover::after,
-        .submit-btn:focus-visible::after {
-            max-width: 1.2em;
-            opacity: 1;
-            margin-inline-start: 8px;
-            transform: translateX(0);
-        }
-
-        .submit-btn.btn-secondary {
-            margin-top: 8px;
-            background: #e2e8f0;
-            color: #334155;
-            box-shadow: none;
-            width: auto;
-            min-width: 0;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            justify-self: start;
-        }
-
-        .submit-btn.btn-secondary:hover {
-            background: #cfd8e3;
-            box-shadow: none;
-        }
-
-        .submit-btn.btn-secondary::after {
-            display: none;
-        }
-
-        .submit-btn:disabled {
-            opacity: 0.65;
+        .btn-submit:disabled {
+            background: #cbd5e1;
             cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
+            box-shadow: none;
         }
 
-        .submit-btn:disabled::after {
-            opacity: 0 !important;
-            max-width: 0 !important;
-            margin-inline-start: 0 !important;
-            transform: translateX(6px) !important;
+        .btn-secondary {
+            margin-top: 0.8rem;
+            background: #f1f5f9;
+            color: var(--text-main);
+            border: 1px solid #cbd5e1;
+            padding: 0.8rem;
         }
 
-        .auth-switch {
-            margin: 18px 0 0;
+        .btn-secondary:hover:not(:disabled) {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Footer */
+        .auth-footer {
+            margin-top: 2rem;
             text-align: center;
-            font-size: 15px;
             color: var(--text-muted);
+            font-weight: 500;
         }
 
-        .auth-switch a {
-            color: var(--accent);
-            font-weight: 700;
+        .auth-footer a {
+            color: var(--primary);
             text-decoration: none;
+            font-weight: 700;
         }
 
-        .auth-switch a:hover {
+        .auth-footer a:hover {
             text-decoration: underline;
         }
 
-        @media (prefers-reduced-motion: reduce) {
-            .submit-btn::after,
-            .submit-btn:hover::after,
-            .submit-btn:focus-visible::after {
-                transition: none;
-                transform: none;
+        .back-home {
+            position: absolute;
+            bottom: 2rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 0.6rem 1.2rem;
+            border-radius: 999px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .back-home:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* ----- Visual Section (Left Side) ----- */
+        .auth-visual-side {
+            flex: 1.2;
+            display: none;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (min-width: 992px) {
+            .auth-visual-side {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
             }
         }
 
-        @media (max-width: 860px) {
-            body {
-                padding-top: 36px;
-            }
+        /* Animated Background Elements */
+        .glass-orb {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: float 8s infinite ease-in-out alternate;
+        }
 
-            .auth-layout {
-                grid-template-columns: 1fr;
-                width: min(520px, calc(100% - 36px));
-                max-width: 520px;
-                padding: 20px;
-            }
+        .orb-1 { width: 400px; height: 400px; top: -100px; left: -100px; }
+        .orb-2 { width: 300px; height: 300px; bottom: -50px; right: 10%; animation-delay: -4s; background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent); }
 
-            .auth-side {
-                order: -1;
-                min-height: 150px;
-            }
+        @keyframes float {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-30px) scale(1.05); }
+        }
 
-            .auth-panel {
-                padding: 0 20px;
-                padding-bottom: 20px;
-            }
+        .visual-content {
+            z-index: 2;
+            text-align: center;
+            padding: 2rem;
+        }
 
-            .side-logo {
-                max-width: 300px;
-            }
-
-            .side-logo-desktop {
-                display: none;
-            }
-
-            .side-logo-mobile {
-                display: block;
-            }
-
-            .auth-header h2 {
-                font-size: clamp(1.55rem, 5.4vw, 1.9rem);
-            }
+        .visual-logo {
+            max-width: 280px;
+            margin-bottom: 2rem;
         }
 
         @media (max-width: 620px) {
-            .cp-reg-row {
-                grid-template-columns: 1fr;
-            }
-
-            .auth-panel {
-                padding: 26px 16px;
-            }
+            .cp-reg-row { grid-template-columns: 1fr; gap: 0; }
+            .auth-container { padding: 2rem 1.5rem; }
         }
     </style>
 </head>
-<body class="auth-cp auth-forgot">
-    <main class="auth-layout" role="main">
-        <section class="auth-side" aria-label="מיתוג והסבר">
-            <img src="<?php echo BASE_URL; ?>assets/images/tazrim-logo-ver.png" alt="תזרים" class="side-logo side-logo-desktop">
-            <img src="<?php echo BASE_URL; ?>assets/images/logo-header.png" alt="תזרים" class="side-logo side-logo-mobile">
+<body>
+
+    <main class="auth-wrapper">
+        
+        <section class="auth-form-side">
+            <div class="auth-container">
+                <header class="auth-header">
+                    <h1>שחזור סיסמה</h1>
+                    <p id="step-desc">הזינו אימייל לקבלת קוד אימות</p>
+                </header>
+
+                <div id="alert-msg" class="cp-forgot-alert" role="alert"></div>
+
+                <form id="forgot-form">
+                    
+                    <div id="step-1">
+                        <div class="form-group">
+                            <label for="email">כתובת אימייל</label>
+                            <div class="input-icon-wrapper">
+                                <input type="email" id="email" class="form-control" placeholder="name@example.com" required autocomplete="email">
+                                <i class="fa-regular fa-envelope icon-main"></i>
+                            </div>
+                        </div>
+                        <button type="button" id="btn-step-1" class="btn-submit">
+                            לקבלת קוד אימות <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                    </div>
+
+                    <div id="step-2" class="step-hidden">
+                        <div class="form-group">
+                            <label for="code">קוד אימות (6 ספרות)</label>
+                            <div class="input-icon-wrapper" style="justify-content: center;">
+                                <input type="text" id="code" class="form-control cp-forgot-code-input" placeholder="123456" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code">
+                            </div>
+                        </div>
+                        <button type="button" id="btn-step-2" class="btn-submit">
+                            אימות קוד <i class="fa-solid fa-check-double"></i>
+                        </button>
+                        <button type="button" id="btn-resend-code" class="btn-submit btn-secondary">
+                            <i class="fa-solid fa-rotate-right"></i> שלח קוד מחדש
+                        </button>
+                    </div>
+
+                    <div id="step-3" class="step-hidden">
+                        <div class="cp-reg-row">
+                            <div class="form-group">
+                                <label for="password">סיסמה חדשה</label>
+                                <div class="input-icon-wrapper">
+                                    <input type="password" id="password" class="form-control" placeholder="סיסמה חדשה" autocomplete="new-password">
+                                    <i class="fa-solid fa-lock icon-main"></i>
+                                    <i class="fa-regular fa-eye toggle-password password-eye"></i>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirm_password">אימות סיסמה</label>
+                                <div class="input-icon-wrapper">
+                                    <input type="password" id="confirm_password" class="form-control" placeholder="הזינו שוב" autocomplete="new-password">
+                                    <i class="fa-solid fa-lock icon-main"></i>
+                                    <i class="fa-regular fa-eye toggle-password confirm-eye"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" id="btn-step-3" class="btn-submit">
+                            עדכון סיסמה <i class="fa-solid fa-floppy-disk"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="auth-footer">
+                    נזכרת בסיסמה? <a href="<?php echo BASE_URL; ?>pages/login.php">להתחברות</a>
+                </div>
+            </div>
+
+            <a href="<?php echo BASE_URL; ?>landing/index.php" class="back-home">
+                <i class="fa-solid fa-house"></i> חזרה לדף הבית
+            </a>
         </section>
 
-        <section class="auth-panel">
-            <header class="auth-header">
-                <h2>שחזור סיסמה</h2>
-                <p id="step-desc">הזינו מייל לקבלת קוד אימות</p>
-            </header>
-
-            <div id="alert-msg" class="cp-forgot-alert" role="alert"></div>
-
-            <form id="forgot-form" class="auth-form">
-            <div id="step-1">
-                <div class="form-group">
-                    <label for="email">כתובת אימייל</label>
-                    <div class="input-with-icon">
-                        <span class="cp-login-input-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                        </span>
-                        <input type="email" id="email" class="form-control" placeholder="name@example.com" required autocomplete="email">
-                    </div>
-                </div>
-                <button type="button" id="btn-step-1" class="submit-btn">לקבלת קוד אימות</button>
+        <section class="auth-visual-side">
+            <div class="glass-orb orb-1"></div>
+            <div class="glass-orb orb-2"></div>
+            
+            <div class="visual-content">
+                <img src="<?php echo BASE_URL; ?>assets/images/tazrim-logo-ver-white.png" alt="תזרים" class="visual-logo" onerror="this.style.display='none'">
+                <p style="color: rgba(255,255,255,0.85); font-size: 1.2rem; margin-top: 1rem; max-width: 400px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    שכחתם סיסמה? לא נורא. נשחזר אותה ומיד תוכלו לחזור לנהל את התזרים שלכם.
+                </p>
             </div>
-
-            <div id="step-2" class="step-hidden">
-                <div class="form-group">
-                    <label for="code">קוד אימות (6 ספרות)</label>
-                    <div class="input-with-icon">
-                        <span class="cp-login-input-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                        </span>
-                        <input type="text" id="code" class="form-control cp-forgot-code-input" placeholder="123456" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code">
-                    </div>
-                </div>
-                <button type="button" id="btn-step-2" class="submit-btn">אימות קוד</button>
-                <button type="button" id="btn-resend-code" class="submit-btn btn-secondary">
-                    שלח קוד מחדש
-                </button>
-            </div>
-
-            <div id="step-3" class="step-hidden">
-                <div class="cp-reg-row">
-                    <div class="form-group">
-                        <label for="password">סיסמה חדשה</label>
-                        <div class="input-with-icon">
-                            <span class="cp-login-input-icon" aria-hidden="true">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            </span>
-                            <input type="password" id="password" class="form-control" placeholder="סיסמה חדשה" autocomplete="new-password">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm_password">אימות סיסמה</label>
-                        <div class="input-with-icon">
-                            <span class="cp-login-input-icon" aria-hidden="true">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                            </span>
-                            <input type="password" id="confirm_password" class="form-control" placeholder="הזינו שוב" autocomplete="new-password">
-                        </div>
-                    </div>
-                </div>
-                <button type="button" id="btn-step-3" class="submit-btn">עדכון סיסמה</button>
-            </div>
-            </form>
-
-            <p class="auth-switch">נזכרת בסיסמה? <a href="<?php echo BASE_URL; ?>pages/login.php">להתחברות</a></p>
         </section>
+
     </main>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        // הצג/הסתר סיסמה
+        document.querySelectorAll('.toggle-password').forEach(icon => {
+            icon.addEventListener('click', function() {
+                const input = this.previousElementSibling.previousElementSibling;
+                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                input.setAttribute('type', type);
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+                this.style.color = type === 'text' ? 'var(--primary)' : '#94a3b8';
+            });
+        });
+
         $(document).ready(function() {
             const handler = '../app/ajax/forgot_password_handler.php';
             const loginSuccessUrl = '<?php echo BASE_URL; ?>pages/login.php?reset=success';
@@ -414,10 +431,10 @@
                 const $btn = $('#btn-resend-code');
                 if (!$btn.length) return;
                 if (enabled) {
-                    $btn.prop('disabled', false).text('שלח קוד מחדש');
+                    $btn.prop('disabled', false).html('<i class="fa-solid fa-rotate-right"></i> שלח קוד מחדש');
                     return;
                 }
-                $btn.prop('disabled', true).text('שלח קוד מחדש בעוד ' + resendCooldownRemaining + ' שנ׳');
+                $btn.prop('disabled', true).html('<i class="fa-solid fa-hourglass-half"></i> שלח קוד מחדש בעוד ' + resendCooldownRemaining + ' שנ׳');
             }
 
             function startResendCooldown(seconds) {
@@ -439,17 +456,18 @@
             function sendCode($sourceBtn) {
                 email = $('#email').val();
                 if (!email) {
-                    showAlert('נא להזין מייל', 'error');
+                    showAlert('נא להזין אימייל תקין', 'error');
                     return;
                 }
 
-                const originalText = $sourceBtn.text();
-                $sourceBtn.prop('disabled', true).text('שולח...');
+                const originalHTML = $sourceBtn.html();
+                $sourceBtn.prop('disabled', true).html('שולח... <i class="fa-solid fa-spinner fa-spin"></i>');
+                
                 $.post(handler, { action: 'send_code', email: email }, function(res) {
                     if (res.status === 'success') {
                         $('#step-1').fadeOut(300, function() {
                             $('#step-2').removeClass('step-hidden').hide().fadeIn(300);
-                            $('#step-desc').text('הזינו את הקוד שנשלח אליכם');
+                            $('#step-desc').text('הזינו את הקוד שנשלח אליכם לתיבת המייל');
                             showAlert(res.message, 'success');
                         });
                         startResendCooldown(30);
@@ -460,13 +478,13 @@
                     showAlert('שגיאת תקשורת. נסו שוב.', 'error');
                 }).always(function() {
                     if ($sourceBtn.attr('id') === 'btn-step-1') {
-                        $sourceBtn.text(originalText);
+                        $sourceBtn.html(originalHTML);
                     }
                     if ($sourceBtn.attr('id') === 'btn-resend-code') {
                         if (resendCooldownRemaining > 0) {
                             setResendState(false);
                         } else {
-                            $sourceBtn.prop('disabled', false).text('שלח קוד מחדש');
+                            $sourceBtn.prop('disabled', false).html('<i class="fa-solid fa-rotate-right"></i> שלח קוד מחדש');
                         }
                     } else {
                         $sourceBtn.prop('disabled', false);
@@ -474,10 +492,18 @@
                 });
             }
 
+            // עדכון הפונקציה כך שתתאים לעיצוב המודרני
             function showAlert(msg, type) {
-                const color = type === 'success' ? 'var(--main)' : 'var(--error)';
-                const bg = type === 'success' ? 'var(--main-light)' : '#fff5f5';
-                $('#alert-msg').html(msg).css({'display': 'block', 'color': color, 'background': bg, 'border-color': type === 'success' ? 'rgba(41,182,105,0.25)' : 'rgba(245,101,101,0.35)'});
+                const color = type === 'success' ? '#15803d' : '#b91c1c';
+                const bg = type === 'success' ? '#f0fdf4' : '#fef2f2';
+                const borderColor = type === 'success' ? '#bbf7d0' : '#fecaca';
+                
+                $('#alert-msg').html(msg).css({
+                    'display': 'block', 
+                    'color': color, 
+                    'background': bg, 
+                    'border': '1px solid ' + borderColor
+                });
             }
 
             $('#btn-step-1').click(function() {
@@ -491,11 +517,16 @@
 
             $('#btn-step-2').click(function() {
                 const code = $('#code').val();
+                
+                const $btn = $(this);
+                const originalHTML = $btn.html();
+                $btn.prop('disabled', true).html('מאמת... <i class="fa-solid fa-spinner fa-spin"></i>');
+
                 $.post(handler, { action: 'verify_code', email: email, code: code }, function(res) {
                     if (res.status === 'success') {
                         $('#step-2').fadeOut(300, function() {
                             $('#step-3').removeClass('step-hidden').hide().fadeIn(300);
-                            $('#step-desc').text('בחרו סיסמה חדשה');
+                            $('#step-desc').text('בחרו סיסמה חדשה וחזקה');
                             $('#alert-msg').hide();
                         });
                     } else {
@@ -503,21 +534,30 @@
                     }
                 }, 'json').fail(function() {
                     showAlert('שגיאת תקשורת. נסו שוב.', 'error');
+                }).always(function() {
+                    $btn.prop('disabled', false).html(originalHTML);
                 });
             });
 
             $('#btn-step-3').click(function() {
                 const pass = $('#password').val();
                 const confirm = $('#confirm_password').val();
+                
+                const $btn = $(this);
+                const originalHTML = $btn.html();
+                $btn.prop('disabled', true).html('מעדכן... <i class="fa-solid fa-spinner fa-spin"></i>');
+
                 $.post(handler, { action: 'reset_password', email: email, password: pass, confirm_password: confirm }, function(res) {
                     if (res.status === 'success') {
                         showAlert(res.message, 'success');
                         setTimeout(function() { window.location.href = loginSuccessUrl; }, 2000);
                     } else {
                         showAlert(res.message, 'error');
+                        $btn.prop('disabled', false).html(originalHTML);
                     }
                 }, 'json').fail(function() {
                     showAlert('שגיאת תקשורת. נסו שוב.', 'error');
+                    $btn.prop('disabled', false).html(originalHTML);
                 });
             });
         });
