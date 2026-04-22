@@ -285,8 +285,7 @@
 
             .auth-layout {
                 grid-template-columns: 1fr;
-                width: min(520px, calc(100% - 36px));
-                max-width: 520px;
+                width: 95%;
                 padding: 20px;
             }
 
