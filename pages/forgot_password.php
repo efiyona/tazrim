@@ -3,32 +3,347 @@
 <html lang="he" dir="rtl">
 <head>
     <?php include(ROOT_PATH . '/assets/includes/setup_meta_data.php'); ?>
+    <style>
+        :root {
+            --bg-1: #f4fff8;
+            --bg-2: #e8f9ee;
+            --card-bg: rgba(255, 255, 255, 0.92);
+            --text-main: #113126;
+            --text-muted: #587469;
+            --accent: #21a95d;
+            --accent-hover: #1a8d4d;
+            --border: #d1d5db;
+            --danger-text: #a92525;
+            --shadow: 0 24px 60px rgba(25, 67, 48, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Heebo", "Assistant", Arial, sans-serif;
+            color: var(--text-main);
+            background:
+                radial-gradient(circle at 20% 15%, #d8f4e3 0%, transparent 45%),
+                radial-gradient(circle at 80% 85%, #d5efe4 0%, transparent 40%),
+                linear-gradient(135deg, var(--bg-1), var(--bg-2));
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .auth-layout {
+            width: min(980px, 100%);
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(8px);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1.1fr;
+        }
+
+        .auth-side {
+            background: var(--white);
+            color: #fff;
+            padding: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .side-logo {
+            display: block;
+            width: 100%;
+            height: 100%;
+            max-height: 300px;
+            object-fit: contain;
+        }
+
+        .side-logo-mobile {
+            display: none;
+        }
+
+        .auth-panel {
+            padding: 44px clamp(22px, 4vw, 40px);
+        }
+
+        .auth-header {
+            margin-bottom: 22px;
+        }
+
+        .auth-header h2 {
+            margin: auto;
+            text-align: center;
+            font-size: clamp(1.4rem, 2.2vw, 1.75rem);
+            font-weight: 800;
+        }
+
+        .auth-header p {
+            margin: 10px 0 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .cp-forgot-alert {
+            display: none;
+            border: 1px solid rgba(245, 101, 101, 0.35);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            font-weight: 600;
+        }
+
+        .auth-form {
+            display: grid;
+            gap: 14px;
+        }
+
+        .step-hidden {
+            display: none;
+        }
+
+        .cp-reg-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-group {
+            display: grid;
+            gap: 8px;
+        }
+
+        .form-group label {
+            margin: 0;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .cp-login-input-icon {
+            position: absolute;
+            inset-inline-start: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 16px;
+            padding-inline-start: 48px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 16px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(33, 169, 93, 0.18);
+        }
+
+        .cp-forgot-code-input {
+            text-align: center;
+            letter-spacing: 0.32em;
+            padding-inline-start: 16px;
+            font-weight: 700;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            letter-spacing: 0.02em;
+            position: relative;
+        }
+
+        .submit-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(41, 182, 105, 0.28);
+        }
+
+        .submit-btn::after {
+            content: "\f060";
+            font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome";
+            font-weight: 900;
+            font-size: 0.9em;
+            line-height: 1;
+            display: inline-block;
+            max-width: 0;
+            opacity: 0;
+            margin-inline-start: 0;
+            transform: translateX(6px);
+            overflow: hidden;
+            white-space: nowrap;
+            vertical-align: -0.05em;
+            transition: max-width 0.3s ease, opacity 0.25s ease, margin-inline-start 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .submit-btn:hover::after,
+        .submit-btn:focus-visible::after {
+            max-width: 1.2em;
+            opacity: 1;
+            margin-inline-start: 8px;
+            transform: translateX(0);
+        }
+
+        .submit-btn.btn-secondary {
+            margin-top: 8px;
+            background: #e2e8f0;
+            color: #334155;
+            box-shadow: none;
+            width: auto;
+            min-width: 0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            justify-self: start;
+        }
+
+        .submit-btn.btn-secondary:hover {
+            background: #cfd8e3;
+            box-shadow: none;
+        }
+
+        .submit-btn.btn-secondary::after {
+            display: none;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .submit-btn:disabled::after {
+            opacity: 0 !important;
+            max-width: 0 !important;
+            margin-inline-start: 0 !important;
+            transform: translateX(6px) !important;
+        }
+
+        .auth-switch {
+            margin: 18px 0 0;
+            text-align: center;
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        .auth-switch a {
+            color: var(--accent);
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .submit-btn::after,
+            .submit-btn:hover::after,
+            .submit-btn:focus-visible::after {
+                transition: none;
+                transform: none;
+            }
+        }
+
+        @media (max-width: 860px) {
+            body {
+                padding-top: 36px;
+            }
+
+            .auth-layout {
+                grid-template-columns: 1fr;
+                width: min(520px, calc(100% - 36px));
+                max-width: 520px;
+                padding: 20px;
+            }
+
+            .auth-side {
+                order: -1;
+                min-height: 150px;
+            }
+
+            .auth-panel {
+                padding: 0 20px;
+                padding-bottom: 20px;
+            }
+
+            .side-logo {
+                max-width: 300px;
+            }
+
+            .side-logo-desktop {
+                display: none;
+            }
+
+            .side-logo-mobile {
+                display: block;
+            }
+
+            .auth-header h2 {
+                font-size: clamp(1.55rem, 5.4vw, 1.9rem);
+            }
+        }
+
+        @media (max-width: 620px) {
+            .cp-reg-row {
+                grid-template-columns: 1fr;
+            }
+
+            .auth-panel {
+                padding: 26px 16px;
+            }
+        }
+    </style>
 </head>
-<body class="page-auth auth-cp auth-forgot">
+<body class="auth-cp auth-forgot">
+    <main class="auth-layout" role="main">
+        <section class="auth-side" aria-label="מיתוג והסבר">
+            <img src="<?php echo BASE_URL; ?>assets/images/tazrim-logo-ver.png" alt="תזרים" class="side-logo side-logo-desktop">
+            <img src="<?php echo BASE_URL; ?>assets/images/logo-header.png" alt="תזרים" class="side-logo side-logo-mobile">
+        </section>
 
-    <div class="gradient-bg" aria-hidden="true"></div>
+        <section class="auth-panel">
+            <header class="auth-header">
+                <h2>שחזור סיסמה</h2>
+                <p id="step-desc">הזינו מייל לקבלת קוד אימות</p>
+            </header>
 
-    <div class="form-container" role="main">
-        <div class="logo">
-            <div class="cp-login-logo-mark" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img">
-                    <circle cx="24" cy="24" r="22" fill="url(#cp-forgot-logo-grad)"/>
-                    <path fill="#fff" d="M14 17h20a2 2 0 012 2v2H12v-2a2 2 0 012-2zm0 6h22v10a2 2 0 01-2 2H14a2 2 0 01-2-2V23zm14 2a1.5 1.5 0 100 3h4a1.5 1.5 0 100-3h-4z"/>
-                    <defs>
-                        <linearGradient id="cp-forgot-logo-grad" x1="10" y1="8" x2="38" y2="42" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#29b669"/>
-                            <stop offset="1" stop-color="#4FD1C5"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
-            </div>
-            <h1 class="cp-login-brand">תזרים</h1>
-            <p class="cp-login-tagline" id="step-desc">הזינו מייל לקבלת קוד אימות</p>
-        </div>
+            <div id="alert-msg" class="cp-forgot-alert" role="alert"></div>
 
-        <div id="alert-msg" class="cp-forgot-alert" style="display:none;" role="alert"></div>
-
-        <form id="forgot-form" class="auth-form cp-login-form">
+            <form id="forgot-form" class="auth-form">
             <div id="step-1">
                 <div class="form-group">
                     <label for="email">כתובת אימייל</label>
@@ -39,7 +354,7 @@
                         <input type="email" id="email" class="form-control" placeholder="name@example.com" required autocomplete="email">
                     </div>
                 </div>
-                <button type="button" id="btn-step-1" class="submit-btn">שלח קוד אימות</button>
+                <button type="button" id="btn-step-1" class="submit-btn">לקבלת קוד אימות</button>
             </div>
 
             <div id="step-2" class="step-hidden">
@@ -52,8 +367,8 @@
                         <input type="text" id="code" class="form-control cp-forgot-code-input" placeholder="123456" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code">
                     </div>
                 </div>
-                <button type="button" id="btn-step-2" class="submit-btn">אמת קוד והמשך</button>
-                <button type="button" id="btn-resend-code" class="submit-btn" style="margin-top: 10px; background: #e2e8f0; color: #334155;">
+                <button type="button" id="btn-step-2" class="submit-btn">אימות קוד</button>
+                <button type="button" id="btn-resend-code" class="submit-btn btn-secondary">
                     שלח קוד מחדש
                 </button>
             </div>
@@ -79,12 +394,13 @@
                         </div>
                     </div>
                 </div>
-                <button type="button" id="btn-step-3" class="submit-btn">עדכן סיסמה והתחבר</button>
+                <button type="button" id="btn-step-3" class="submit-btn">עדכון סיסמה</button>
             </div>
-        </form>
+            </form>
 
-        <p class="auth-switch">נזכרת בסיסמה? <a href="<?php echo BASE_URL; ?>pages/login.php">להתחברות</a></p>
-    </div>
+            <p class="auth-switch">נזכרת בסיסמה? <a href="<?php echo BASE_URL; ?>pages/login.php">להתחברות</a></p>
+        </section>
+    </main>
 
     <script>
         $(document).ready(function() {

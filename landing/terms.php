@@ -1,34 +1,25 @@
 <?php
     require('../path.php');
+    require_once(ROOT_PATH . '/app/database/db.php');
+    require_once(ROOT_PATH . '/app/functions/tos_runtime.php');
+
+    $tos_html         = tazrim_tos_content_html();
+    $tos_last_updated = tazrim_tos_last_updated();
+    $tos_version      = tazrim_tos_version();
 ?>
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>התזרים</title>
-    <meta name="description" content="מערכת התזרים עוזרת לכם לעקוב אחרי הוצאות והכנסות, לתכנן חודש קדימה, ולדעת בדיוק לאן הכסף הולך - ללא חיבור לחשבון הבנק, בחינם לגמרי.">
+
+    <title>תקנון ומדיניות פרטיות | התזרים</title>
+    <meta name="description" content="תנאי השימוש ומדיניות הפרטיות של מערכת התזרים - שקיפות מלאה על איך הנתונים שלכם נשמרים ומוגנים.">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700;800&family=Montserrat:ital,wght@0,100;1,100&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-    <script src="https://kit.fontawesome.com/9a47092d09.js" crossorigin="anonymous"></script>
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
-
-
-    <link rel="manifest" href="<?php echo BASE_URL; ?>manifest.json">
-    <link rel="icon" type="image/x-icon" href="<?php echo BASE_URL; ?>favicon.ico">
-    <meta name="theme-color" content="#29b669">
-
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="התזרים">
-
-    <link rel="apple-touch-icon" href="<?php echo BASE_URL; ?>assets/images/apple-touch-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>landing/assets/header.css">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>landing/assets/footer.css">
 
@@ -547,186 +538,248 @@
         .cta-section .btn-primary:hover { background-color: var(--gray-light); }
         @media (min-width: 900px) { .cta-section { margin: 0 auto 60px; max-width: 1160px; } }
 
+        /* =========================================
+           Privacy Policy - Hero Banner
+        ========================================= */
+        .privacy-hero {
+            background: linear-gradient(135deg, var(--main-light) 0%, rgba(79, 209, 197, 0.08) 100%);
+            padding: 80px 0 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .privacy-hero::before {
+            content: '';
+            position: absolute;
+            top: -120px; right: -120px;
+            width: 320px; height: 320px;
+            border-radius: 50%;
+            background: radial-gradient(closest-side, rgba(41, 182, 105, 0.12), transparent 70%);
+            pointer-events: none;
+        }
+        .privacy-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -140px; left: -140px;
+            width: 340px; height: 340px;
+            border-radius: 50%;
+            background: radial-gradient(closest-side, rgba(79, 209, 197, 0.14), transparent 70%);
+            pointer-events: none;
+        }
+        .privacy-hero .container { position: relative; z-index: 1; }
+        .privacy-hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--white);
+            color: var(--main);
+            padding: 10px 18px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            box-shadow: 0 4px 14px rgba(41, 182, 105, 0.12);
+            border: 1px solid rgba(41, 182, 105, 0.15);
+            margin-bottom: 18px;
+        }
+        .privacy-hero-badge i { font-size: 1rem; }
+        .privacy-hero h1 {
+            font-size: 2rem;
+            margin-bottom: 14px;
+            color: var(--text);
+            line-height: 1.2;
+        }
+        @media (min-width: 768px) {
+            .privacy-hero h1 { font-size: 2.6rem; }
+        }
+        .privacy-hero-sub {
+            max-width: 640px;
+            margin: 0 auto 22px;
+            font-size: 1.05rem;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+        .privacy-hero-meta {
+            display: inline-flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 8px 14px;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+        .privacy-hero-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-light); opacity: 0.5; }
+        .privacy-hero-meta .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.7);
+            padding: 4px 10px;
+            border-radius: 999px;
+            color: var(--text);
+        }
+        .privacy-hero-meta .tag i { color: var(--main); }
+        .privacy-hero-back-wrap {
+            margin-top: 22px;
+        }
+        .privacy-hero-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(41, 182, 105, 0.28);
+            border-radius: 999px;
+            padding: 10px 18px;
+            font-size: 0.94rem;
+            font-weight: 700;
+            box-shadow: 0 4px 14px rgba(41, 182, 105, 0.12);
+            transition: all 0.2s ease;
+        }
+        .privacy-hero-back:hover {
+            color: var(--main);
+            border-color: var(--main);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(41, 182, 105, 0.18);
+        }
+        .privacy-hero-back i {
+            font-size: 0.82rem;
+        }
+
+        /* =========================================
+           Privacy Policy - Document Content
+        ========================================= */
+        .privacy-section { padding: 50px 0 30px; background: var(--white); }
+        .privacy-doc {
+            max-width: 880px;
+            margin: 0 auto;
+            background: var(--white);
+            border: 1px solid var(--gray);
+            border-radius: 22px;
+            padding: clamp(24px, 4vw, 48px);
+            box-shadow: 0 10px 40px rgba(17, 24, 39, 0.05);
+        }
+        .privacy-doc .tos-scroll-box { max-height: none; overflow: visible; }
+        .privacy-doc h3 {
+            text-align: center !important;
+            font-size: 1.4rem;
+            color: var(--text);
+            margin: 0 0 10px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--gray);
+        }
+        .privacy-doc h4 {
+            font-size: 1.15rem;
+            color: var(--text);
+            font-weight: 800;
+            margin: 32px 0 12px;
+            padding: 0 0 0 16px;
+            border-right: 4px solid var(--main);
+            padding-right: 14px;
+            line-height: 1.35;
+        }
+        .privacy-doc p {
+            font-size: 1rem;
+            color: var(--text);
+            line-height: 1.8;
+            margin: 0 0 14px;
+        }
+        .privacy-doc ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 18px;
+        }
+        .privacy-doc li {
+            position: relative;
+            padding: 6px 28px 6px 0;
+            margin-bottom: 6px;
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .privacy-doc li::before {
+            content: '\f00c'; /* fa-check */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: var(--main);
+            position: absolute;
+            right: 0;
+            top: 9px;
+            font-size: 0.85rem;
+            width: 20px; height: 20px;
+            background: var(--main-light);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .privacy-doc strong {
+            color: var(--main);
+            font-weight: 800;
+        }
+        .privacy-doc a {
+            color: var(--main);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--main);
+            transition: color 0.2s ease;
+        }
+        .privacy-doc a:hover {
+            color: var(--main-dark);
+            border-bottom-style: solid;
+        }
+
     </style>
 </head>
 <body>
 
     <?php require_once(__DIR__ . '/assets/header.php'); ?>
 
-    <section class="hero">
+    <section class="privacy-hero">
         <div class="container">
-            <div class="hero-content">
-                <h1>התזרים המשפחתי,<br>בשליטה מלאה.</h1>
-                <p class="hero-subtitle">רואים איפה הכסף, יודעים איך החודש ייגמר - בזמן אמת.</p>
-
-                <a href="#steps" class="btn-primary animated-btn">בואו נתחיל</a>
-
-                <div class="hero-chips">
-                    <div class="hero-chip"><i class="fa-solid fa-tag"></i> חינמי ומאובטח</div>
-                    <div class="hero-chip"><i class="fa-solid fa-shield-halved"></i> ללא חיבור לבנק</div>
-                    <div class="hero-chip"><i class="fa-solid fa-users"></i> סנכרון משפחתי</div>
-                </div>
+            <div class="privacy-hero-back-wrap">
+                <a href="<?php echo BASE_URL . 'landing/index.php'; ?>" class="privacy-hero-back">
+                    <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    חזרה למסך הראשי
+                </a>
             </div>
-            
-            <div class="hero-visual">
-                <div class="mockup-phone">
-                    <div class="mockup-notch"></div>
-                    <div class="mockup-screen">
-                        
-                        <div class="m-top-bar">
-                            <div class="m-avatar">מ</div>
-                            <div class="m-greeting">
-                                <span>בוקר טוב,</span>
-                                משפחת לוי
-                            </div>
-                        </div>
-
-                        <div class="m-month-nav">
-                            <div class="m-chip">
-                                <i class="fa-regular fa-calendar-days"></i> מאי 2026
-                            </div>
-                        </div>
-
-                        <div class="m-kpi-grid">
-                            <div class="m-kpi-card income">
-                                <div class="m-kpi-label">הכנסות</div>
-                                <div class="m-kpi-val success">+12,500 ₪</div>
-                            </div>
-                            <div class="m-kpi-card expense">
-                                <div class="m-kpi-label">הוצאות</div>
-                                <div class="m-kpi-val error">-4,480 ₪</div>
-                            </div>
-                            <div class="m-kpi-card span-full">
-                                <div class="m-kpi-label">יתרת החשבון</div>
-                                <div class="m-kpi-val">₪8,020</div>
-                            </div>
-                        </div>
-
-                        <div class="m-section-title">פעולות אחרונות</div>
-
-                        <div class="m-tx-list">
-                            <div class="m-tx-item">
-                                <div class="m-tx-icon red"><i class="fa-solid fa-cart-shopping"></i></div>
-                                <div class="m-tx-details">
-                                    <div class="m-tx-title">קניות בסופר</div>
-                                    <div class="m-tx-date">היום, 14:30</div>
-                                </div>
-                                <div class="m-tx-amount error">-450 ₪</div>
-                            </div>
-                            <div class="m-tx-item">
-                                <div class="m-tx-icon red"><i class="fa-solid fa-car"></i></div>
-                                <div class="m-tx-details">
-                                    <div class="m-tx-title">דלק</div>
-                                    <div class="m-tx-date">אתמול, 09:15</div>
-                                </div>
-                                <div class="m-tx-amount error">-280 ₪</div>
-                            </div>
-                            <div class="m-tx-item">
-                                <div class="m-tx-icon green"><i class="fa-solid fa-briefcase"></i></div>
-                                <div class="m-tx-details">
-                                    <div class="m-tx-title">משכורת</div>
-                                    <div class="m-tx-date">01 במאי</div>
-                                </div>
-                                <div class="m-tx-amount success">+12,500 ₪</div>
-                            </div>
-                        </div>
-                        <br>
-                        <div class="m-section-title">קטגוריות</div>
-
-                        <div class="m-tx-list">
-                            <div class="m-tx-item">
-                                <div class="m-tx-icon red"><i class="fa-solid fa-cart-shopping"></i></div>
-                                <div class="m-tx-details">
-                                    <div class="m-tx-title">חשבונות הבית</div>
-                                    <div class="m-tx-date">ללא יעד</div>
-                                </div>
-                                <div class="m-tx-amount error">-450 ₪</div>
-                            </div>
-                        </div>
-                        <div class="m-fab"><i class="fa-solid fa-plus"></i></div>
-                    </div>
-                </div>
+            <h1>תקנון ומדיניות פרטיות</h1>
+            <p class="privacy-hero-sub">
+                המידע שלכם - שלכם. ריכזנו כאן את כל מה שחשוב לדעת על איך המערכת שומרת,
+                מאבטחת ומשתמשת בנתונים שאתם מזינים אליה.
+            </p>
+            <div class="privacy-hero-meta">
+                <?php if (!empty($tos_last_updated)): ?>
+                    <span class="tag">
+                        <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+                        עדכון אחרון: <?php echo htmlspecialchars($tos_last_updated, ENT_QUOTES, 'UTF-8'); ?>
+                    </span>
+                <?php endif; ?>
+                <?php if (!empty($tos_version)): ?>
+                    <span class="tag">
+                        <i class="fa-solid fa-code-branch" aria-hidden="true"></i>
+                        גרסה <?php echo htmlspecialchars($tos_version, ENT_QUOTES, 'UTF-8'); ?>
+                    </span>
+                <?php endif; ?>
+                <span class="tag">
+                    <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                    מאובטח ומוצפן
+                </span>
             </div>
         </div>
     </section>
 
     <main>
-        <section class="section-pad bg-gray-light pain-section">
-            <div class="container text-center">
-                <span class="pain-eyebrow"><i class="fa-solid fa-circle-exclamation"></i> אתם לא לבד</span>
-                <h2>הכסף נעלם באמצע החודש?</h2>
-                <p class="pain-lead">שלושת האתגרים שחוזרים על עצמם כמעט בכל משפחה צעירה - ומחכים לפתרון אחד, פשוט.</p>
-
-                <div class="pain-grid">
-                    <article class="pain-item">
-                        <div class="pain-item-icon" aria-hidden="true">
-                            <i class="fa-regular fa-magnifying-glass-dollar"></i>
-                       
-                        </div>
-                        <h3 class="pain-item-title">הוצאות שמתחמקות מהעין</h3>
-                        <p class="pain-item-desc">סופר, רכב, חשבונות ורכישות קטנות - הסכומים מצטברים בשקט בלי שרואים את התמונה המלאה.</p>
-                    </article>
-
-                    <article class="pain-item">
-                        <div class="pain-item-icon" aria-hidden="true">
-                            <i class="fa-solid fa-chart-line"></i>
-                        </div>
-                        <h3 class="pain-item-title">סוף החודש באי-ודאות</h3>
-                        <p class="pain-item-desc">קשה לדעת מראש אם ייסגר בפלוס או במינוס, ואין כלי אמיתי לתכנן ולקבל החלטות בבית.</p>
-                    </article>
-
-                    <article class="pain-item">
-                        <div class="pain-item-icon" aria-hidden="true">
-                            <i class="fa-solid fa-people-roof"></i>
-                        </div>
-                        <h3 class="pain-item-title">חוסר סנכרון בבית</h3>
-                        <p class="pain-item-desc">כל אחד מנהל בצד את שלו - בלי מקום משותף אחד עם כל ההכנסות, ההוצאות והיעדים של המשפחה.</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section class="section-pad">
-            <div class="container text-center">
-                <h2>ככה זה עובד</h2>
-                <p class="outcomes-intro">תמונת מצב ברורה של הבית: קטגוריות, תקציב ויתרה - בזמן אמת.</p>
-
-                <div class="features-grid">
-                    <article class="feature-card">
-                        <div class="feature-icon"><i class="fa-solid fa-calendar-check"></i></div>
-                        <div class="feature-content">
-                            <h3>רואים את סוף החודש</h3>
-                            <p>צפי יתרה מדויק, אחרי כל ההוצאות וההכנסות הצפויות.</p>
-                        </div>
-                    </article>
-                    <article class="feature-card">
-                        <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
-                        <div class="feature-content">
-                            <h3>בלי לחבר את הבנק</h3>
-                            <p>הזנה של 2 קליקים עם אוטומציות חכמות. המידע שלכם, אצלכם.</p>
-                        </div>
-                    </article>
-                    <article class="feature-card">
-                        <div class="feature-icon"><i class="fa-solid fa-users"></i></div>
-                        <div class="feature-content">
-                            <h3>ביחד, על אותו עמוד</h3>
-                            <p>שיתוף מלא בין בני הזוג, סנכרון בזמן אמת וקניות משותפות.</p>
-                        </div>
-                    </article>
-                    <article class="feature-card">
-                        <div class="feature-icon"><i class="fa-solid fa-robot"></i></div>
-                        <div class="feature-content">
-                            <h3>יועץ AI אישי</h3>
-                            <p>שואלים שאלה, מקבלים תשובה חכמה מבוססת הנתונים שלכם.</p>
-                        </div>
-                    </article>
-                </div>
+        <section class="privacy-section">
+            <div class="container">
+                <article class="privacy-doc">
+                    <?php echo $tos_html; ?>
+                </article>
             </div>
         </section>
 
         <section id="steps" class="section-pad bg-gray-light">
             <div class="container text-center">
-                <h2>שלושה צעדים להתחלה</h2>
+                <h2>שלושה צעדים להתחלה.</h2>
                 
                 <div class="steps-container">
                     <div class="timeline-steps">
@@ -760,7 +813,7 @@
 
         <section class="section-pad testimonials-section">
             <div class="container">
-                <h2 class="text-center">משפחות כבר מנהלות ברוגע</h2>
+                <h2 class="text-center">משפחות כבר מנהלות ברוגע.</h2>
                 <p class="testimonials-lead text-center">מה מרגישות משפחות צעירות שהחליפו את הגיליון האקסל ב"התזרים":</p>
 
                 <div class="testi-gallery-wrap">
@@ -883,14 +936,6 @@
             </div>
         </section>
 
-        <section id="register" class="section-pad">
-            <div class="cta-section">
-                <h2>מוכנים לסיים את החודש בשליטה?</h2>
-                <p>הצטרפו עכשיו ל"התזרים" ותתחילו לנהל את ההוצאות וההכנסות שלכם בצורה פשוטה וברורה.</p>
-                <a href="<?php echo BASE_URL . 'pages/register.php'; ?>" class="btn-primary animated-btn" style="background-color: var(--white); color: var(--main);">בואו נתחיל עכשיו</a>
-                <span style="display:block; margin-top:15px; font-size:0.9rem; font-weight:600; color:rgba(255,255,255,0.8);">מתחילים בקלות, בלי מורכבות ובלי התחייבות.</span>
-            </div>
-        </section>
     </main>
 
     <?php require_once(__DIR__ . '/assets/footer.php'); ?>

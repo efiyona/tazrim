@@ -1,0 +1,141 @@
+.site-footer {
+    background: #0f172a;
+    color: #cbd5e1;
+    padding: 55px 0 22px;
+    margin-top: 20px;
+}
+
+.site-footer .container {
+    padding: 0 24px;
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer-brand .footer-logo {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.footer-brand .footer-logo img {
+    display: block;
+    width: auto;
+    height: 42px;
+    object-fit: contain;
+}
+
+.footer-brand p {
+    color: #94a3b8;
+    font-size: 0.92rem;
+    max-width: 280px;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.footer-col h4 {
+    color: #fff;
+    font-size: 0.92rem;
+    font-weight: 800;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+}
+
+.footer-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.footer-col a {
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.footer-col a:hover {
+    color: var(--main);
+}
+
+.footer-col a i {
+    font-size: 0.75rem;
+    color: #64748b;
+    transition: color 0.2s;
+}
+
+.footer-col a:hover i {
+    color: var(--main);
+}
+
+.footer-trust {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.footer-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 9px 13px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.footer-trust-item i {
+    color: var(--main);
+    font-size: 0.9rem;
+}
+
+.footer-bottom {
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.footer-bottom p {
+    color: #64748b;
+    font-size: 0.82rem;
+    margin: 0;
+}
+
+.footer-tagline {
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.footer-tagline i {
+    color: var(--error);
+    font-size: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .footer-grid {
+        grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+        gap: 40px;
+    }
+
+    .footer-bottom {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}

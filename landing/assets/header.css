@@ -1,0 +1,106 @@
+.floating-header-wrapper {
+    position: sticky;
+    top: 15px;
+    z-index: 1000;
+    padding: 0 15px;
+    pointer-events: none;
+}
+
+.floating-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 10px 14px 10px 20px;
+    border-radius: 999px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    pointer-events: auto;
+}
+
+.header-logo {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+}
+
+.header-logo img {
+    display: block;
+    width: auto;
+    height: 30px;
+    object-fit: contain;
+}
+
+.header-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    padding: 9px 16px;
+    border-radius: 999px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.header-btn--ghost {
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+}
+
+.header-btn--ghost:hover {
+    color: var(--main);
+    background: var(--main-light);
+}
+
+.header-btn--primary {
+    color: #fff;
+    background: var(--main);
+    box-shadow: 0 3px 10px rgba(41, 182, 105, 0.28);
+}
+
+.header-btn--primary:hover {
+    background: var(--main-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(41, 182, 105, 0.38);
+}
+
+.header-btn i {
+    font-size: 0.85rem;
+}
+
+@media (max-width: 520px) {
+    .floating-header {
+        padding: 8px 10px 8px 14px;
+    }
+
+    .header-logo img {
+        height: 40px;
+    }
+
+    .header-btn {
+        padding: 8px 13px;
+        font-size: 0.85rem;
+    }
+
+    .header-btn--ghost .header-btn-label {
+        display: none;
+    }
+
+    .header-btn--ghost {
+        padding: 8px 11px;
+    }
+}
