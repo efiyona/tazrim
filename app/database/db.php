@@ -619,5 +619,49 @@ function tazrim_ensure_homes_bank_balance_columns() {
     $done = true;
 }
 
+/**
+ * עמודת email_verified_at ב-users + טבלת קודי אימות מייל.
+ */
+function tazrim_ensure_email_verification_schema(): void
+{
+    global $conn;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    if (!$conn) {
+        return;
+    }
+
+    $r = @mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE 'email_verified_at'");
+    if ($r && mysqli_num_rows($r) === 0) {
+        @mysqli_query(
+            $conn,
+            "ALTER TABLE `users` ADD COLUMN `email_verified_at` DATETIME NULL DEFAULT NULL
+             COMMENT 'NULL=לא אומת' AFTER `api_token`"
+        );
+    }
+
+    @mysqli_query(
+        $conn,
+        "CREATE TABLE IF NOT EXISTS `email_verification_codes` (
+            `user_id` int(11) NOT NULL,
+            `code` char(6) NOT NULL,
+            `expires_at` datetime NOT NULL,
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`user_id`),
+            KEY `idx_evc_expires` (`expires_at`),
+            CONSTRAINT `fk_evc_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $done = true;
+}
+
+tazrim_ensure_email_verification_schema();
+
 require_once ROOT_PATH . '/app/functions/home_bank_balance.php';
 tazrim_ensure_homes_bank_balance_columns();
+
+require_once ROOT_PATH . '/app/functions/email_verification_runtime.php';
+tazrim_ajax_exit_if_email_unverified_for_session();

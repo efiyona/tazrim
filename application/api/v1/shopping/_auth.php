@@ -19,5 +19,9 @@ function shopping_api_require_user(mysqli $conn) {
         echo json_encode(['status' => 'error', 'message' => 'לא נמצא בית.']);
         exit();
     }
+    if (!function_exists('tazrim_api_v1_json_exit_if_email_unverified')) {
+        require_once ROOT_PATH . '/app/functions/email_verification_runtime.php';
+    }
+    tazrim_api_v1_json_exit_if_email_unverified($user);
     return ['user' => $user, 'home_id' => $home_id];
 }

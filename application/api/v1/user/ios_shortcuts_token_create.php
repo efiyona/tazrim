@@ -29,6 +29,8 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'טוקן פג תוקף או לא חוקי.']);
         exit();
     }
+    require_once ROOT_PATH . '/app/functions/email_verification_runtime.php';
+    tazrim_api_v1_json_exit_if_email_unverified($user);
 
     $user_id = (int) ($user['id'] ?? 0);
     $home_id = (int) ($user['home_id'] ?? 0);

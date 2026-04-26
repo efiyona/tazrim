@@ -87,6 +87,9 @@ foreach ($navigation as $item) {
 }
 $target_modal_id = $current_config['plus_modal'] ?? null;
 require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
+
+$tazrim_email_verification_block = !empty($GLOBALS['tazrim_email_verification_block']);
+$emailForGate = (string) ($_SESSION['user_email'] ?? '');
 ?>
 
 <div class="floating-nav-wrapper">
@@ -134,8 +137,8 @@ require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
     <?php endif; ?>
 </div>
 
-<main class="main-content">
-    
+<main class="main-content<?php echo $tazrim_email_verification_block ? ' main-content--tazrim-email-prompt' : ''; ?>">
+
     <header class="top-bar">
         <div class="header-right">
             <div class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></div>
@@ -189,6 +192,237 @@ require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
             </div>
         </div>
     </header>
+
+    <?php if ($tazrim_email_verification_block): ?>
+    <div class="tazrim-email-modal" id="tazrimEmailModal" role="alertdialog" aria-modal="true" aria-labelledby="tazrimEmailTitleSend" aria-describedby="tazrimEmailDescSend">
+        <div class="tazrim-email-modal__box">
+            <a href="<?php echo BASE_URL; ?>pages/settings/user_profile.php" class="tazrim-email-modal__close" title="שינוי כתובת מייל" aria-label="מעבר לעדכון כתובת מייל"><i class="fa-solid fa-xmark" aria-hidden="true"></i></a>
+
+            <div class="tazrim-email-modal__view" id="tazrimEmailViewSend">
+                <div class="tazrim-email-modal__art tazrim-email-modal__art--mail" aria-hidden="true">
+                    <i class="fa-solid fa-envelope"></i>
+                </div>
+                <h2 class="tazrim-email-modal__title" id="tazrimEmailTitleSend">אימות כתובת מייל</h2>
+                <p class="tazrim-email-modal__sub" id="tazrimEmailDescSend">נשלח לך קוד בן 6 ספרות לכתובת שמקושרת לחשבון</p>
+                <div class="tazrim-email-modal__field">
+                    <input type="text" class="tazrim-email-modal__field-input" id="tazrimEmailReadonly" name="tazrim_email_display" value="<?php echo htmlspecialchars($emailForGate, ENT_QUOTES, 'UTF-8'); ?>" readonly tabindex="-1" dir="ltr" aria-label="כתובת המייל לאימות" placeholder="אין כתובת מייל" />
+                </div>
+                <button type="button" class="btn-primary tazrim-email-modal__cta" id="tazrimEmailSendBtn" data-endpoint="<?php echo htmlspecialchars(BASE_URL . 'app/ajax/email_verification.php', ENT_QUOTES, 'UTF-8'); ?>">שלח קוד אימות</button>
+            </div>
+
+            <div class="tazrim-email-modal__view" id="tazrimEmailViewOtp" hidden>
+                <div class="tazrim-email-modal__art tazrim-email-modal__art--lock" aria-hidden="true">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h2 class="tazrim-email-modal__title" id="tazrimEmailTitleOtp">הכנס קוד אימות</h2>
+                <p class="tazrim-email-modal__sub" id="tazrimEmailDescOtp">הקוד יגיע לתיבת הדואר בכמה דקות. כשמוזן — לחצו &quot;אמת קוד&quot;.</p>
+                <div class="tazrim-email-modal__otp" role="group" aria-label="שש ספרות קוד אימות">
+                    <?php for ($oi = 0; $oi < 6; $oi++): ?>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="tazrim-email-modal__digit" id="tazrimOtp<?php echo $oi; ?>" name="tazrim_otp_<?php echo $oi; ?>" autocomplete="<?php echo $oi === 0 ? 'one-time-code' : 'off'; ?>" data-otp-i="<?php echo $oi; ?>" />
+                    <?php endfor; ?>
+                </div>
+                <button type="button" class="tazrim-email-modal__resend" id="tazrimEmailResendBtn" data-endpoint="<?php echo htmlspecialchars(BASE_URL . 'app/ajax/email_verification.php', ENT_QUOTES, 'UTF-8'); ?>">שלח שוב</button>
+                <button type="button" class="btn-primary tazrim-email-modal__cta" id="tazrimEmailVerifyBtn">אמת קוד</button>
+            </div>
+
+            <p id="tazrimEmailGateMsg" class="tazrim-email-modal__msg" style="display:none" role="status" aria-live="polite"></p>
+            <p class="tazrim-email-modal__footer">
+                <a class="tazrim-email-modal__link" href="<?php echo BASE_URL; ?>pages/settings/user_profile.php">עדכון כתובת מייל</a>
+            </p>
+        </div>
+    </div>
+    <script>
+    (function () {
+        var send = document.getElementById('tazrimEmailSendBtn');
+        if (!send) return;
+        var vSend = document.getElementById('tazrimEmailViewSend');
+        var vOtp = document.getElementById('tazrimEmailViewOtp');
+        var resend = document.getElementById('tazrimEmailResendBtn');
+        var go = document.getElementById('tazrimEmailVerifyBtn');
+        var msg = document.getElementById('tazrimEmailGateMsg');
+        var modal = document.getElementById('tazrimEmailModal');
+        var ep = send.getAttribute('data-endpoint') || (resend && resend.getAttribute('data-endpoint')) || '';
+        var digits = [];
+        for (var d = 0; d < 6; d++) { digits.push(document.getElementById('tazrimOtp' + d)); }
+        if (document.documentElement) { document.documentElement.classList.add('tazrim-email-modal-open'); }
+        if (document.body) { document.body.classList.add('tazrim-email-modal-open'); }
+        function getOtp() {
+            return digits.map(function (el) { return (el && el.value) ? el.value.replace(/\D/g, '') : ''; }).join('').slice(0, 6);
+        }
+        function clearOtp() {
+            digits.forEach(function (el) { if (el) el.value = ''; });
+        }
+        function showMsg(t, isErr) {
+            if (!msg) return;
+            if (!t) { msg.style.display = 'none'; msg.textContent = ''; return; }
+            msg.style.display = 'block';
+            msg.textContent = t;
+            msg.className = 'tazrim-email-modal__msg' + (isErr ? ' is-error' : ' is-ok');
+        }
+        function setModalAriaOtp() {
+            if (!modal) return;
+            modal.setAttribute('aria-labelledby', 'tazrimEmailTitleOtp');
+            modal.setAttribute('aria-describedby', 'tazrimEmailDescOtp');
+        }
+        function setModalAriaSend() {
+            if (!modal) return;
+            modal.setAttribute('aria-labelledby', 'tazrimEmailTitleSend');
+            modal.setAttribute('aria-describedby', 'tazrimEmailDescSend');
+        }
+        function showStepVerify() {
+            showMsg('', false);
+            if (vSend) vSend.setAttribute('hidden', '');
+            if (vOtp) vOtp.removeAttribute('hidden');
+            setModalAriaOtp();
+            clearOtp();
+            if (digits[0]) { digits[0].focus(); }
+        }
+        function post(fd) {
+            return fetch(ep, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+                .then(function (r) { return r.text(); })
+                .then(function (t) { try { return JSON.parse(t); } catch (e) { return { status: 'error', message: t }; } });
+        }
+        function doSend(btn) {
+            if (!ep) return;
+            var fd = new FormData();
+            fd.append('action', 'send_code');
+            showMsg('', false);
+            if (btn) btn.disabled = true;
+            post(fd).then(function (d) {
+                if (d.status === 'success') {
+                    showStepVerify();
+                } else {
+                    setModalAriaSend();
+                    showMsg(d.message || 'שגיאה', true);
+                }
+            }).catch(function () { setModalAriaSend(); showMsg('שגיאת רשת', true); })
+              .then(function () { if (btn) btn.disabled = false; });
+        }
+        send.addEventListener('click', function () { doSend(send); });
+        if (resend) resend.addEventListener('click', function () { doSend(resend); });
+        digits.forEach(function (el, i) {
+            if (!el) return;
+            el.addEventListener('input', function () {
+                this.value = (this.value || '').replace(/\D/g, '').slice(-1);
+                if (this.value && i < 5 && digits[i + 1]) { digits[i + 1].focus(); }
+            });
+            el.addEventListener('keydown', function (e) {
+                if (e.key === 'Backspace' && !this.value && i > 0 && digits[i - 1]) { digits[i - 1].focus(); }
+            });
+            el.addEventListener('paste', function (e) {
+                if (i !== 0) return;
+                e.preventDefault();
+                var t = (e.clipboardData && e.clipboardData.getData('text')) || '';
+                var s = t.replace(/\D/g, '').slice(0, 6);
+                for (var j = 0; j < 6; j++) { if (digits[j]) digits[j].value = s[j] || ''; }
+                if (s.length === 6 && go) { go.focus(); } else { var n = Math.min(s.length, 5); if (digits[n]) digits[n].focus(); }
+            });
+        });
+        if (go) go.addEventListener('click', function () {
+            var c = getOtp();
+            if (c.length !== 6) { showMsg('נא להזין 6 ספרות', true); return; }
+            var fd = new FormData();
+            fd.append('action', 'verify_code');
+            fd.append('code', c);
+            go.disabled = true;
+            post(fd).then(function (d) {
+                if (d.status === 'success') {
+                    if (document.documentElement) { document.documentElement.classList.remove('tazrim-email-modal-open'); }
+                    if (document.body) { document.body.classList.remove('tazrim-email-modal-open'); }
+                    showMsg(d.message || 'המייל אומת', false);
+                    setTimeout(function () { window.location.reload(); }, 450);
+                } else {
+                    showMsg(d.message || 'הקוד שגוי', true);
+                }
+            }).catch(function () { showMsg('שגיאת רשת', true); })
+              .then(function () { go.disabled = false; });
+        });
+    })();
+    </script>
+    <style>
+    html.tazrim-email-modal-open { overflow: hidden; }
+    body.tazrim-email-modal-open { overflow: hidden; touch-action: none; }
+    .tazrim-email-modal {
+        position: fixed; inset: 0; z-index: 10060;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px 16px; box-sizing: border-box;
+        background: rgba(15, 23, 42, 0.48);
+        -webkit-backdrop-filter: blur(2px);
+        backdrop-filter: blur(2px);
+    }
+    .tazrim-email-modal__box {
+        position: relative; width: 100%; max-width: 400px; max-height: min(90vh, 640px);
+        overflow: auto; margin: auto;
+        background: var(--white, #fff);
+        border-radius: 24px;
+        box-shadow: 0 8px 40px rgba(15, 23, 42, 0.12), 0 2px 12px rgba(15, 23, 42, 0.06);
+        padding: 36px 28px 22px; box-sizing: border-box; text-align: center;
+    }
+    .tazrim-email-modal__close {
+        position: absolute; top: 14px; inset-inline-start: 14px; width: 40px; height: 40px; border: 0; border-radius: 50%;
+        background: var(--input-bg, #F1F4F5); color: var(--text-light, #8a94a0);
+        display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.1rem;
+    }
+    .tazrim-email-modal__close:hover { background: #e2e8f0; color: var(--text, #2D3748); }
+    .tazrim-email-modal__view[hidden] { display: none !important; }
+    .tazrim-email-modal__art {
+        width: 88px; height: 88px; border-radius: 50%; margin: 0 auto 20px;
+        display: flex; align-items: center; justify-content: center; font-size: 2.1rem;
+    }
+    .tazrim-email-modal__art--mail {
+        background: var(--sub_main-light, rgba(41, 182, 105, 0.12)); color: var(--main, #29b669);
+    }
+    .tazrim-email-modal__art--lock {
+        background: rgba(246, 173, 85, 0.15); color: var(--notice, #E89B2E);
+    }
+    .tazrim-email-modal__title {
+        margin: 0 0 8px; font-size: 1.25rem; font-weight: 800; color: var(--text, #2D3748);
+        line-height: 1.3;
+    }
+    .tazrim-email-modal__sub {
+        margin: 0 0 22px; font-size: 0.86rem; line-height: 1.5; color: var(--text-light, #7a828b); font-weight: 600;
+    }
+    .tazrim-email-modal__field { margin: 0 0 20px; text-align: center; }
+    .tazrim-email-modal__field-input {
+        width: 100%; max-width: 100%; min-height: 50px; padding: 0 16px; border-radius: 14px;
+        border: 1px solid #e2e8f0; background: var(--input-bg, #F7F9FA);
+        color: var(--text, #2D3748); font-size: 0.95rem; font-weight: 600; text-align: center; box-sizing: border-box;
+    }
+    .tazrim-email-modal__cta {
+        width: 100%; min-height: 50px; border-radius: 14px; font-size: 0.95rem; font-weight: 800; margin: 0;
+    }
+    #tazrimEmailViewOtp .tazrim-email-modal__resend { margin: 0 0 2px; }
+    #tazrimEmailViewOtp .tazrim-email-modal__cta { margin-top: 10px; }
+    .tazrim-email-modal__otp {
+        direction: ltr; display: flex; flex-wrap: nowrap; justify-content: center; align-items: stretch;
+        gap: 6px; margin: 0 0 14px; padding: 0; max-width: 100%;
+    }
+    .tazrim-email-modal__digit {
+        flex: 1; min-width: 0; max-width: 48px; height: 50px; border-radius: 12px; box-sizing: border-box;
+        border: 1px solid #e2e8f0; background: var(--input-bg, #F7F9FA);
+        text-align: center; font-size: 1.25rem; font-weight: 800; color: var(--text, #2D3748);
+        padding: 0; margin: 0;
+    }
+    .tazrim-email-modal__digit:focus {
+        outline: none; border-color: var(--main, #29b669); box-shadow: 0 0 0 2px var(--sub_main-light, rgba(41, 182, 105, 0.25));
+    }
+    .tazrim-email-modal__resend {
+        display: block; width: 100%; margin: 0; padding: 0 0 4px; border: 0; background: none; cursor: pointer;
+        font-size: 0.86rem; font-weight: 700; color: var(--main, #29b669); text-decoration: underline; text-align: center;
+    }
+    .tazrim-email-modal__resend:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tazrim-email-modal__msg { margin: 10px 0 0; font-size: 0.84rem; font-weight: 700; }
+    .tazrim-email-modal__msg.is-ok { color: var(--main, #29b669); }
+    .tazrim-email-modal__msg.is-error { color: var(--error, #F56565); }
+    .tazrim-email-modal__footer { margin: 16px 0 0; padding: 0; text-align: center; }
+    .tazrim-email-modal__link { font-size: 0.86rem; font-weight: 700; color: var(--main, #29b669); text-decoration: none; }
+    .tazrim-email-modal__link:hover { text-decoration: underline; }
+    @media (max-width: 380px) {
+        .tazrim-email-modal__box { padding: 32px 18px 20px; }
+        .tazrim-email-modal__digit { max-width: 40px; height: 44px; font-size: 1.1rem; }
+    }
+    </style>
+    <?php endif; ?>
 
     <button type="button" id="quickFeedbackBtn" class="quick-feedback-btn" aria-label="דיווח מהיר">
         דיווח מהיר

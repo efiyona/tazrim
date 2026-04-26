@@ -14,6 +14,7 @@ $home_data = selectOne('homes', ['id' => $home_id]);
 
 // שליפת נתוני המשתמש הנוכחי
 $user_data = selectOne('users', ['id' => $user_id]);
+require_once ROOT_PATH . '/app/functions/email_verification_runtime.php';
 $user_email = (string)($user_data['email'] ?? '');
 $email_parts = explode('@', $user_email, 2);
 $email_masked = $user_email;
@@ -277,9 +278,8 @@ if ($conn instanceof mysqli) {
                                     <label>אימייל</label>
                                     <div class="input-with-icon">
                                         <i class="fa-solid fa-envelope"></i>
-                                        <input type="email" value="<?php echo htmlspecialchars($user_data['email']); ?>" class="readonly-input" readonly>
+                                        <input type="email" name="email" value="<?php echo htmlspecialchars($user_data['email'] ?? ''); ?>" required>
                                     </div>
-                                    <p class="block-help" style="margin-top: 5px;">כתובת האימייל משמשת להתחברות, ולא ניתנת לשינוי.</p>
                                 </div>
 
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -970,14 +970,28 @@ if ($conn instanceof mysqli) {
             })
             .then(async response => {
                 const text = await response.text();
+                var data;
                 try {
-                    return JSON.parse(text);
+                    data = JSON.parse(text);
                 } catch (e) {
-                    console.error('Server Error Output:', text);
-                    throw new Error('השרת שלח תשובה לא תקינה.');
+                    if (!response.ok) {
+                        const m = (typeof tazrimMessageFromAjaxText === 'function' ? tazrimMessageFromAjaxText(text) : 'הפעולה נכשלה');
+                        tazrimAlert({ title: 'שגיאה', message: m });
+                    } else {
+                        console.error('Server Error Output:', text);
+                        tazrimAlert({ title: 'שגיאה', message: 'השרת שלח תשובה לא תקינה.' });
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-key"></i> יצירת מפתח חיבור';
+                    return Promise.reject();
                 }
-            })
-            .then(data => {
+                if (!response.ok) {
+                    const em = (data && data.message) || (typeof tazrimMessageFromAjaxText === 'function' ? tazrimMessageFromAjaxText(text) : 'הפעולה נכשלה');
+                    tazrimAlert({ title: 'שגיאה', message: em });
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-key"></i> יצירת מפתח חיבור';
+                    return;
+                }
                 if (data.status === 'success') {
                     refreshIosTazrimPanel();
                 } else {
@@ -987,7 +1001,8 @@ if ($conn instanceof mysqli) {
                 }
             })
             .catch(err => {
-                tazrimAlert({ title: 'שגיאה', message: err.message || 'אירעה שגיאה.' });
+                if (!err) return;
+                tazrimAlert({ title: 'שגיאה', message: err && err.message ? err.message : 'אירעה שגיאה.' });
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-key"></i> יצירת מפתח חיבור';
             });

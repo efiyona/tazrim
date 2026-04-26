@@ -236,6 +236,22 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
 </body>
 
 <script>
+    (function () {
+        if (typeof window.tazrimMessageFromAjaxText === 'function') return;
+        window.tazrimMessageFromAjaxText = function (text) {
+            if (!text || typeof text !== 'string') return 'אירעה שגיאה. נסו שוב או רעננו את הדף.';
+            var t = text.trim();
+            if (!t) return 'אירעה שגיאה. נסו שוב או רעננו את הדף.';
+            if (t.charAt(0) === '{' || t.charAt(0) === '[') {
+                try {
+                    var o = JSON.parse(t);
+                    if (o && typeof o.message === 'string' && o.message.length) return o.message;
+                } catch (e) {}
+            }
+            return 'אירעה שגיאה. נסו שוב או רעננו את הדף.';
+        };
+    })();
+
     const currentMonth = <?php echo $selected_month; ?>;
     const currentYear = <?php echo $selected_year; ?>;
 
@@ -277,8 +293,17 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         const url = `app/ajax/fetch_transactions.php?offset=${offset}&status=${status}&m=${currentMonth}&y=${currentYear}`;
         
         fetch(url)
-            .then(res => res.text())
-            .then(html => {
+            .then(res => res.text().then(t => ({ ok: res.ok, t })))
+            .then(({ ok, t }) => {
+                if (!ok) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    var errMsg1 = tazrimMessageFromAjaxText(t);
+                    if (typeof tazrimAlert === 'function') tazrimAlert({ title: 'לא ניתן לטעון', message: errMsg1 });
+                    else if (window.alert) window.alert(errMsg1);
+                    return;
+                }
+                const html = t;
                 if (html.trim() === "" || html.trim() === "NO_MORE") {
                     setButtonToExpanded(btn);
                 } else {
@@ -348,9 +373,14 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> רגע…</div>';
 
         fetch(getDetailsRequestUrl(window.categoryDetailsContext))
-            .then(response => response.text())
-            .then(data => {
-                content.innerHTML = data;
+            .then(response => response.text().then(t => ({ ok: response.ok, t })))
+            .then(({ ok, t }) => {
+                if (!ok) {
+                    const msg = typeof tazrimMessageFromAjaxText === 'function' ? tazrimMessageFromAjaxText(t) : 'הפעולה נכשלה';
+                    content.innerHTML = '<p style="text-align:center;padding:24px;color:var(--error);font-weight:700;">' + msg + '</p>';
+                    return;
+                }
+                content.innerHTML = t;
             });
     }
 
@@ -367,9 +397,14 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> רגע…</div>';
 
         fetch(getDetailsRequestUrl(window.categoryDetailsContext))
-            .then(response => response.text())
-            .then(data => {
-                content.innerHTML = data;
+            .then(response => response.text().then(t => ({ ok: response.ok, t })))
+            .then(({ ok, t }) => {
+                if (!ok) {
+                    const msg = typeof tazrimMessageFromAjaxText === 'function' ? tazrimMessageFromAjaxText(t) : 'הפעולה נכשלה';
+                    content.innerHTML = '<p style="text-align:center;padding:24px;color:var(--error);font-weight:700;">' + msg + '</p>';
+                    return;
+                }
+                content.innerHTML = t;
             });
     }
 
@@ -388,15 +423,29 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         const content = document.getElementById('cat-details-content');
         content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> רגע…</div>';
         return fetch(url)
-            .then(r => r.text())
-            .then(html => { content.innerHTML = html; });
+            .then(r => r.text().then(t => ({ ok: r.ok, t })))
+            .then(({ ok, t }) => {
+                if (!ok) {
+                    const msg = typeof tazrimMessageFromAjaxText === 'function' ? tazrimMessageFromAjaxText(t) : 'הפעולה נכשלה';
+                    content.innerHTML = '<p style="text-align:center;padding:24px;color:var(--error);font-weight:700;">' + msg + '</p>';
+                    return;
+                }
+                content.innerHTML = t;
+            });
     }
 
     function refreshHomeDashboardCore() {
         return fetch(`app/ajax/home_dashboard_core.php?m=${currentMonth}&y=${currentYear}`)
-            .then(r => r.json())
-            .then(data => {
-                if (!data.ok) {
+            .then(r => r.text().then(t => {
+                var data = null;
+                try { data = JSON.parse(t); } catch (e) { /* ignore */ }
+                if (!r.ok) {
+                    var msg2 = (data && data.message) || tazrimMessageFromAjaxText(t);
+                    if (typeof tazrimAlert === 'function') tazrimAlert({ title: 'שגיאה', message: msg2 });
+                    else if (window.alert) window.alert(msg2);
+                    return;
+                }
+                if (!data || !data.ok) {
                     window.location.reload();
                     return;
                 }
@@ -404,8 +453,8 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                 if (el) el.outerHTML = data.html;
                 recentOffset = 4;
                 pendingOffset = 4;
-            })
-            .catch(() => { window.location.reload(); });
+            }))
+            .catch(function () { window.location.reload(); });
     }
 
     document.addEventListener('click', function (e) {

@@ -191,4 +191,28 @@
             }, 50);
         });
     };
+
+    /**
+     * הודעת שגיאה אנושית מגוף JSON של השרת (למשל 403) — בלי JSON גולמי ב־UI
+     */
+    window.tazrimMessageFromAjaxText = function (text) {
+        if (!text || typeof text !== 'string') {
+            return 'אירעה שגיאה. נסו שוב או רעננו את הדף.';
+        }
+        var t = text.trim();
+        if (t.length === 0) {
+            return 'אירעה שגיאה. נסו שוב או רעננו את הדף.';
+        }
+        if (t.charAt(0) === '{' || t.charAt(0) === '[') {
+            try {
+                var o = JSON.parse(t);
+                if (o && typeof o.message === 'string' && o.message.length) {
+                    return o.message;
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
+        return 'אירעה שגיאה. נסו שוב או רעננו את הדף.';
+    };
 })();

@@ -42,6 +42,23 @@ if (!function_exists('ai_chat_get_context')) {
         }
 
         $homeId = (int) ($_SESSION['home_id'] ?? 0);
+        if (!function_exists('selectOne')) {
+            require_once ROOT_PATH . '/app/database/db.php';
+        }
+        if (file_exists(ROOT_PATH . '/app/functions/email_verification_runtime.php')) {
+            if (!function_exists('tazrim_user_email_is_unverified')) {
+                require_once ROOT_PATH . '/app/functions/email_verification_runtime.php';
+            }
+            if (function_exists('tazrim_email_verified_column_exists') && tazrim_email_verified_column_exists() && function_exists('selectOne')) {
+                $u = selectOne('users', ['id' => $userId]);
+                if (!$u) {
+                    return ['ok' => false, 'error' => 'unauthorized'];
+                }
+                if (tazrim_user_email_is_unverified($u)) {
+                    return ['ok' => false, 'error' => 'email_verification_required'];
+                }
+            }
+        }
         return [
             'ok' => true,
             'user_id' => $userId,

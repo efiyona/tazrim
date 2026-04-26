@@ -38,6 +38,9 @@ if (isset($_POST['login_btn'])) {
             $_SESSION['nickname'] = $user['nickname'];
             $_SESSION['home_id'] = $user['home_id'];
             $_SESSION['role'] = $user['role'];
+            if (function_exists('tazrim_session_refresh_email_status')) {
+                tazrim_session_refresh_email_status((int) $user['id'], $user);
+            }
             
             // טיפול ב"זכור אותי"
             if(isset($_POST['remember_me'])) {
@@ -212,6 +215,12 @@ if (isset($_POST['register_btn'])) {
             $_SESSION['nickname'] = $nickname;
             $_SESSION['home_id'] = $target_home_id;
             $_SESSION['role'] = $userData['role'];
+            if (function_exists('tazrim_session_refresh_email_status')) {
+                $uRow = selectOne('users', ['id' => (int) $user_id]);
+                if ($uRow) {
+                    tazrim_session_refresh_email_status((int) $user_id, $uRow);
+                }
+            }
 
             header('location: ' . BASE_URL . 'index.php');
             exit();

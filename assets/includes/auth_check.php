@@ -17,6 +17,9 @@ if (!isset($_SESSION['id'])) {
             $_SESSION['nickname'] = $user['nickname'];
             $_SESSION['home_id'] = $user['home_id'];
             $_SESSION['role'] = $user['role'];
+            if (function_exists('tazrim_session_refresh_email_status')) {
+                tazrim_session_refresh_email_status((int) $user['id'], $user);
+            }
         } else {
             setcookie('remember_token', '', time() - 3600, "/");
             header('location: ' . BASE_URL . 'pages/login.php');
@@ -63,6 +66,15 @@ if (!in_array($current_page, $excluded_pages)) {
             header('location: ' . BASE_URL . 'pages/welcome.php');
             exit();
         }
+    }
+}
+
+// 6. באנר אימות מייל (רק בדפים שאינם פטורים)
+$GLOBALS['tazrim_email_verification_block'] = false;
+if (file_exists(ROOT_PATH . '/app/functions/email_verification_runtime.php')) {
+    require_once ROOT_PATH . '/app/functions/email_verification_runtime.php';
+    if (function_exists('tazrim_should_block_ui_for_email')) {
+        $GLOBALS['tazrim_email_verification_block'] = tazrim_should_block_ui_for_email($current_page);
     }
 }
 ?>

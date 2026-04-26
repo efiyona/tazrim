@@ -39,6 +39,14 @@ if ($user && password_verify($password, $user['password'])) {
     $update_id = update('users', $user['id'], ['api_token' => $api_token]);
     
     if ($update_id) {
+        $needs_email_verification = false;
+        if (file_exists(ROOT_PATH . '/app/functions/email_verification_runtime.php')) {
+            require_once ROOT_PATH . '/app/functions/email_verification_runtime.php';
+            if (function_exists('tazrim_email_verified_column_exists') && tazrim_email_verified_column_exists()
+                && function_exists('tazrim_user_email_is_unverified')) {
+                $needs_email_verification = tazrim_user_email_is_unverified($user);
+            }
+        }
         // 6. הצלחה! החזרת הנתונים לאפליקציה בפורמט JSON
         echo json_encode([
             'status' => 'success',
@@ -49,7 +57,8 @@ if ($user && password_verify($password, $user['password'])) {
                 'first_name' => $user['first_name'],
                 'last_name' => $user['last_name'],
                 'nickname' => $user['nickname'],
-                'api_token' => $api_token
+                'api_token' => $api_token,
+                'needs_email_verification' => $needs_email_verification,
             ]
         ]);
         exit();

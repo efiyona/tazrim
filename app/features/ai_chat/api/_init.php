@@ -8,9 +8,15 @@ header('Pragma: no-cache');
 
 $ctx = ai_chat_get_context();
 if (!$ctx['ok']) {
-    http_response_code(401);
+    $code = (string) ($ctx['error'] ?? 'unauthorized');
+    http_response_code($code === 'email_verification_required' ? 403 : 401);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['status' => 'error', 'message' => 'unauthorized'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(
+        $code === 'email_verification_required'
+            ? ['status' => 'error', 'code' => 'email_verification_required', 'message' => 'email_verification_required']
+            : ['status' => 'error', 'message' => 'unauthorized'],
+        JSON_UNESCAPED_UNICODE
+    );
     exit;
 }
 
