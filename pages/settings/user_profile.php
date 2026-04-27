@@ -293,10 +293,7 @@ if ($conn instanceof mysqli) {
                 <div class="management-grid">
                     <?php if ($work_schedule_enabled): ?>
                     <div class="card full-width-card" id="work-account-jobs">
-                        <div class="card-header">
-                            <h3>סידור עבודה</h3>
-                        </div>
-                        <div class="card-body-padding" id="user-profile-work-panel-wrap">
+                        <div id="user-profile-work-panel-wrap">
                             <?php
                             $work_jobs = $work_jobs_profile;
                             $work_panel_uid = (int) $user_id;

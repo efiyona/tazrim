@@ -2499,11 +2499,13 @@ body.auth-forgot .auth-switch a {
             white-space: nowrap;
         }
 
-        #manage-home-shopping-stores-panel {
+        #manage-home-shopping-stores-panel,
+        #user-profile-work-panel-wrap {
             min-width: 0;
             max-width: 100%;
         }
-        #manage-home-shopping-stores-panel .manage-categories-toolbar {
+        #manage-home-shopping-stores-panel .manage-categories-toolbar,
+        #user-profile-work-panel-wrap .manage-categories-toolbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -2512,20 +2514,24 @@ body.auth-forgot .auth-switch a {
             margin-bottom: 24px;
             min-width: 0;
         }
-        #manage-home-shopping-stores-panel .manage-categories-toolbar .section-subtitle {
+        #manage-home-shopping-stores-panel .manage-categories-toolbar .section-subtitle,
+        #user-profile-work-panel-wrap .manage-categories-toolbar .section-subtitle {
             flex: 1 1 12rem;
             min-width: 0;
             overflow-wrap: anywhere;
             word-break: break-word;
         }
-        #manage-home-shopping-stores-panel .manage-categories-toolbar .btn-primary {
+        #manage-home-shopping-stores-panel .manage-categories-toolbar .btn-primary,
+        #user-profile-work-panel-wrap .manage-categories-toolbar .btn-primary {
             flex-shrink: 0;
         }
-        #manage-home-shopping-stores-panel .transaction-item {
+        #manage-home-shopping-stores-panel .transaction-item,
+        #user-profile-work-panel-wrap .transaction-item {
             max-width: 100%;
             box-sizing: border-box;
         }
-        #manage-home-shopping-stores-panel .details .date {
+        #manage-home-shopping-stores-panel .details .date,
+        #user-profile-work-panel-wrap .details .date {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -2535,12 +2541,14 @@ body.auth-forgot .auth-switch a {
         @media (max-width: 767.98px) {
             #manage-home-categories-panel,
             #manage-home-recurring-panel,
-            #manage-home-shopping-stores-panel {
+            #manage-home-shopping-stores-panel,
+            #user-profile-work-panel-wrap {
                 width: 100%;
             }
             #manage-home-categories-panel .transaction-item,
             #manage-home-recurring-panel .transaction-item,
-            #manage-home-shopping-stores-panel .transaction-item {
+            #manage-home-shopping-stores-panel .transaction-item,
+            #user-profile-work-panel-wrap .transaction-item {
                 width: 100%;
                 max-width: none;
                 box-sizing: border-box;
@@ -5515,17 +5523,21 @@ body.page-auth {
 .work-manage-cta { text-align: center; margin-top: 8px; padding: 0 4px; }
 .work-manage-cta__btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; font-weight: 800; }
 .work-manage-cta__hint { margin: 8px 0 0; font-size: 0.85rem; color: var(--text-light); }
-.user-profile-work-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
-.user-profile-work-job { background: #fafbfc; border: 1px solid #e8eaef; border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
-.user-profile-work-job__row { display: flex; align-items: stretch; justify-content: space-between; gap: 8px; }
-.user-profile-work-job__main { flex: 1; display: flex; align-items: center; gap: 12px; padding: 14px; cursor: pointer; min-width: 0; }
-.user-profile-work-job__sw { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
-.user-profile-work-job__title { font-weight: 800; font-size: 1rem; }
-.user-profile-work-job__meta { font-size: 0.8rem; color: var(--text-light); margin-top: 2px; }
-.user-profile-work-iconbtn {
-    width: 48px; border: none; background: transparent; color: #c0392b; cursor: pointer; font-size: 1.1rem; flex-shrink: 0; align-self: stretch;
+/* ערימת עבודה + סוגים — מיושר לניהול חנויות (שורת transaction + בלוק מתחת) */
+.user-profile-work-job-stack { margin-bottom: 14px; }
+.user-profile-work-job-stack .user-profile-work-job-head.transaction-item {
+    margin-bottom: 0;
+    border-radius: 15px 15px 0 0;
 }
-.user-profile-work-types { border-top: 1px solid #e8eaef; padding: 12px 14px 16px; background: #fff; }
+.user-profile-work-types-below {
+    padding: 12px 14px 14px;
+    background: var(--gray-light);
+    border: 1px solid #e8e8e8;
+    border-top: none;
+    border-radius: 0 0 15px 15px;
+    box-sizing: border-box;
+}
+.user-profile-work-types-below .user-profile-work-types__head { margin-top: 0; }
 .user-profile-work-types__head { font-size: 0.78rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
 .user-profile-work-types__empty { font-size: 0.9rem; color: var(--text-light); margin: 0 0 8px; }
 .user-profile-work-type {
@@ -5814,7 +5826,48 @@ body.page-auth {
         padding: 14px 16px;
     }
     .work-shift-modal .modal-body {
-        padding: 14px 14px 18px;
+        padding: 14px 12px 18px;
+    }
+}
+
+/* מודל משמרת: שדות time רחבים ב־iOS — עמודה אחת + ריפוד אחיד כדי שלא ייחתכו בצדדים */
+.work-shift-modal .modal-body {
+    overflow-x: visible;
+    min-width: 0;
+    box-sizing: border-box;
+}
+.work-shift-modal .work-time-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-inline: 0;
+}
+.work-shift-modal .work-time-field {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+.work-shift-modal input[type="time"].work-input--time,
+.work-shift-modal input.work-input.work-input--time {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    font-size: 16px;
+    line-height: 1.3;
+    padding: 12px 10px;
+    margin: 0;
+}
+@media (min-width: 480px) {
+    .work-shift-modal .work-time-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
     }
 }
 #work-step-2 {
