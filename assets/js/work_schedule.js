@@ -410,12 +410,22 @@
     return grid.querySelector('.work-cal-day[data-day="' + dayStr + '"]');
   }
 
+  function countShiftsForJobInViewMonth(jobId) {
+    const j = String(jobId);
+    var n = 0;
+    monthShifts.forEach(function (s) {
+      if (String(s.job_id) === j) n += 1;
+    });
+    return n;
+  }
+
   function loadShifts() {
     return postAction('list_shifts', { year: String(currentYear), month: String(currentMonth) }).then(function (res) {
       if (res && res.ok && Array.isArray(res.data)) {
         monthShifts = res.data;
         renderDots();
         if (selectedDayStr) openDaySheet(selectedDayStr);
+        renderLegend();
       }
     });
   }
@@ -435,7 +445,10 @@
     if (!leg) return;
     if (!jobsCache.length) { leg.innerHTML = ''; return; }
     leg.innerHTML = '<div class="work-legend-items">' + jobsCache.map(function (j) {
-      return '<span class="work-legend-item"><span class="work-legend-ring" style="border-color:' + j.color + '"></span> ' + escapeHtml(j.title) + '</span>';
+      const n = countShiftsForJobInViewMonth(j.id);
+      return '<span class="work-legend-item"><span class="work-legend-ring" style="border-color:' + escapeHtml(j.color) + '"></span> ' +
+        '<span class="work-legend-name">' + escapeHtml(j.title) + '</span>' +
+        '<span class="work-legend-count" aria-label="משמרות בחודש: ' + n + '">' + n + '</span></span>';
     }).join('') + '</div>';
   }
 
