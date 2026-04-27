@@ -5260,9 +5260,8 @@ body.page-auth {
     max-width: 100%;
 }
 .work-type-card__head .work-input {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
-    width: 1%;
 }
 .work-type-card__head .btn-small {
     flex-shrink: 0;
@@ -5384,6 +5383,8 @@ body.page-auth {
     gap: 8px;
     justify-content: center;
     margin-top: 4px;
+    min-width: 0;
+    max-width: 100%;
 }
 .work-preset-ic-btn {
     border: 1.5px solid #e5e7eb;
@@ -5760,14 +5761,12 @@ body.page-auth {
     width: min(100%, 420px);
     box-sizing: border-box;
 }
-.work-type-modal-content {
+.work-shift-modal .modal-content.work-type-modal-content {
     max-width: 440px;
     width: min(100%, 440px);
-    box-sizing: border-box;
 }
 @media (max-width: 480px) {
-    .work-shift-modal .modal-content,
-    .work-type-modal-content {
+    .work-shift-modal .modal-content {
         width: calc(100vw - 20px);
         max-width: none;
         margin: max(10px, 4vh) auto;
