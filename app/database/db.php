@@ -105,6 +105,9 @@ function tazrim_ensure_feedback_reports_table() {
 
 tazrim_ensure_feedback_reports_table();
 
+require_once ROOT_PATH . '/app/functions/landing_visit_log.php';
+tazrim_ensure_landing_page_events_table();
+
 /**
  * טבלאות הודעות פופאפ מנוהלות (קמפיינים, יעדים, קריאות).
  */

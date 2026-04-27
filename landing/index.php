@@ -1,5 +1,7 @@
 <?php
     require('../path.php');
+    require_once ROOT_PATH . '/app/functions/landing_visit_log.php';
+    tazrim_log_landing_page_visit();
 ?>
 <!DOCTYPE html>
 <html lang="he" dir="rtl">

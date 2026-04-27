@@ -50,6 +50,13 @@ function tazrim_admin_nav_items(): array
             'href' => BASE_URL . 'admin/dashboard.php',
         ],
         [
+            'type' => 'link',
+            'key' => 'landing_events',
+            'label' => 'כניסות לדף נחיתה',
+            'icon' => 'fa-door-open',
+            'href' => BASE_URL . 'admin/landing_events.php',
+        ],
+        [
             'type' => 'group',
             'key' => 'broadcast_user_messages',
             'label' => 'הודעות למשתמשים',

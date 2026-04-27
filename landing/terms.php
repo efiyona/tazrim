@@ -1,6 +1,7 @@
 <?php
     require('../path.php');
     require_once(ROOT_PATH . '/app/database/db.php');
+    tazrim_log_landing_page_visit();
     require_once(ROOT_PATH . '/app/functions/tos_runtime.php');
 
     $tos_html         = tazrim_tos_content_html();
