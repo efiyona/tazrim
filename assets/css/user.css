@@ -5528,11 +5528,49 @@ body.page-auth {
 .user-profile-work-types { border-top: 1px solid #e8eaef; padding: 12px 14px 16px; background: #fff; }
 .user-profile-work-types__head { font-size: 0.78rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
 .user-profile-work-types__empty { font-size: 0.9rem; color: var(--text-light); margin: 0 0 8px; }
-.user-profile-work-type { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 12px; cursor: pointer; }
+.user-profile-work-type {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    padding: 4px 6px 4px 4px;
+    border-radius: 12px;
+}
 .user-profile-work-type:hover { background: #f4f5f7; }
-.user-profile-work-type__ic { width: 32px; text-align: center; color: var(--main); }
+.user-profile-work-type__main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: right;
+}
+.user-profile-work-type__body { min-width: 0; flex: 1; }
+.user-profile-work-type__ic { width: 32px; text-align: center; color: var(--main); flex-shrink: 0; }
 .user-profile-work-type__name { font-weight: 700; font-size: 0.95rem; }
 .user-profile-work-type__t { font-size: 0.8rem; color: #888; }
+.user-profile-work-type__edit {
+    flex-shrink: 0;
+    align-self: center;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(43, 182, 115, 0.12);
+    color: var(--main, #2BB673);
+    cursor: pointer;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+@media (hover: hover) {
+    .user-profile-work-type__edit:hover { background: rgba(43, 182, 115, 0.22); }
+}
+.user-profile-work-type__edit:active { transform: scale(0.96); }
 .user-profile-work-addtype { width: 100%; margin-top: 8px; }
 .work-day-sheet__add { width: 100%; margin-top: 4px; max-width: 280px; margin-left: auto; margin-right: auto; display: block; }
 .work-day-card__wrap { display: flex; align-items: stretch; gap: 8px; }

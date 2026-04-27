@@ -34,7 +34,10 @@
       .catch(function () {
         if (window.tazrimAlert) tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת.' });
       })
-      .finally(function () { w.style.opacity = ''; w.style.pointerEvents = ''; });
+      .finally(function () {
+        w.style.opacity = '';
+        w.style.pointerEvents = '';
+      });
   }
 
   function showMsg(elId, text, isErr) {
@@ -244,5 +247,14 @@
     if (jm) jm.addEventListener('click', function (e) { if (e.target === jm) window.upWorkCloseJobModal(); });
     var tm = document.getElementById('up-work-type-modal');
     if (tm) tm.addEventListener('click', function (e) { if (e.target === tm) window.upWorkCloseTypeModal(); });
+    var wrap = document.getElementById('user-profile-work-panel-wrap');
+    if (wrap) {
+      wrap.addEventListener('keydown', function (e) {
+        var m = e.target.closest('.user-profile-work-type__main[role="button"]');
+        if (!m || (e.key !== 'Enter' && e.key !== ' ')) return;
+        e.preventDefault();
+        m.click();
+      });
+    }
   });
 })();

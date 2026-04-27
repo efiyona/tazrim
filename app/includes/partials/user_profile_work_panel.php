@@ -56,12 +56,20 @@ $icP = static function (string $p): string {
                     $tso = (int) ($t['sort_order'] ?? 0);
                     $fa = $icP($ip);
                 ?>
-                <div class="user-profile-work-type" role="button" tabindex="0" onclick="upWorkOpenEditType(<?php echo $ti; ?>,<?php echo $jid; ?>,<?php echo json_encode($tn, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,<?php echo json_encode($ip, JSON_UNESCAPED_UNICODE); ?>,<?php echo json_encode($tstart, JSON_UNESCAPED_UNICODE); ?>,<?php echo json_encode($tend, JSON_UNESCAPED_UNICODE); ?>,<?php echo $tso; ?>)">
-                    <span class="user-profile-work-type__ic" aria-hidden="true"><i class="fa-solid <?php echo htmlspecialchars($fa, ENT_QUOTES, 'UTF-8'); ?>"></i></span>
-                    <div>
-                        <div class="user-profile-work-type__name"><?php echo htmlspecialchars($tn, ENT_QUOTES, 'UTF-8'); ?></div>
-                        <?php if ($tstart !== '' || $tend !== ''): ?><div class="user-profile-work-type__t"><?php echo htmlspecialchars($tstart, ENT_QUOTES, 'UTF-8'); ?><?php echo ($tstart !== '' && $tend !== '') ? ' – ' : ''; ?><?php echo htmlspecialchars($tend, ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
+                <?php
+                $typeEditOnclick = 'upWorkOpenEditType(' . $ti . ',' . $jid . ',' . json_encode($tn, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) . ',' . json_encode($ip, JSON_UNESCAPED_UNICODE) . ',' . json_encode($tstart, JSON_UNESCAPED_UNICODE) . ',' . json_encode($tend, JSON_UNESCAPED_UNICODE) . ',' . $tso . ')';
+                ?>
+                <div class="user-profile-work-type">
+                    <div class="user-profile-work-type__main" role="button" tabindex="0" onclick="<?php echo htmlspecialchars($typeEditOnclick, ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="user-profile-work-type__ic" aria-hidden="true"><i class="fa-solid <?php echo htmlspecialchars($fa, ENT_QUOTES, 'UTF-8'); ?>"></i></span>
+                        <div class="user-profile-work-type__body">
+                            <div class="user-profile-work-type__name"><?php echo htmlspecialchars($tn, ENT_QUOTES, 'UTF-8'); ?></div>
+                            <?php if ($tstart !== '' || $tend !== ''): ?><div class="user-profile-work-type__t"><?php echo htmlspecialchars($tstart, ENT_QUOTES, 'UTF-8'); ?><?php echo ($tstart !== '' && $tend !== '') ? ' – ' : ''; ?><?php echo htmlspecialchars($tend, ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
+                        </div>
                     </div>
+                    <button type="button" class="user-profile-work-type__edit" title="עריכה" aria-label="עריכת סוג משמרת" onclick="<?php echo htmlspecialchars($typeEditOnclick, ENT_QUOTES, 'UTF-8'); ?>">
+                        <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                    </button>
                 </div>
                 <?php endforeach; ?>
                 <?php } ?>
