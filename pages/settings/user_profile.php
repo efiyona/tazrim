@@ -1270,8 +1270,8 @@ if ($conn instanceof mysqli) {
         </div>
     </div>
 </div>
-<div id="up-work-type-modal" class="modal" style="display:none" aria-hidden="true" role="dialog" aria-labelledby="up-work-type-h">
-    <div class="modal-content" style="max-width:440px">
+<div id="up-work-type-modal" class="modal work-shift-modal" style="display:none" aria-hidden="true" role="dialog" aria-labelledby="up-work-type-h">
+    <div class="modal-content work-type-modal-content">
         <div class="modal-header">
             <h3 id="up-work-type-h">סוג משמרת</h3>
             <button type="button" class="close-modal-btn" onclick="upWorkCloseTypeModal()" aria-label="סגור"><i class="fa-solid fa-xmark"></i></button>

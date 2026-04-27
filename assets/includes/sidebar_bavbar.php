@@ -107,14 +107,14 @@ foreach ($navigation as $item) {
         break;
     }
 }
-$target_modal_id = $current_config['plus_modal'] ?? null;
+$target_modal_id = (is_array($current_config) && isset($current_config['plus_modal'])) ? $current_config['plus_modal'] : null;
 require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
 
 $tazrim_email_verification_block = !empty($GLOBALS['tazrim_email_verification_block']);
 $emailForGate = (string) ($_SESSION['user_email'] ?? '');
 ?>
 
-<div class="floating-nav-wrapper">
+<div class="floating-nav-wrapper<?php echo !empty($target_modal_id) ? ' floating-nav-wrapper--with-fab' : ''; ?>">
 
     <div class="bottom-nav-bar">
         <ul id="navBarUl">
@@ -1006,17 +1006,30 @@ function toggleNotifications() {
 document.addEventListener('DOMContentLoaded', () => {
     const listItems = document.querySelectorAll('.bottom-nav-bar .list');
     const indicator = document.getElementById('navIndicator');
-    const itemWidth = 70; // רוחב האייקון ב-user.css
 
+    /** מרחק אופקי בין פריט הפעיל לראשון ברשימה (תומך ברוחבי טאבים משתנים / פריסת FAB צפופה) */
     function moveIndicator(targetLi) {
         if (!indicator || !targetLi) return;
-        const items = Array.from(targetLi.parentElement.children).filter(c => c.classList.contains('list'));
-        const index = items.indexOf(targetLi);
-        indicator.style.transform = `translateX(${index * -itemWidth}px)`;
+        const ul = targetLi.closest('ul');
+        if (!ul) return;
+        const items = Array.from(ul.querySelectorAll(':scope > li.list'));
+        const first = items[0];
+        if (!first) return;
+        const dx = targetLi.offsetLeft - first.offsetLeft;
+        indicator.style.transform = 'translateX(' + dx + 'px)';
     }
 
     const initialActive = document.querySelector('.bottom-nav-bar .list.active');
     if (initialActive) moveIndicator(initialActive);
+
+    let navResizeSched;
+    window.addEventListener('resize', () => {
+        clearTimeout(navResizeSched);
+        navResizeSched = setTimeout(function () {
+            const a = document.querySelector('.bottom-nav-bar .list.active');
+            if (a) moveIndicator(a);
+        }, 120);
+    }, { passive: true });
 
     listItems.forEach(item => {
         const link = item.querySelector('.nav-main-link');

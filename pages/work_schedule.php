@@ -198,10 +198,16 @@ $account_work_url = BASE_URL . 'pages/settings/user_profile.php#work-account-job
             <div id="ws-modal-job-chips" class="work-store-chip-wrap" role="listbox" aria-label="בחירת עבודה"></div>
             <span class="work-field-label">סוג משמרת</span>
             <div id="ws-modal-type-chips" class="work-store-chip-wrap" role="listbox" aria-label="בחירת סוג משמרת"></div>
-            <label class="work-field-label" for="ws-modal-start-time">התחלה</label>
-            <input type="time" id="ws-modal-start-time" class="work-input work-input--time" step="60" />
-            <label class="work-field-label" for="ws-modal-end-time">סיום</label>
-            <input type="time" id="ws-modal-end-time" class="work-input work-input--time" step="60" />
+            <div class="work-time-fields" role="group" aria-label="שעות משמרת">
+                <div class="work-time-field">
+                    <label class="work-field-label work-field-label--inline" for="ws-modal-start-time">התחלה</label>
+                    <input type="time" id="ws-modal-start-time" class="work-input work-input--time" step="60" />
+                </div>
+                <div class="work-time-field">
+                    <label class="work-field-label work-field-label--inline" for="ws-modal-end-time">סיום</label>
+                    <input type="time" id="ws-modal-end-time" class="work-input work-input--time" step="60" />
+                </div>
+            </div>
             <p class="work-field-hint work-field-hint--subtle" id="ws-modal-overnight-hint" style="display:none">המשמרת מסתיימת ביום המחרת</p>
             <label class="work-field-label" for="ws-modal-note">הערה (אופציונלי)</label>
             <input type="text" id="ws-modal-note" class="work-input" maxlength="500" />
