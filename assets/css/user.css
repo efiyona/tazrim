@@ -5256,18 +5256,31 @@ body.page-auth {
     align-items: center;
     gap: 10px;
     margin-bottom: 8px;
+    min-width: 0;
+    max-width: 100%;
 }
 .work-type-card__head .work-input {
     flex: 1;
     min-width: 0;
+    width: 1%;
+}
+.work-type-card__head .btn-small {
+    flex-shrink: 0;
 }
 .work-type-times {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+    align-items: start;
+}
+@media (max-width: 420px) {
+    .work-type-times {
+        grid-template-columns: 1fr;
+    }
 }
 .work-type-time-label {
     display: block;
+    min-width: 0;
 }
 .work-type-time-label span {
     display: block;
@@ -5276,8 +5289,45 @@ body.page-auth {
     color: var(--text-light);
     margin-bottom: 4px;
 }
+.work-type-time-label input[type="time"].work-input--time {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
 .work-input--time {
     padding: 10px 12px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+/* שורת שעות במודלים ובפרופיל — עמודות במובייל */
+.work-time-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 12px;
+    align-items: start;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+.work-time-field {
+    min-width: 0;
+    max-width: 100%;
+}
+.work-time-field .work-field-label--inline,
+.work-time-field label {
+    margin-top: 0;
+    margin-bottom: 6px;
+}
+.work-field-label--inline {
+    font-size: 0.88rem;
+}
+@media (max-width: 400px) {
+    .work-time-fields {
+        grid-template-columns: 1fr;
+    }
 }
 .work-type-icon-grid {
     margin-top: 4px;
@@ -5347,9 +5397,19 @@ body.page-auth {
     align-items: center;
     justify-content: center;
     gap: 4px;
-    min-width: 68px;
+    min-width: 0;
+    flex: 1 1 calc(25% - 8px);
+    max-width: 88px;
     color: var(--text, #1a1d24);
     transition: border-color 0.15s, background 0.15s;
+}
+@media (max-width: 360px) {
+    .work-preset-ic-btn {
+        flex: 1 1 calc(50% - 6px);
+        max-width: none;
+        padding: 7px 6px;
+    }
+    .work-preset-ic-label { font-size: 0.62rem; }
 }
 .work-preset-ic-btn--sel,
 .work-preset-ic-btn.work-preset-ic-btn--sel {
@@ -5697,6 +5757,61 @@ body.page-auth {
 .work-shift-modal .modal-content {
     max-width: 420px;
     border-radius: 16px;
+    width: min(100%, 420px);
+    box-sizing: border-box;
+}
+.work-type-modal-content {
+    max-width: 440px;
+    width: min(100%, 440px);
+    box-sizing: border-box;
+}
+@media (max-width: 480px) {
+    .work-shift-modal .modal-content,
+    .work-type-modal-content {
+        width: calc(100vw - 20px);
+        max-width: none;
+        margin: max(10px, 4vh) auto;
+        max-height: min(88vh, 640px);
+    }
+    .work-shift-modal .modal-header {
+        padding: 14px 16px;
+    }
+    .work-shift-modal .modal-body {
+        padding: 14px 14px 18px;
+    }
+}
+#work-step-2 {
+    text-align: right;
+    direction: rtl;
+}
+#work-step-2 .work-add-type-btn,
+#work-step-2 #wizard-finish-btn {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+}
+@media (max-width: 520px) {
+    .work-welcome-card.shopping-welcome-card {
+        padding: 22px 14px 28px;
+        margin: 12px auto;
+        max-width: calc(100vw - 20px);
+        box-sizing: border-box;
+    }
+    .work-type-card {
+        padding: 10px 10px;
+        margin-bottom: 10px;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    .work-palette--centered {
+        max-width: 100%;
+        justify-content: center;
+        gap: 8px;
+    }
+    .work-palette-swatch {
+        width: 32px;
+        height: 32px;
+    }
 }
 .work-modal-actions {
     display: flex;

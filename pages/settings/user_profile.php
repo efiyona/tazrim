@@ -1284,12 +1284,12 @@ if ($conn instanceof mysqli) {
                 <label for="up-work-type-name">שם</label>
                 <input type="text" id="up-work-type-name" class="work-input" maxlength="80" />
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-                <div class="input-group">
+            <div class="work-time-fields" role="group" aria-label="שעות ברירת מחדל">
+                <div class="work-time-field input-group">
                     <label for="up-work-type-t1">התחלה (ברירת מחדל)</label>
                     <input type="time" id="up-work-type-t1" class="work-input work-input--time" step="60" />
                 </div>
-                <div class="input-group">
+                <div class="work-time-field input-group">
                     <label for="up-work-type-t2">סיום (ברירת מחדל)</label>
                     <input type="time" id="up-work-type-t2" class="work-input work-input--time" step="60" />
                 </div>
