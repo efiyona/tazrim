@@ -408,6 +408,27 @@
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
 }
 
+a.admin-kpi-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+a.admin-kpi-card:hover {
+    border-color: #bfdbfe;
+    box-shadow: 0 12px 34px rgba(37, 99, 235, 0.08);
+}
+
+a.admin-kpi-card:focus {
+    outline: none;
+}
+
+a.admin-kpi-card:focus-visible {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
 .admin-kpi-card__icon {
     display: inline-flex;
     align-items: center;

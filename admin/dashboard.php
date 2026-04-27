@@ -9,18 +9,19 @@ $stats = [
     'users_total' => 0,
     'homes_total' => 0,
     'reports_pending' => 0,
-    'reports_total' => 0,
+    'landing_visits' => 0,
 ];
 $statQueries = [
     'users_total' => 'SELECT COUNT(*) AS c FROM `users`',
     'homes_total' => 'SELECT COUNT(*) AS c FROM `homes`',
     'reports_pending' => "SELECT COUNT(*) AS c FROM `feedback_reports` WHERE `status` IN ('new', 'in_review')",
-    'reports_total' => 'SELECT COUNT(*) AS c FROM `feedback_reports`',
 ];
 foreach ($statQueries as $key => $sql) {
     $res = mysqli_query($conn, $sql);
     $stats[$key] = $res ? (int) mysqli_fetch_assoc($res)['c'] : 0;
 }
+$lvRes = @mysqli_query($conn, 'SELECT COUNT(*) AS c FROM `landing_page_events`');
+$stats['landing_visits'] = $lvRes ? (int) mysqli_fetch_assoc($lvRes)['c'] : 0;
 
 $latestUsers = [];
 $usersRes = mysqli_query($conn, "SELECT id, first_name, last_name, email, role FROM `users` ORDER BY `id` DESC LIMIT 5");
@@ -70,29 +71,62 @@ require dirname(__FILE__) . '/includes/partials/layout_shell_start.php';
         </a>
     </section>
 
-    <section class="admin-kpi-grid">
-        <article class="admin-kpi-card">
+    <section class="admin-kpi-grid" id="admin-dashboard-kpi">
+        <a class="admin-kpi-card" href="<?php echo htmlspecialchars(BASE_URL . 'admin/table.php?t=users', ENT_QUOTES, 'UTF-8'); ?>">
             <span class="admin-kpi-card__icon"><i class="fa-solid fa-users"></i></span>
             <div class="admin-kpi-card__label">משתמשים רשומים</div>
-            <div class="admin-kpi-card__value"><?php echo number_format($stats['users_total']); ?></div>
-        </article>
-        <article class="admin-kpi-card">
+            <div class="admin-kpi-card__value"><span class="js-admin-kpi-counter" data-kpi-target="<?php echo (int) $stats['users_total']; ?>">0</span></div>
+        </a>
+        <a class="admin-kpi-card" href="<?php echo htmlspecialchars(BASE_URL . 'admin/table.php?t=homes', ENT_QUOTES, 'UTF-8'); ?>">
             <span class="admin-kpi-card__icon"><i class="fa-solid fa-house-user"></i></span>
             <div class="admin-kpi-card__label">בתים פעילים</div>
-            <div class="admin-kpi-card__value"><?php echo number_format($stats['homes_total']); ?></div>
-        </article>
-        <article class="admin-kpi-card admin-kpi-card--alert">
+            <div class="admin-kpi-card__value"><span class="js-admin-kpi-counter" data-kpi-target="<?php echo (int) $stats['homes_total']; ?>">0</span></div>
+        </a>
+        <a class="admin-kpi-card admin-kpi-card--alert" href="<?php echo htmlspecialchars(BASE_URL . 'admin/table.php?t=feedback_reports', ENT_QUOTES, 'UTF-8'); ?>">
             <span class="admin-kpi-card__icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
             <div class="admin-kpi-card__label">דיווחים ממתינים</div>
-            <div class="admin-kpi-card__value"><?php echo number_format($stats['reports_pending']); ?></div>
-        </article>
-        <article class="admin-kpi-card">
-            <span class="admin-kpi-card__icon"><i class="fa-solid fa-inbox"></i></span>
-            <div class="admin-kpi-card__label">סה"כ דיווחים</div>
-            <div class="admin-kpi-card__value"><?php echo number_format($stats['reports_total']); ?></div>
-        </article>
+            <div class="admin-kpi-card__value"><span class="js-admin-kpi-counter" data-kpi-target="<?php echo (int) $stats['reports_pending']; ?>">0</span></div>
+        </a>
+        <a class="admin-kpi-card" href="<?php echo htmlspecialchars(BASE_URL . 'admin/landing_events.php', ENT_QUOTES, 'UTF-8'); ?>">
+            <span class="admin-kpi-card__icon"><i class="fa-solid fa-door-open"></i></span>
+            <div class="admin-kpi-card__label">ביקורים בדף נחיתה</div>
+            <div class="admin-kpi-card__value"><span class="js-admin-kpi-counter" data-kpi-target="<?php echo (int) $stats['landing_visits']; ?>">0</span></div>
+        </a>
 
     </section>
+
+    <script>
+    (function () {
+        function formatCount(n) {
+            return n.toLocaleString('en-US');
+        }
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+        var nodes = document.querySelectorAll('#admin-dashboard-kpi .js-admin-kpi-counter');
+        var duration = 950;
+        nodes.forEach(function (el, i) {
+            var raw = el.getAttribute('data-kpi-target') || '0';
+            var target = parseInt(raw, 10);
+            if (isNaN(target) || target < 0) {
+                target = 0;
+            }
+            var delay = i * 70;
+            window.setTimeout(function () {
+                var t0 = performance.now();
+                function tick(now) {
+                    var p = Math.min(1, (now - t0) / duration);
+                    var v = Math.round(target * easeOutCubic(p));
+                    el.textContent = formatCount(v);
+                    if (p < 1) {
+                        requestAnimationFrame(tick);
+                    }
+                }
+                requestAnimationFrame(tick);
+            }, delay);
+        });
+    })();
+    </script>
 
     <section class="admin-dashboard-grid">
         <article class="admin-dashboard-panel admin-dashboard-panel--wide">
