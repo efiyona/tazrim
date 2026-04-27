@@ -1,11 +1,16 @@
 <?php
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 
-/** סנכרון תפקיד מהמסד לסשן (קישור פאנל אדמין עקבי עם אימות בשרת) */
+/** סנכרון תפקיד + דגלים מהמסד לסשן (קישור פאנל אדמין עקבי עם אימות בשרת) */
+$urow = null;
+$work_schedule_enabled = false;
 if (function_exists('selectOne') && isset($_SESSION['id'])) {
     $urow = selectOne('users', ['id' => (int) $_SESSION['id']]);
     if ($urow && isset($urow['role'])) {
         $_SESSION['role'] = $urow['role'];
+    }
+    if ($urow && !empty($urow['work_schedule_enabled'])) {
+        $work_schedule_enabled = true;
     }
 }
 
@@ -51,15 +56,32 @@ $navigation = [
         'file' => 'shopping.php',
         'plus_modal' => 'add-shopping-item-modal' 
     ],
-    [
-        'name' => 'הגדרות',
-        'icon' => 'fa-gear',
-        'url' => 'javascript:void(0);',
-        'file' => $settings_nav_files,
-        'plus_modal' => null,
-        'submenu' => $settings_submenu
-    ]
 ];
+if (!empty($work_schedule_enabled)) {
+    $navigation[] = [
+        'name' => 'סידור',
+        'icon' => 'fa-calendar-week',
+        'url' => BASE_URL . 'pages/work_schedule.php',
+        'file' => 'work_schedule.php',
+        'plus_modal' => 'work-shift-quick-modal',
+    ];
+}
+$navigation[] = [
+    'name' => 'הגדרות',
+    'icon' => 'fa-gear',
+    'url' => 'javascript:void(0);',
+    'file' => $settings_nav_files,
+    'plus_modal' => null,
+    'submenu' => $settings_submenu
+];
+
+if (!empty($GLOBALS['tazrim_work_schedule_hide_fab'] ?? null)) {
+    foreach ($navigation as $k => $item) {
+        if (isset($item['file']) && $item['file'] === 'work_schedule.php') {
+            $navigation[$k]['plus_modal'] = null;
+        }
+    }
+}
 
 function isNavActive($nav_item, $current_page) {
     if (isset($nav_item['file'])) {
@@ -123,11 +145,13 @@ $emailForGate = (string) ($_SESSION['user_email'] ?? '');
     <?php
         $is_shopping_fab = $current_page === 'shopping.php';
         $is_reports_export_fab = $current_page === 'reports.php';
+        $is_work_schedule_fab = $current_page === 'work_schedule.php';
     ?>
     <div class="detached-plus-wrapper <?php echo $is_shopping_fab ? 'detached-plus-wrapper--danger' : ''; ?>">
         <div
             class="plus-btn-detached <?php echo $is_shopping_fab ? 'plus-btn-detached--danger' : ''; ?>"
-            <?php if (!$is_shopping_fab): ?>onclick="openDynamicModal('<?php echo $target_modal_id; ?>')"<?php endif; ?>
+            <?php if ($is_work_schedule_fab): ?>onclick="if(typeof openWorkShiftQuickModal==='function'){openWorkShiftQuickModal();}else{openDynamicModal('work-shift-quick-modal');}"
+            <?php elseif (!$is_shopping_fab): ?>onclick="openDynamicModal('<?php echo $target_modal_id; ?>')"<?php endif; ?>
             aria-label="<?php echo $is_shopping_fab ? 'אפשרויות מחיקה' : ($is_reports_export_fab ? 'ייצוא לאקסל' : 'הוספה'); ?>"
             title="<?php echo $is_shopping_fab ? 'אפשרויות מחיקה' : ($is_reports_export_fab ? 'ייצוא לאקסל' : 'הוספה'); ?>"
         >

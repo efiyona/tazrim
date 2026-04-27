@@ -51,6 +51,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ai_pref_delete'], $_P
         $ai_prefs_flash = 'ok';
     }
 }
+$work_schedule_enabled = !empty($user_data['work_schedule_enabled']);
+$work_jobs_profile = [];
+$work_palette_up = ['#5B8DEF', '#E85D75', '#2BB673', '#F5A524', '#9B6BFF', '#00B8D4', '#FF7B54', '#6B7C93'];
+if ($work_schedule_enabled && $conn instanceof mysqli) {
+    $wu = (int) $user_id;
+    $qwj = @mysqli_query($conn, 'SELECT * FROM `user_work_jobs` WHERE `user_id` = ' . $wu . ' ORDER BY `sort_order` ASC, `id` ASC');
+    if ($qwj) {
+        while ($wj = mysqli_fetch_assoc($qwj)) {
+            $wjobId = (int) $wj['id'];
+            $wj['types'] = [];
+            $qwt = @mysqli_query(
+                $conn,
+                'SELECT * FROM `user_work_shift_types` WHERE `job_id` = ' . $wjobId . ' ORDER BY `sort_order` ASC, `id` ASC'
+            );
+            if ($qwt) {
+                while ($wt = mysqli_fetch_assoc($qwt)) {
+                    $wj['types'][] = $wt;
+                }
+            }
+            $work_jobs_profile[] = $wj;
+        }
+    }
+}
+
 $ai_prefs_rows = [];
 if ($conn instanceof mysqli) {
     $apStmt = $conn->prepare('SELECT pref_key, pref_value, updated_at FROM ai_user_preferences WHERE user_id = ? ORDER BY updated_at DESC');
@@ -267,7 +291,21 @@ if ($conn instanceof mysqli) {
                 </div>
 
                 <div class="management-grid">
-                    
+                    <?php if ($work_schedule_enabled): ?>
+                    <div class="card full-width-card" id="work-account-jobs">
+                        <div class="card-header">
+                            <h3>סידור עבודה</h3>
+                        </div>
+                        <div class="card-body-padding" id="user-profile-work-panel-wrap">
+                            <?php
+                            $work_jobs = $work_jobs_profile;
+                            $work_panel_uid = (int) $user_id;
+                            include ROOT_PATH . '/app/includes/partials/user_profile_work_panel.php';
+                            ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                     <div class="card">
                         <div class="card-header">
                             <h3>פרטים אישיים</h3>
@@ -1203,5 +1241,79 @@ if ($conn instanceof mysqli) {
             }
         }
     </script>
+<?php if ($work_schedule_enabled): ?>
+<div id="up-work-job-modal" class="modal" style="display:none" aria-hidden="true" role="dialog" aria-labelledby="up-work-job-h">
+    <div class="modal-content" style="max-width:440px">
+        <div class="modal-header">
+            <h3 id="up-work-job-h">עבודה</h3>
+            <button type="button" class="close-modal-btn" onclick="upWorkCloseJobModal()" aria-label="סגור"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="up-work-job-id" value="" />
+            <div class="input-group">
+                <label for="up-work-job-title">שם עבודה</label>
+                <input type="text" id="up-work-job-title" class="work-input" maxlength="120" />
+            </div>
+            <span class="work-field-label">צבע בלוח</span>
+            <div class="work-palette work-palette--centered" id="up-work-job-palette" role="list">
+                <?php foreach ($work_palette_up as $i => $hex): ?>
+                <button type="button" class="work-palette-swatch up-work-pal<?php echo $i === 0 ? ' work-palette-swatch--selected' : ''; ?>" data-color="<?php echo htmlspecialchars($hex, ENT_QUOTES, 'UTF-8'); ?>" style="background:<?php echo htmlspecialchars($hex, ENT_QUOTES, 'UTF-8'); ?>" aria-pressed="<?php echo $i === 0 ? 'true' : 'false'; ?>"></button>
+                <?php endforeach; ?>
+            </div>
+            <input type="hidden" id="up-work-job-color" value="<?php echo htmlspecialchars($work_palette_up[0], ENT_QUOTES, 'UTF-8'); ?>" />
+            <div class="input-group">
+                <label for="up-work-job-payday">יום שכר בחודש (1–31)</label>
+                <input type="number" id="up-work-job-payday" class="work-input" min="1" max="31" value="10" />
+            </div>
+            <div id="up-work-job-msg" style="display:none;padding:10px;border-radius:8px;font-weight:600;text-align:center"></div>
+            <button type="button" class="btn-primary" id="up-work-job-save" onclick="upWorkSaveJob()">שמור</button>
+        </div>
+    </div>
+</div>
+<div id="up-work-type-modal" class="modal" style="display:none" aria-hidden="true" role="dialog" aria-labelledby="up-work-type-h">
+    <div class="modal-content" style="max-width:440px">
+        <div class="modal-header">
+            <h3 id="up-work-type-h">סוג משמרת</h3>
+            <button type="button" class="close-modal-btn" onclick="upWorkCloseTypeModal()" aria-label="סגור"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="up-work-type-id" value="" />
+            <input type="hidden" id="up-work-type-job-id" value="" />
+            <input type="hidden" id="up-work-type-sort" value="0" />
+            <div class="input-group">
+                <label for="up-work-type-name">שם</label>
+                <input type="text" id="up-work-type-name" class="work-input" maxlength="80" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="input-group">
+                    <label for="up-work-type-t1">התחלה (ברירת מחדל)</label>
+                    <input type="time" id="up-work-type-t1" class="work-input work-input--time" step="60" />
+                </div>
+                <div class="input-group">
+                    <label for="up-work-type-t2">סיום (ברירת מחדל)</label>
+                    <input type="time" id="up-work-type-t2" class="work-input work-input--time" step="60" />
+                </div>
+            </div>
+            <span class="work-field-label">אייקון</span>
+            <div class="work-preset-ic-row" id="up-work-type-preset-row">
+                <button type="button" class="work-preset-ic-btn" data-preset="morning"><i class="fa-solid fa-sun"></i><span class="work-preset-ic-label">בוקר</span></button>
+                <button type="button" class="work-preset-ic-btn" data-preset="evening"><i class="fa-solid fa-cloud-sun"></i><span class="work-preset-ic-label">ערב</span></button>
+                <button type="button" class="work-preset-ic-btn" data-preset="mid"><i class="fa-solid fa-clock"></i><span class="work-preset-ic-label">ביניים</span></button>
+                <button type="button" class="work-preset-ic-btn" data-preset="night"><i class="fa-solid fa-moon"></i><span class="work-preset-ic-label">לילה</span></button>
+            </div>
+            <input type="hidden" id="up-work-type-preset" value="morning" />
+            <div id="up-work-type-msg" style="display:none;padding:10px;border-radius:8px;font-weight:600;text-align:center"></div>
+            <div class="work-modal-actions" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px">
+                <button type="button" class="btn-primary" id="up-work-type-save" onclick="upWorkSaveType()">שמור</button>
+                <button type="button" class="btn-danger-outline" id="up-work-type-del" style="display:none" onclick="upWorkDeleteType()">מחיקה</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+window.TAZRIM_USER_WORK = { api: <?php echo json_encode(BASE_URL . 'app/ajax/work_schedule.php', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>, panelUrl: <?php echo json_encode(BASE_URL . 'app/ajax/fetch_user_profile_work_panel.php', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?> };
+</script>
+<script src="<?php echo htmlspecialchars(BASE_URL . 'assets/js/user_profile_work.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
+<?php endif; ?>
 </body>
 </html>

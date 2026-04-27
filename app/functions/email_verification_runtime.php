@@ -157,12 +157,14 @@ if (!function_exists('tazrim_ajax_basename_email_whitelist')) {
             'fetch_manage_home_categories.php',
             'save_category.php',
             'fetch_manage_home_shopping_stores.php',
+            'fetch_user_profile_work_panel.php',
             'save_shopping_store.php',
             'delete_category.php',
             'delete_shopping_store.php',
             'fetch_notifications.php',
             'mark_notifications_read.php',
             'submit_feedback.php',
+            'work_schedule.php',
         ];
 
         return array_merge($base, $settings);

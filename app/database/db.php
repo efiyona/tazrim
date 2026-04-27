@@ -109,6 +109,97 @@ require_once ROOT_PATH . '/app/functions/landing_visit_log.php';
 tazrim_ensure_landing_page_events_table();
 
 /**
+ * סידור עבודה: users.work_schedule_enabled + user_work_*.
+ */
+function tazrim_ensure_work_schedule_schema(): void
+{
+    global $conn;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    if (!$conn) {
+        return;
+    }
+    $done = true;
+
+    $r = @mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE 'work_schedule_enabled'");
+    if ($r && mysqli_num_rows($r) === 0) {
+        @mysqli_query(
+            $conn,
+            "ALTER TABLE `users` ADD COLUMN `work_schedule_enabled` TINYINT(1) NOT NULL DEFAULT 0 AFTER `role`"
+        );
+    }
+
+    @mysqli_query(
+        $conn,
+        "CREATE TABLE IF NOT EXISTS `user_work_jobs` (
+            `id` int(11) NOT NULL AUTO_INCREMENT,
+            `user_id` int(11) NOT NULL,
+            `title` varchar(120) NOT NULL,
+            `color` varchar(7) NOT NULL DEFAULT '#5B8DEF',
+            `payday_day_of_month` tinyint unsigned NOT NULL DEFAULT 1,
+            `sort_order` int(11) NOT NULL DEFAULT 0,
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+            PRIMARY KEY (`id`),
+            KEY `idx_user_work_jobs_user` (`user_id`),
+            CONSTRAINT `fk_user_work_jobs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    @mysqli_query(
+        $conn,
+        "CREATE TABLE IF NOT EXISTS `user_work_shift_types` (
+            `id` int(11) NOT NULL AUTO_INCREMENT,
+            `job_id` int(11) NOT NULL,
+            `name` varchar(80) NOT NULL,
+            `icon_preset` varchar(24) NOT NULL DEFAULT '',
+            `sort_order` int(11) NOT NULL DEFAULT 0,
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            PRIMARY KEY (`id`),
+            KEY `idx_user_work_shift_types_job` (`job_id`),
+            CONSTRAINT `fk_user_work_st_job` FOREIGN KEY (`job_id`) REFERENCES `user_work_jobs` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    $rIc = @mysqli_query($conn, "SHOW COLUMNS FROM `user_work_shift_types` LIKE 'icon_class'");
+    if ($rIc && mysqli_num_rows($rIc) === 0) {
+        @mysqli_query(
+            $conn,
+            "ALTER TABLE `user_work_shift_types`
+             ADD COLUMN `icon_class` varchar(64) NOT NULL DEFAULT '' AFTER `icon_preset`,
+             ADD COLUMN `default_start_time` time DEFAULT NULL AFTER `icon_class`,
+             ADD COLUMN `default_end_time` time DEFAULT NULL AFTER `default_start_time`"
+        );
+    }
+
+    @mysqli_query(
+        $conn,
+        "CREATE TABLE IF NOT EXISTS `user_work_shifts` (
+            `id` int(11) NOT NULL AUTO_INCREMENT,
+            `user_id` int(11) NOT NULL,
+            `job_id` int(11) NOT NULL,
+            `shift_type_id` int(11) DEFAULT NULL,
+            `starts_at` datetime NOT NULL,
+            `ends_at` datetime NOT NULL,
+            `note` varchar(500) DEFAULT NULL,
+            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+            `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+            PRIMARY KEY (`id`),
+            KEY `idx_user_work_shifts_user_start` (`user_id`, `starts_at`),
+            KEY `idx_user_work_shifts_job` (`job_id`),
+            KEY `idx_user_work_shifts_type` (`shift_type_id`),
+            CONSTRAINT `fk_user_work_shifts_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+            CONSTRAINT `fk_user_work_shifts_job` FOREIGN KEY (`job_id`) REFERENCES `user_work_jobs` (`id`) ON DELETE CASCADE,
+            CONSTRAINT `fk_user_work_shifts_st` FOREIGN KEY (`shift_type_id`) REFERENCES `user_work_shift_types` (`id`) ON DELETE SET NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+}
+
+tazrim_ensure_work_schedule_schema();
+
+/**
  * טבלאות הודעות פופאפ מנוהלות (קמפיינים, יעדים, קריאות).
  */
 function tazrim_ensure_popup_campaign_tables() {
