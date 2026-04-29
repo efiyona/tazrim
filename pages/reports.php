@@ -36,6 +36,9 @@ $next_month = $current_month + 1;
 $next_year = $current_year;
 if ($next_month == 13) { $next_month = 1; $next_year++; }
 
+$today_m = (int) date('m');
+$today_y = (int) date('Y');
+
 $month_names = ["", "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
 
 // === שליפת נתוני KPI ===
@@ -245,75 +248,32 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
                     <h1 class="section-title" style="margin-bottom: 0;">דוחות ותובנות</h1>
                 </div>
                 
-                <div class="home-month-nav shopping-tabs-bar<?php echo !$is_current_month ? ' home-month-nav--has-today' : ''; ?>" aria-label="ניווט בין חודשים">
+                <div class="home-month-nav shopping-tabs-bar<?php echo !$is_current_month ? ' home-month-nav--has-today' : ''; ?>" id="reports-month-nav" aria-label="ניווט בין חודשים">
                     <div class="shopping-store-tabs">
-                        <a href="?m=<?php echo $prev_month; ?>&y=<?php echo $prev_year; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש קודם">
+                        <a id="reports-month-prev" href="?m=<?php echo $prev_month; ?>&y=<?php echo $prev_year; ?>" data-m="<?php echo (int) $prev_month; ?>" data-y="<?php echo (int) $prev_year; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש קודם">
                             <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-                            <span><?php echo $month_names[$prev_month]; ?></span>
+                            <span data-role="month-label"><?php echo $month_names[$prev_month]; ?></span>
                         </a>
                         <div class="home-month-nav__center-cell">
-                            <span class="shopping-tab-chip active home-month-nav__current" aria-current="page">
+                            <span class="shopping-tab-chip active home-month-nav__current" id="reports-month-current" aria-current="page">
                                 <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                                <span><?php echo $month_names[$current_month] . ' ' . $current_year; ?></span>
+                                <span data-role="current-label"><?php echo $month_names[$current_month] . ' ' . $current_year; ?></span>
                             </span>
-                            <?php if (!$is_current_month): ?>
-                                <a href="<?php echo BASE_URL . '/pages/reports.php?m=' . date('m') . '&y=' . date('Y'); ?>" class="shopping-tab-chip shopping-tab-add home-month-nav__today" title="חזרה לחודש הנוכחי">
-                                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
-                                    <span>היום</span>
-                                </a>
-                            <?php endif; ?>
+                            <a id="reports-month-today" href="<?php echo BASE_URL . '/pages/reports.php?m=' . $today_m . '&y=' . $today_y; ?>" data-m="<?php echo (int) $today_m; ?>" data-y="<?php echo (int) $today_y; ?>" class="shopping-tab-chip shopping-tab-add home-month-nav__today" title="חזרה לחודש הנוכחי"<?php echo $is_current_month ? ' hidden' : ''; ?>>
+                                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                                <span>היום</span>
+                            </a>
                         </div>
-                        <a href="?m=<?php echo $next_month; ?>&y=<?php echo $next_year; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש הבא">
-                            <span><?php echo $month_names[$next_month]; ?></span>
+                        <a id="reports-month-next" href="?m=<?php echo $next_month; ?>&y=<?php echo $next_year; ?>" data-m="<?php echo (int) $next_month; ?>" data-y="<?php echo (int) $next_year; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש הבא">
+                            <span data-role="month-label"><?php echo $month_names[$next_month]; ?></span>
                             <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
                         </a>
                     </div>
                 </div>
             </div>
 
-            <div class="kpi-grid kpi-grid--home">
-                <div class="kpi-card kpi-card--home kpi-card--income">
-                    <div class="kpi-card__body">
-                        <div class="kpi-card__head">
-                            <span class="kpi-card__icon-wrap" aria-hidden="true"><i class="fa-solid fa-arrow-trend-up"></i></span>
-                            <span class="kpi-card__label">סה"כ הכנסות</span>
-                        </div>
-                        <div class="kpi-amount kpi-card__value success-text"><?php echo number_format($total_income) . '₪'; ?>+</div>
-                    </div>
-                </div>
-
-                <div class="kpi-card kpi-card--home kpi-card--expense">
-                    <div class="kpi-card__body">
-                        <div class="kpi-card__head">
-                            <span class="kpi-card__icon-wrap" aria-hidden="true"><i class="fa-solid fa-arrow-trend-down"></i></span>
-                            <span class="kpi-card__label">סה"כ הוצאות</span>
-                        </div>
-                        <div class="kpi-amount kpi-card__value error-text"><?php echo number_format($total_expenses) . '₪'; ?>-</div>
-                    </div>
-                </div>
-
-                <div class="kpi-card kpi-card--home kpi-card--reports-balance">
-                    <div class="kpi-card__body">
-                        <div class="kpi-card__head">
-                            <span class="kpi-card__icon-wrap" aria-hidden="true"><i class="fa-solid fa-scale-balanced"></i></span>
-                            <span class="kpi-card__label">מאזן החודש</span>
-                        </div>
-                        <div class="kpi-amount kpi-card__value <?php echo $balance >= 0 ? 'success-text' : 'error-text'; ?>">
-                            <span dir="ltr"><?php echo $balance < 0 ? '-' : '+'; ?><?php echo number_format(abs($balance)); ?>₪</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="kpi-card kpi-card--home kpi-card--daily-avg">
-                    <div class="kpi-card__body">
-                        <div class="kpi-card__head">
-                            <span class="kpi-card__icon-wrap" aria-hidden="true"><i class="fa-regular fa-calendar-days"></i></span>
-                            <span class="kpi-card__label">ממוצע הוצאה יומית</span>
-                        </div>
-                        <div class="kpi-amount kpi-card__value kpi-card__value--amber"><?php echo number_format($daily_avg) . '₪'; ?></div>
-                    </div>
-                </div>
-
+            <div id="reports-kpis-wrap">
+                <?php include ROOT_PATH . '/app/includes/partials/reports_kpis.php'; ?>
             </div>
 
             <div class="charts-container">
@@ -321,7 +281,7 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
                     <div class="chart-header">
                         <h3><i class="fa-solid fa-chart-pie" style="color: var(--main);"></i> התפלגות הוצאות</h3>
                     </div>
-                    <div class="canvas-wrapper">
+                    <div class="canvas-wrapper" id="reports-pie-wrap">
                         <canvas id="expensesPieChart"></canvas>
                     </div>
                 </div>
@@ -331,39 +291,7 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
                         <h3><i class="fa-solid fa-bullseye" style="color: var(--error);"></i> ניצול תקציבים</h3>
                     </div>
                     <div id="budgets-progress-container" style="padding-top: 10px;">
-                        
-                        <?php if(empty($budgets)): ?>
-                            <div style="text-align: center; color: #888; padding: 30px 0;">
-                                <i class="fa-solid fa-clipboard-check" style="font-size: 2rem; margin-bottom: 10px; color: #ccc;"></i><br>
-                                לא הוגדרו יעדי תקציב לחודש זה.
-                            </div>
-                        <?php else: ?>
-                            <?php foreach($budgets as $b): 
-                                // חישוב אחוז הניצול
-                                $percent = $b['budget_limit'] > 0 ? ($b['spent'] / $b['budget_limit']) * 100 : 0;
-                                $percent_clamped = min($percent, 100); // מונע מהפס לצאת מגבולות הבר
-                                
-                                // קביעת צבע לפי ניצול: מתחת 75% ירוק, עד 90% כתום, מעל אדום
-                                $color = 'var(--success)';
-                                if ($percent >= 90) $color = 'var(--error)';
-                                elseif ($percent >= 75) $color = '#f59e0b'; // צהוב-כתום
-                            ?>
-                                <div class="budget-item">
-                                    <div class="budget-header">
-                                        <span><i class="fa-solid <?php echo $b['icon'] ?: 'fa-tag'; ?>" style="color: #888; margin-left: 5px;"></i> <?php echo $b['name']; ?></span>
-                                        <span style="font-size: 0.85rem; color: #666;"><strong style="color: var(--text);"><?php echo number_format($b['spent']); ?></strong> / <?php echo number_format($b['budget_limit']); ?> ₪</span>
-                                    </div>
-                                    <div class="progress-bar-bg">
-                                        <div class="progress-bar-fill" style="width: <?php echo $percent_clamped; ?>%; background-color: <?php echo $color; ?>;"></div>
-                                    </div>
-                                    <div style="font-size: 0.75rem; color: <?php echo $color; ?>; font-weight: 700; margin-top: 4px;">
-                                        <?php echo number_format($percent, 1); ?>% נוצל
-                                        <?php if($percent > 100) echo " (חריגה!)"; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-
+                        <?php include ROOT_PATH . '/app/includes/partials/reports_budgets.php'; ?>
                     </div>
                 </div>
             </div>
@@ -390,11 +318,11 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
                     <div class="excel-export-grid">
                         <label class="excel-export-field">
                             <span>מתאריך</span>
-                            <input type="date" name="start_date" value="<?php echo htmlspecialchars($start_date, ENT_QUOTES, 'UTF-8'); ?>" required>
+                            <input type="date" id="exportStartDate" name="start_date" value="<?php echo htmlspecialchars($start_date, ENT_QUOTES, 'UTF-8'); ?>" required>
                         </label>
                         <label class="excel-export-field">
                             <span>עד תאריך</span>
-                            <input type="date" name="end_date" value="<?php echo htmlspecialchars($end_date, ENT_QUOTES, 'UTF-8'); ?>" required>
+                            <input type="date" id="exportEndDate" name="end_date" value="<?php echo htmlspecialchars($end_date, ENT_QUOTES, 'UTF-8'); ?>" required>
                         </label>
                         <label class="excel-export-field">
                             <span>סוג תנועות</span>
@@ -480,22 +408,39 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
     </div>
 
     <script>
-        const pieLabels = <?php echo json_encode($pie_labels); ?>;
-        const pieData = <?php echo json_encode($pie_data); ?>;
+        const TAZRIM_REPORTS = {
+            api: <?php echo json_encode(BASE_URL . 'app/ajax/fetch_reports_data.php', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+            pageUrl: <?php echo json_encode(BASE_URL . 'pages/reports.php', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+            month: <?php echo (int) $current_month; ?>,
+            year: <?php echo (int) $current_year; ?>
+        };
 
-        if (pieData.length > 0) {
+        let pieChartInstance = null;
+        const PIE_COLORS = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FDCB6E', '#6C5CE7',
+            '#A8E6CF', '#FD999A', '#81ECEC', '#74B9FF', '#A29BFE', '#55efc4', '#ff7675'
+        ];
+
+        function renderPieChart(labels, data) {
+            const wrap = document.getElementById('reports-pie-wrap');
+            if (!wrap) return;
+            if (pieChartInstance) {
+                try { pieChartInstance.destroy(); } catch (e) { /* ignore */ }
+                pieChartInstance = null;
+            }
+            if (!data || data.length === 0) {
+                wrap.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#888; font-weight:600;"><i class="fa-solid fa-chart-pie" style="margin-left: 8px; font-size: 1.5rem; color:#ddd;"></i> אין הוצאות בחודש זה.</div>';
+                return;
+            }
+            wrap.innerHTML = '<canvas id="expensesPieChart"></canvas>';
             const ctx = document.getElementById('expensesPieChart').getContext('2d');
-            new Chart(ctx, {
+            pieChartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: pieLabels,
+                    labels: labels,
                     datasets: [{
-                        data: pieData,
-                        // פלטת צבעים נעימה לעין מותאמת אישית
-                        backgroundColor: [
-                            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FDCB6E', '#6C5CE7', 
-                            '#A8E6CF', '#FD999A', '#81ECEC', '#74B9FF', '#A29BFE', '#55efc4', '#ff7675'
-                        ],
+                        data: data,
+                        backgroundColor: PIE_COLORS,
                         borderWidth: 3,
                         borderColor: '#ffffff',
                         hoverOffset: 6
@@ -504,19 +449,19 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '65%', // עובי העוגה
+                    cutout: '65%',
                     plugins: {
-                        legend: { 
-                            position: 'right', 
-                            rtl: true, 
-                            labels: { font: { family: 'Heebo', size: 13, weight: '500' }, padding: 15 } 
+                        legend: {
+                            position: 'right',
+                            rtl: true,
+                            labels: { font: { family: 'Heebo', size: 13, weight: '500' }, padding: 15 }
                         },
                         tooltip: {
                             titleFont: { family: 'Heebo', size: 14 },
                             bodyFont: { family: 'Heebo', size: 14, weight: 'bold' },
                             padding: 12,
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     return ' ' + context.label + ': ₪' + context.raw.toLocaleString();
                                 }
                             }
@@ -524,10 +469,151 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
                     }
                 }
             });
-        } else {
-            // אם אין נתונים לחודש הזה נציג הודעה
-            document.querySelector('.canvas-wrapper').innerHTML = '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#888; font-weight:600;"><i class="fa-solid fa-chart-pie" style="margin-left: 8px; font-size: 1.5rem; color:#ddd;"></i> אין הוצאות בחודש זה.</div>';
         }
+
+        renderPieChart(<?php echo json_encode($pie_labels, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode($pie_data); ?>);
+
+        (function () {
+            const nav = document.getElementById('reports-month-nav');
+            if (!nav) return;
+
+            function buildPageUrl(y, m) {
+                const base = TAZRIM_REPORTS.pageUrl || (window.location.pathname);
+                return base + '?m=' + m + '&y=' + y;
+            }
+
+            function setLoading(on) {
+                const kpiWrap = document.getElementById('reports-kpis-wrap');
+                const budgets = document.getElementById('budgets-progress-container');
+                const pieWrap = document.getElementById('reports-pie-wrap');
+                [kpiWrap, budgets, pieWrap].forEach(function (n) {
+                    if (n) n.style.opacity = on ? '0.55' : '';
+                });
+            }
+
+            function updateHeader(h) {
+                const curLbl = nav.querySelector('[data-role="current-label"]');
+                if (curLbl) curLbl.textContent = h.currentLabel;
+
+                const prev = document.getElementById('reports-month-prev');
+                if (prev) {
+                    prev.setAttribute('data-y', String(h.prev.y));
+                    prev.setAttribute('data-m', String(h.prev.m));
+                    prev.setAttribute('href', '?m=' + h.prev.m + '&y=' + h.prev.y);
+                    const lbl = prev.querySelector('[data-role="month-label"]');
+                    if (lbl) lbl.textContent = h.prev.label;
+                }
+                const next = document.getElementById('reports-month-next');
+                if (next) {
+                    next.setAttribute('data-y', String(h.next.y));
+                    next.setAttribute('data-m', String(h.next.m));
+                    next.setAttribute('href', '?m=' + h.next.m + '&y=' + h.next.y);
+                    const lbl = next.querySelector('[data-role="month-label"]');
+                    if (lbl) lbl.textContent = h.next.label;
+                }
+                const today = document.getElementById('reports-month-today');
+                if (today) {
+                    today.setAttribute('data-y', String(h.today.y));
+                    today.setAttribute('data-m', String(h.today.m));
+                    today.setAttribute('href', buildPageUrl(h.today.y, h.today.m));
+                    if (h.isCurrentMonth) today.setAttribute('hidden', '');
+                    else today.removeAttribute('hidden');
+                }
+                nav.classList.toggle('home-month-nav--has-today', !h.isCurrentMonth);
+            }
+
+            function updateExportDates(d) {
+                const s = document.getElementById('exportStartDate');
+                const e = document.getElementById('exportEndDate');
+                if (s) s.value = d.start;
+                if (e) e.value = d.end;
+            }
+
+            let inflight = null;
+            function loadMonth(y, m, opts) {
+                opts = opts || {};
+                if (inflight && typeof inflight.abort === 'function') {
+                    try { inflight.abort(); } catch (e) { /* ignore */ }
+                }
+                const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+                inflight = ctrl;
+                setLoading(true);
+                const body = new URLSearchParams();
+                body.set('m', String(m));
+                body.set('y', String(y));
+                return fetch(TAZRIM_REPORTS.api, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    credentials: 'same-origin',
+                    body: body.toString(),
+                    signal: ctrl ? ctrl.signal : undefined
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (!res || !res.ok || !res.data) {
+                        setLoading(false);
+                        return;
+                    }
+                    const d = res.data;
+                    TAZRIM_REPORTS.month = d.header.currentM;
+                    TAZRIM_REPORTS.year = d.header.currentY;
+                    updateHeader(d.header);
+                    const kpiWrap = document.getElementById('reports-kpis-wrap');
+                    if (kpiWrap) kpiWrap.innerHTML = d.kpisHtml || '';
+                    const bWrap = document.getElementById('budgets-progress-container');
+                    if (bWrap) bWrap.innerHTML = d.budgetsHtml || '';
+                    renderPieChart(d.pie.labels || [], d.pie.data || []);
+                    updateExportDates(d.dates);
+                    if (!opts.skipHistory) {
+                        try {
+                            const url = buildPageUrl(y, m);
+                            const state = { reportsMonth: true, year: y, month: m };
+                            if (opts.replace) window.history.replaceState(state, '', url);
+                            else window.history.pushState(state, '', url);
+                        } catch (e) { /* ignore */ }
+                    }
+                    setLoading(false);
+                })
+                .catch(function () {
+                    setLoading(false);
+                });
+            }
+
+            nav.addEventListener('click', function (ev) {
+                const a = ev.target.closest('a[data-y][data-m]');
+                if (!a || !nav.contains(a)) return;
+                if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button === 1) return;
+                ev.preventDefault();
+                const y = parseInt(a.getAttribute('data-y'), 10);
+                const m = parseInt(a.getAttribute('data-m'), 10);
+                if (!y || !m) return;
+                if (Number(TAZRIM_REPORTS.year) === y && Number(TAZRIM_REPORTS.month) === m) return;
+                loadMonth(y, m);
+            });
+
+            window.addEventListener('popstate', function (ev) {
+                const st = ev.state;
+                if (st && st.reportsMonth && st.year && st.month) {
+                    loadMonth(parseInt(st.year, 10), parseInt(st.month, 10), { skipHistory: true });
+                    return;
+                }
+                const sp = new URLSearchParams(window.location.search);
+                const y = parseInt(sp.get('y') || '', 10);
+                const m = parseInt(sp.get('m') || '', 10);
+                if (y && m) loadMonth(y, m, { skipHistory: true });
+            });
+
+            try {
+                const st = window.history.state;
+                if (!st || !st.reportsMonth) {
+                    window.history.replaceState(
+                        { reportsMonth: true, year: TAZRIM_REPORTS.year, month: TAZRIM_REPORTS.month },
+                        '',
+                        window.location.href
+                    );
+                }
+            } catch (e) { /* ignore */ }
+        })();
 
         const exportScope = document.getElementById('exportScope');
         const excelExportModal = document.getElementById('excel-export-modal');
