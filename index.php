@@ -36,6 +36,9 @@ $next_month = $selected_month + 1;
 $next_year = $selected_year;
 if ($next_month == 13) { $next_month = 1; $next_year++; }
 
+$today_m = (int) date('m');
+$today_y = (int) date('Y');
+
 $hebrew_months = [
     1 => 'ינואר', 2 => 'פברואר', 3 => 'מרץ', 4 => 'אפריל', 
     5 => 'מאי', 6 => 'יוני', 7 => 'יולי', 8 => 'אוגוסט', 
@@ -68,26 +71,24 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                         <h1 class="section-title" style="margin-bottom: 0;">נתוני החודש</h1>
                     </div>
                     
-                    <div class="home-month-nav shopping-tabs-bar<?php echo !$is_current_month ? ' home-month-nav--has-today' : ''; ?>" aria-label="ניווט בין חודשים">
+                    <div class="home-month-nav shopping-tabs-bar<?php echo !$is_current_month ? ' home-month-nav--has-today' : ''; ?>" id="home-month-nav" aria-label="ניווט בין חודשים">
                         <div class="shopping-store-tabs">
-                            <a href="?m=<?php echo $prev_month; ?>&y=<?php echo $prev_year; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש קודם">
+                            <a id="home-month-prev" href="?m=<?php echo $prev_month; ?>&y=<?php echo $prev_year; ?>" data-m="<?php echo (int) $prev_month; ?>" data-y="<?php echo (int) $prev_year; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש קודם">
                                 <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-                                <span><?php echo $hebrew_months[$prev_month]; ?></span>
+                                <span data-role="month-label"><?php echo $hebrew_months[$prev_month]; ?></span>
                             </a>
                             <div class="home-month-nav__center-cell">
-                                <span class="shopping-tab-chip active home-month-nav__current" aria-current="page">
+                                <span class="shopping-tab-chip active home-month-nav__current" id="home-month-current" aria-current="page">
                                     <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                                    <span><?php echo $month_name . ' ' . $selected_year; ?></span>
+                                    <span data-role="current-label"><?php echo $month_name . ' ' . $selected_year; ?></span>
                                 </span>
-                                <?php if (!$is_current_month): ?>
-                                    <a href="<?php echo '?m=' . date('m') . '&y=' . date('Y'); ?>" class="shopping-tab-chip shopping-tab-add home-month-nav__today" title="חזרה לחודש הנוכחי">
-                                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
-                                        <span>היום</span>
-                                    </a>
-                                <?php endif; ?>
+                                <a id="home-month-today" href="?m=<?php echo $today_m; ?>&y=<?php echo $today_y; ?>" data-m="<?php echo (int) $today_m; ?>" data-y="<?php echo (int) $today_y; ?>" class="shopping-tab-chip shopping-tab-add home-month-nav__today" title="חזרה לחודש הנוכחי"<?php echo $is_current_month ? ' hidden' : ''; ?>>
+                                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                                    <span>היום</span>
+                                </a>
                             </div>
-                            <a href="?m=<?php echo $next_month; ?>&y=<?php echo $next_year; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש הבא">
-                                <span><?php echo $hebrew_months[$next_month]; ?></span>
+                            <a id="home-month-next" href="?m=<?php echo $next_month; ?>&y=<?php echo $next_year; ?>" data-m="<?php echo (int) $next_month; ?>" data-y="<?php echo (int) $next_year; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש הבא">
+                                <span data-role="month-label"><?php echo $hebrew_months[$next_month]; ?></span>
                                 <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
                             </a>
                         </div>
@@ -252,8 +253,11 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         };
     })();
 
-    const currentMonth = <?php echo $selected_month; ?>;
-    const currentYear = <?php echo $selected_year; ?>;
+    let currentMonth = <?php echo (int) $selected_month; ?>;
+    let currentYear = <?php echo (int) $selected_year; ?>;
+
+    const HOME_MONTH_NAMES = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+    const HOME_PAGE_URL = <?php echo json_encode(BASE_URL . 'index.php', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
     let recentOffset = 4;
     let pendingOffset = 4;
@@ -456,6 +460,124 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
             }))
             .catch(function () { window.location.reload(); });
     }
+
+    (function () {
+        const nav = document.getElementById('home-month-nav');
+        if (!nav) return;
+
+        function buildPageUrl(y, m) {
+            const base = HOME_PAGE_URL || window.location.pathname;
+            return base + '?m=' + m + '&y=' + y;
+        }
+
+        function shiftMonth(y, m, delta) {
+            let nm = m + delta;
+            let ny = y;
+            while (nm < 1) { nm += 12; ny -= 1; }
+            while (nm > 12) { nm -= 12; ny += 1; }
+            return { y: ny, m: nm };
+        }
+
+        function todayParts() {
+            const t = new Date();
+            return { y: t.getFullYear(), m: t.getMonth() + 1 };
+        }
+
+        function setLoading(on) {
+            const core = document.getElementById('home-dashboard-core');
+            if (core) core.style.opacity = on ? '0.55' : '';
+        }
+
+        function updateMonthNavHeader(y, m) {
+            const curLbl = nav.querySelector('[data-role="current-label"]');
+            if (curLbl) curLbl.textContent = (HOME_MONTH_NAMES[m - 1] || '') + ' ' + y;
+
+            const prev = document.getElementById('home-month-prev');
+            if (prev) {
+                const p = shiftMonth(y, m, -1);
+                prev.setAttribute('data-y', String(p.y));
+                prev.setAttribute('data-m', String(p.m));
+                prev.setAttribute('href', '?m=' + p.m + '&y=' + p.y);
+                const lbl = prev.querySelector('[data-role="month-label"]');
+                if (lbl) lbl.textContent = HOME_MONTH_NAMES[p.m - 1] || '';
+            }
+            const next = document.getElementById('home-month-next');
+            if (next) {
+                const nx = shiftMonth(y, m, 1);
+                next.setAttribute('data-y', String(nx.y));
+                next.setAttribute('data-m', String(nx.m));
+                next.setAttribute('href', '?m=' + nx.m + '&y=' + nx.y);
+                const lbl = next.querySelector('[data-role="month-label"]');
+                if (lbl) lbl.textContent = HOME_MONTH_NAMES[nx.m - 1] || '';
+            }
+            const today = document.getElementById('home-month-today');
+            const t = todayParts();
+            const isCurrent = (y === t.y && m === t.m);
+            if (today) {
+                today.setAttribute('data-y', String(t.y));
+                today.setAttribute('data-m', String(t.m));
+                today.setAttribute('href', '?m=' + t.m + '&y=' + t.y);
+                if (isCurrent) today.setAttribute('hidden', '');
+                else today.removeAttribute('hidden');
+            }
+            nav.classList.toggle('home-month-nav--has-today', !isCurrent);
+        }
+
+        function navigateToMonth(y, m, opts) {
+            opts = opts || {};
+            if (!y || !m) return;
+            if (Number(currentYear) === Number(y) && Number(currentMonth) === Number(m) && !opts.force) {
+                return;
+            }
+            currentYear = y;
+            currentMonth = m;
+            updateMonthNavHeader(y, m);
+            if (!opts.skipHistory) {
+                try {
+                    const url = buildPageUrl(y, m);
+                    const state = { homeMonth: true, year: y, month: m };
+                    if (opts.replace) window.history.replaceState(state, '', url);
+                    else window.history.pushState(state, '', url);
+                } catch (e) { /* ignore */ }
+            }
+            setLoading(true);
+            return refreshHomeDashboardCore().finally(function () { setLoading(false); });
+        }
+
+        nav.addEventListener('click', function (ev) {
+            const a = ev.target.closest('a[data-y][data-m]');
+            if (!a || !nav.contains(a)) return;
+            if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button === 1) return;
+            ev.preventDefault();
+            const y = parseInt(a.getAttribute('data-y'), 10);
+            const m = parseInt(a.getAttribute('data-m'), 10);
+            if (!y || !m) return;
+            navigateToMonth(y, m);
+        });
+
+        window.addEventListener('popstate', function (ev) {
+            const st = ev.state;
+            if (st && st.homeMonth && st.year && st.month) {
+                navigateToMonth(parseInt(st.year, 10), parseInt(st.month, 10), { skipHistory: true });
+                return;
+            }
+            const sp = new URLSearchParams(window.location.search);
+            const y = parseInt(sp.get('y') || '', 10);
+            const m = parseInt(sp.get('m') || '', 10);
+            if (y && m) navigateToMonth(y, m, { skipHistory: true });
+        });
+
+        try {
+            const st = window.history.state;
+            if (!st || !st.homeMonth) {
+                window.history.replaceState(
+                    { homeMonth: true, year: currentYear, month: currentMonth },
+                    '',
+                    window.location.href
+                );
+            }
+        } catch (e) { /* ignore */ }
+    })();
 
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('.kpi-balance-toggle-btn');

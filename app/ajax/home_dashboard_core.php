@@ -19,6 +19,9 @@ if ($y < 2000 || $y > 2100) {
     $y = (int) date('Y');
 }
 
+$_SESSION['view_month'] = $m;
+$_SESSION['view_year']  = $y;
+
 require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
 
 try {
