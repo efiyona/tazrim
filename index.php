@@ -174,11 +174,25 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                         </div>
                     </div>
 
-                    <div class="input-group" style="margin-top: 20px; text-align: right;">
-                        <label class="checkbox-container" style="font-size: 0.95rem; font-weight: 600;">
-                            <input type="checkbox" name="is_recurring" id="trans-recurring" value="1">
-                            הגדר כפעולה קבועה (תחזור אוטומטית כל חודש)
-                        </label>
+                    <input type="checkbox" name="is_recurring" id="trans-recurring" value="1" style="display:none" aria-hidden="true" tabindex="-1">
+
+                    <div class="input-group" style="margin-top: 20px;">
+                        <label>סוג פעולה</label>
+                        <input type="hidden" name="interval_months" id="trans-interval-months" value="1">
+                        <div class="work-store-chip-wrap" id="trans-recurrence-chips" role="listbox" aria-label="בחירת סוג פעולה">
+                            <button type="button" class="work-store-chip work-store-chip--sel" data-recurrence="once" aria-selected="true">
+                                <span class="work-store-chip__dot work-store-chip__dot--neutral" aria-hidden="true"></span>
+                                <span class="work-store-chip__name">חד־פעמי</span>
+                            </button>
+                            <button type="button" class="work-store-chip" data-recurrence="monthly" aria-selected="false">
+                                <span class="work-store-chip__dot work-store-chip__dot--neutral" aria-hidden="true"></span>
+                                <span class="work-store-chip__name">חודשי</span>
+                            </button>
+                            <button type="button" class="work-store-chip" data-recurrence="bimonthly" aria-selected="false">
+                                <span class="work-store-chip__dot work-store-chip__dot--neutral" aria-hidden="true"></span>
+                                <span class="work-store-chip__name">דו־חודשי</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div id="add-trans-msg" style="margin-bottom: 15px; font-weight: 700; text-align: center; display: none; padding: 10px; border-radius: 8px;"></div>
@@ -771,12 +785,41 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         syncCurrencyToggle('trans-currency-code', 'trans-currency-toggle');
         document.getElementById('selected-category-id').value = ""; 
         document.getElementById('add-trans-msg').style.display = 'none';
+        setTransRecurrenceMode('once');
         
         const submitBtn = document.getElementById('submit-trans-btn');
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> הוסף פעולה';
         
         filterCategories(); 
+    }
+
+    function setTransIntervalMonths(val) {
+        const hidden = document.getElementById('trans-interval-months');
+        const v = (parseInt(val, 10) === 2) ? 2 : 1;
+        if (hidden) {
+            hidden.value = String(v);
+        }
+    }
+
+    function setTransRecurrenceMode(mode) {
+        const m = (mode === 'monthly' || mode === 'bimonthly' || mode === 'once') ? mode : 'once';
+        const recurringCheckbox = document.getElementById('trans-recurring');
+        if (recurringCheckbox) {
+            recurringCheckbox.checked = (m !== 'once');
+        }
+        setTransIntervalMonths(m === 'bimonthly' ? 2 : 1);
+
+        const wrap = document.getElementById('trans-recurrence-chips');
+        if (!wrap) {
+            return;
+        }
+        wrap.querySelectorAll('.work-store-chip').forEach(function (b) {
+            const bMode = b.getAttribute('data-recurrence') || 'once';
+            const sel = bMode === m;
+            b.classList.toggle('work-store-chip--sel', sel);
+            b.setAttribute('aria-selected', sel ? 'true' : 'false');
+        });
     }
 
     function filterCategories() {
@@ -849,7 +892,19 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         }
     });
 
+    const recurrenceWrap = document.getElementById('trans-recurrence-chips');
+    if (recurrenceWrap) {
+        recurrenceWrap.addEventListener('click', function (e) {
+            const btn = e.target.closest('.work-store-chip[data-recurrence]');
+            if (!btn || !recurrenceWrap.contains(btn)) {
+                return;
+            }
+            setTransRecurrenceMode(btn.getAttribute('data-recurrence'));
+        });
+    }
+
     syncCurrencyToggle('trans-currency-code', 'trans-currency-toggle');
+    setTransRecurrenceMode('once');
 </script>
 
 <script>

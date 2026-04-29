@@ -29,9 +29,10 @@ $recurring_income = $recurring_income ?? [];
             $desc = $rec['description'];
             $cat_name = $rec['cat_name'] ?? '';
             $currency_code = tazrim_normalize_currency_code($rec['currency_code'] ?? 'ILS');
+            $interval_months = (int) ($rec['interval_months'] ?? 1);
         ?>
             <div class="transaction-item expense"
-                onclick='openEditRecurringModal(<?php echo (int) $rec['id']; ?>, <?php echo json_encode($desc, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $rec['amount']); ?>, <?php echo json_encode($rec['type']); ?>, <?php echo (int) $rec['category']; ?>, <?php echo (int) $rec['day_of_month']; ?>, <?php echo json_encode($currency_code); ?>)'
+                onclick='openEditRecurringModal(<?php echo (int) $rec['id']; ?>, <?php echo json_encode($desc, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $rec['amount']); ?>, <?php echo json_encode($rec['type']); ?>, <?php echo (int) $rec['category']; ?>, <?php echo (int) $rec['day_of_month']; ?>, <?php echo json_encode($currency_code); ?>, <?php echo (int) $interval_months; ?>)'
                 style="cursor: pointer;">
                 <div class="transaction-info">
                     <div class="cat-icon-wrapper">
@@ -39,7 +40,11 @@ $recurring_income = $recurring_income ?? [];
                     </div>
                     <div class="details">
                         <span class="desc"><?php echo htmlspecialchars($desc, ENT_QUOTES, 'UTF-8'); ?></span>
-                        <span class="date"><?php echo 'כל ' . (int) $rec['day_of_month'] . ' בחודש'; ?><?php echo $cat_name !== '' ? ' · ' . htmlspecialchars($cat_name, ENT_QUOTES, 'UTF-8') : ''; ?></span>
+                        <span class="date">
+                            <?php echo 'כל ' . (int) $rec['day_of_month'] . ' בחודש'; ?>
+                            <?php echo ($interval_months === 2) ? ' · דו־חודשי' : ''; ?>
+                            <?php echo $cat_name !== '' ? ' · ' . htmlspecialchars($cat_name, ENT_QUOTES, 'UTF-8') : ''; ?>
+                        </span>
                     </div>
                 </div>
                 <div class="transaction-actions">
@@ -75,9 +80,10 @@ $recurring_income = $recurring_income ?? [];
             $desc = $rec['description'];
             $cat_name = $rec['cat_name'] ?? '';
             $currency_code = tazrim_normalize_currency_code($rec['currency_code'] ?? 'ILS');
+            $interval_months = (int) ($rec['interval_months'] ?? 1);
         ?>
             <div class="transaction-item income"
-                onclick='openEditRecurringModal(<?php echo (int) $rec['id']; ?>, <?php echo json_encode($desc, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $rec['amount']); ?>, <?php echo json_encode($rec['type']); ?>, <?php echo (int) $rec['category']; ?>, <?php echo (int) $rec['day_of_month']; ?>, <?php echo json_encode($currency_code); ?>)'
+                onclick='openEditRecurringModal(<?php echo (int) $rec['id']; ?>, <?php echo json_encode($desc, JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $rec['amount']); ?>, <?php echo json_encode($rec['type']); ?>, <?php echo (int) $rec['category']; ?>, <?php echo (int) $rec['day_of_month']; ?>, <?php echo json_encode($currency_code); ?>, <?php echo (int) $interval_months; ?>)'
                 style="cursor: pointer;">
                 <div class="transaction-info" style="flex: 1; min-width: 0;">
                     <div class="cat-icon-wrapper">
@@ -85,7 +91,11 @@ $recurring_income = $recurring_income ?? [];
                     </div>
                     <div class="details">
                         <span class="desc"><?php echo htmlspecialchars($desc, ENT_QUOTES, 'UTF-8'); ?></span>
-                        <span class="date"><?php echo 'כל ' . (int) $rec['day_of_month'] . ' בחודש'; ?><?php echo $cat_name !== '' ? ' · ' . htmlspecialchars($cat_name, ENT_QUOTES, 'UTF-8') : ''; ?></span>
+                        <span class="date">
+                            <?php echo 'כל ' . (int) $rec['day_of_month'] . ' בחודש'; ?>
+                            <?php echo ($interval_months === 2) ? ' · דו־חודשי' : ''; ?>
+                            <?php echo $cat_name !== '' ? ' · ' . htmlspecialchars($cat_name, ENT_QUOTES, 'UTF-8') : ''; ?>
+                        </span>
                     </div>
                 </div>
                 <div class="transaction-actions">

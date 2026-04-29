@@ -40,6 +40,10 @@ try {
     $description = trim($body['description'] ?? '');
     $transaction_date = trim($body['transaction_date'] ?? date('Y-m-d'));
     $is_recurring = !empty($body['is_recurring']);
+    $interval_months = isset($body['interval_months']) ? (int) $body['interval_months'] : 1;
+    if (!in_array($interval_months, [1, 2], true)) {
+        $interval_months = 1;
+    }
 
     if ($token === '') {
         echo json_encode(['status' => 'error', 'message' => 'לא התקבל טוקן זיהוי.']);
@@ -108,8 +112,8 @@ try {
     if ($is_recurring) {
         $day_of_month = (int) date('d', strtotime($transaction_date));
         $current_month_start = date('Y-m-01');
-        $insert_recurring = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, currency_code, category, description, day_of_month, last_injected_month, is_active) 
-                             VALUES ($home_id, $user_id, '$type_esc', $amount, '$currency_code_esc', $category_id, '$desc_esc', $day_of_month, '$current_month_start', 1)";
+        $insert_recurring = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, currency_code, category, description, day_of_month, interval_months, last_injected_month, is_active) 
+                             VALUES ($home_id, $user_id, '$type_esc', $amount, '$currency_code_esc', $category_id, '$desc_esc', $day_of_month, $interval_months, '$current_month_start', 1)";
         mysqli_query($conn, $insert_recurring);
     }
 

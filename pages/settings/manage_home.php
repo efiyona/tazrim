@@ -276,11 +276,22 @@ $members_result = mysqli_query($conn, $members_query);
                         </div>
                     </div>
 
-                    <div class="input-group" style="margin-top: 20px; text-align: right;">
-                        <label class="checkbox-container" style="font-size: 0.95rem; font-weight: 600;">
-                            <input type="checkbox" checked disabled aria-hidden="true" tabindex="-1">
-                            פעולה אוטומטית חודשית
-                        </label>
+                    <div class="input-group" style="margin-top: 20px;">
+                        <label>תדירות</label>
+                        <input type="hidden" name="interval_months" id="rec-interval-months" value="1">
+                        <div class="work-store-chip-wrap" id="rec-interval-chips" role="listbox" aria-label="בחירת תדירות">
+                            <button type="button" class="work-store-chip work-store-chip--sel" data-interval="1" aria-selected="true">
+                                <span class="work-store-chip__dot work-store-chip__dot--neutral" aria-hidden="true"></span>
+                                <span class="work-store-chip__name">חודשי</span>
+                            </button>
+                            <button type="button" class="work-store-chip" data-interval="2" aria-selected="false">
+                                <span class="work-store-chip__dot work-store-chip__dot--neutral" aria-hidden="true"></span>
+                                <span class="work-store-chip__name">דו־חודשי</span>
+                            </button>
+                        </div>
+                        <div id="rec-interval-locked-hint" class="work-field-hint work-field-hint--subtle" style="display:none; margin-top:8px;">
+                            לא ניתן לשנות תדירות בעריכת פעולה קיימת.
+                        </div>
                     </div>
 
                     <div id="rec-msg" style="margin-bottom: 15px; font-weight: 700; text-align: center; display: none; padding: 10px; border-radius: 8px;"></div>
@@ -622,10 +633,29 @@ $members_result = mysqli_query($conn, $members_query);
             syncCurrencyToggle('rec-currency-code', 'rec-currency-toggle');
             document.getElementById('rec-selected-category-id').value = '';
             document.getElementById('rec-msg').style.display = 'none';
+            setRecurringIntervalMonths(1);
             var submitBtn = document.getElementById('btn-save-recurring');
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> הוסף פעולה';
             filterRecurringCategories();
+        }
+
+        function setRecurringIntervalMonths(val) {
+            var hidden = document.getElementById('rec-interval-months');
+            var wrap = document.getElementById('rec-interval-chips');
+            var v = (parseInt(val, 10) === 2) ? 2 : 1;
+            if (hidden) {
+                hidden.value = String(v);
+            }
+            if (!wrap) {
+                return;
+            }
+            wrap.querySelectorAll('.work-store-chip').forEach(function (b) {
+                var bVal = parseInt(b.getAttribute('data-interval') || '1', 10);
+                var sel = bVal === v;
+                b.classList.toggle('work-store-chip--sel', sel);
+                b.setAttribute('aria-selected', sel ? 'true' : 'false');
+            });
         }
 
         function refreshManageHomeRecurringPanel() {
@@ -663,10 +693,19 @@ $members_result = mysqli_query($conn, $members_query);
             resetRecurringForm();
             document.getElementById('rec-modal-title').innerText = 'הוספת פעולה חדשה';
             document.getElementById('rec-type-toggle').style.display = 'flex';
+            var intervalWrap = document.getElementById('rec-interval-chips');
+            if (intervalWrap) {
+                intervalWrap.style.pointerEvents = '';
+                intervalWrap.style.opacity = '';
+            }
+            var hint = document.getElementById('rec-interval-locked-hint');
+            if (hint) {
+                hint.style.display = 'none';
+            }
             recurringModal.style.display = 'block';
         }
 
-        function openEditRecurringModal(id, description, amount, type, categoryId, dayOfMonth, currencyCode) {
+        function openEditRecurringModal(id, description, amount, type, categoryId, dayOfMonth, currencyCode, intervalMonths) {
             recurringForm.reset();
             document.getElementById('recurring-id').value = id;
             document.getElementById('rec-modal-title').innerText = 'עריכת פעולה';
@@ -681,6 +720,16 @@ $members_result = mysqli_query($conn, $members_query);
             document.getElementById('rec-currency-code').value = currencyCode || 'ILS';
             syncCurrencyToggle('rec-currency-code', 'rec-currency-toggle');
             document.getElementById('rec-description').value = description;
+            setRecurringIntervalMonths(intervalMonths);
+            var intervalWrap = document.getElementById('rec-interval-chips');
+            if (intervalWrap) {
+                intervalWrap.style.pointerEvents = 'none';
+                intervalWrap.style.opacity = '0.55';
+            }
+            var hint = document.getElementById('rec-interval-locked-hint');
+            if (hint) {
+                hint.style.display = 'block';
+            }
             var now = new Date();
             var y = now.getFullYear();
             var m = now.getMonth();
@@ -698,6 +747,17 @@ $members_result = mysqli_query($conn, $members_query);
         function closeRecurringModal() {
             recurringModal.style.display = 'none';
             resetRecurringForm();
+        }
+
+        var recurringIntervalWrap = document.getElementById('rec-interval-chips');
+        if (recurringIntervalWrap) {
+            recurringIntervalWrap.addEventListener('click', function (e) {
+                var btn = e.target.closest('.work-store-chip[data-interval]');
+                if (!btn || !recurringIntervalWrap.contains(btn)) {
+                    return;
+                }
+                setRecurringIntervalMonths(btn.getAttribute('data-interval'));
+            });
         }
 
         document.addEventListener('click', function () {

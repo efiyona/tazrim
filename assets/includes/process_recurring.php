@@ -29,6 +29,10 @@ if (mysqli_num_rows($recurring_result) > 0) {
         $category = $template['category'];
         $description = mysqli_real_escape_string($conn, $template['description']);
         $day_of_month = $template['day_of_month'];
+        $interval_months = (int) ($template['interval_months'] ?? 1);
+        if (!in_array($interval_months, [1, 2], true)) {
+            $interval_months = 1;
+        }
 
         $last_injected = $template['last_injected_month'];
         
@@ -37,7 +41,7 @@ if (mysqli_num_rows($recurring_result) > 0) {
             $start_date = new DateTime($current_month_start);
         } else {
             $start_date = new DateTime($last_injected);
-            $start_date->modify('+1 month'); // מתחילים מהחודש שאחרי ההזרקה האחרונה
+            $start_date->modify('+' . $interval_months . ' month'); // מתחילים מהחודש שאחרי ההזרקה האחרונה (לפי מרווח)
         }
         
         $end_date = new DateTime($current_month_start);
@@ -106,8 +110,8 @@ if (mysqli_num_rows($recurring_result) > 0) {
                 addNotification($home_id, "פעולה קבועה ($month_name)", $notif_msg, 'success');
             }
             
-            // קידום הלולאה לחודש הבא
-            $start_date->modify('+1 month');
+            // קידום הלולאה לחודש הבא (חודשי/דו־חודשי)
+            $start_date->modify('+' . $interval_months . ' month');
         }
     }
 }

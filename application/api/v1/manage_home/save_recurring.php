@@ -54,6 +54,10 @@ try {
     $amount = isset($body['rec_amount']) ? (float) $body['rec_amount'] : 0;
     $currency_code = tazrim_normalize_currency_code($body['currency_code'] ?? 'ILS');
     $description = mysqli_real_escape_string($conn, trim((string) ($body['rec_description'] ?? '')));
+    $interval_months = isset($body['interval_months']) ? (int) $body['interval_months'] : 1;
+    if (!in_array($interval_months, [1, 2], true)) {
+        $interval_months = 1;
+    }
 
     $day_of_month = 0;
     if (!empty($body['transaction_date'])) {
@@ -113,8 +117,8 @@ try {
         }
     } else {
         $currency_code_esc = mysqli_real_escape_string($conn, $currency_code);
-        $q = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, currency_code, category, description, day_of_month, last_injected_month, is_active) 
-              VALUES ($home_id, $user_id, '$type', $amount, '$currency_code_esc', $category_id, '$description', $day_of_month, NULL, 1)";
+        $q = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, currency_code, category, description, day_of_month, interval_months, last_injected_month, is_active) 
+              VALUES ($home_id, $user_id, '$type', $amount, '$currency_code_esc', $category_id, '$description', $day_of_month, $interval_months, NULL, 1)";
         if (mysqli_query($conn, $q)) {
             echo json_encode(['status' => 'success']);
         } else {

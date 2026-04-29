@@ -84,6 +84,10 @@ try {
             $rec['currency_code'] = tazrim_normalize_currency_code($rec['currency_code'] ?? 'ILS');
             $rec['category'] = (int) $rec['category'];
             $rec['day_of_month'] = (int) $rec['day_of_month'];
+            $rec['interval_months'] = (int) ($rec['interval_months'] ?? 1);
+            if (!in_array($rec['interval_months'], [1, 2], true)) {
+                $rec['interval_months'] = 1;
+            }
             if ($rec['type'] === 'expense') {
                 $recurring_expenses[] = $rec;
             } else {

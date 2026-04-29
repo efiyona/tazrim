@@ -198,6 +198,7 @@ CREATE TABLE `recurring_transactions` (
   `category` int(11) NOT NULL,
   `description` varchar(255) NOT NULL,
   `day_of_month` int(11) NOT NULL,
+  `interval_months` tinyint NOT NULL DEFAULT 1,
   `last_injected_month` date DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
