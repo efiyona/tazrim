@@ -1007,10 +1007,10 @@ admin_ai_chat_sse_event('meta', [
 
 $primaryModels = match ($complexityTier) {
     'complex' => ['gemini-2.5-pro', 'gemini-2.0-pro', 'gemini-1.5-pro'],
-    'moderate' => ['gemini-2.5-flash', 'gemini-2.0-flash'],
+    'moderate' => ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'],
     default => ['gemini-2.5-flash-lite', 'gemini-2.5-flash'],
 };
-$fallbackModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+$fallbackModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
 $agentModels = array_values(array_unique(array_merge($primaryModels, $fallbackModels)));
 
 $maxDataQueries = 3;
@@ -1243,6 +1243,9 @@ if ($agentError !== '' && $finalText === '') {
     $reasonHuman = $agentError === 'gemini_unreachable'
         ? 'המודל לא הגיב (ייתכן timeout, בעיית רשת, או חריגת מכסה).'
         : $agentError;
+    if ($agentError === 'gemini_unreachable' && preg_match('/quota|billing|429|exhausted/i', $lastGeminiErr) === 1) {
+        $reasonHuman .= ' שימו לב: מפתחות Gemini מאותו פרויקט Google חולקים מכסה אחת — מספר מפתחות לא מכפיל את המכסה.';
+    }
     $fallbackText = "לא הצלחתי להשיב כרגע.\n\nסיבה: {$reasonHuman}";
     if ($lastGeminiErr !== '') {
         $fallbackText .= "\nפרטים טכניים: {$lastGeminiErr}";

@@ -194,7 +194,8 @@ if ($phase === 'answer' && !empty($answersFromUser)) {
 }
 
 // --- Gemini call with retries & model fallback ---
-$gemini_models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+// lite קודם — לרוב מכסה נפרדת מ-flash; 2.0 אחרון (לעיתים מכסה אגרסיבית יותר בפרויקטים חינמיים).
+$gemini_models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
 $maxAttemptsPerModel = 2;
 $retryableCodes = [429, 500, 502, 503, 504];
 $maxJsonRetries = 2;
@@ -268,6 +269,7 @@ for ($jsonTry = 0; $jsonTry <= $maxJsonRetries; $jsonTry++) {
     if ($result['http'] !== 200) {
         $friendly = 'שגיאת תקשורת עם שירות הבינה';
         $decoded = json_decode($result['body'], true);
+        $msg = '';
         if (is_array($decoded) && isset($decoded['error']['message'])) {
             $msg = (string) $decoded['error']['message'];
             $status = $decoded['error']['status'] ?? '';
@@ -275,7 +277,11 @@ for ($jsonTry = 0; $jsonTry <= $maxJsonRetries; $jsonTry++) {
                 $friendly = 'שירות הבינה עמוס כרגע. נסו שוב בעוד דקה–שתיים.';
             } elseif ($result['http'] === 404 || $status === 'NOT_FOUND') {
                 $friendly = 'המודל לא זמין ב-API. נסו שוב מאוחר יותר.';
+            } elseif ($result['http'] === 429 || stripos($msg, 'quota') !== false || stripos($msg, 'billing') !== false) {
+                $friendly = 'מכסת Gemini בפרויקט Google נוצלה. מפתחות מאותו פרויקט חולקים מכסה אחת — בדקו חיוב ומגבלות ב-Google AI Studio, או נסו שוב מאוחר יותר.';
             }
+        } elseif ($result['http'] === 429) {
+            $friendly = 'מכסת Gemini בפרויקט Google נוצלה. מפתחות מאותו פרויקט חולקים מכסה אחת — בדקו חיוב ומגבלות ב-Google AI Studio, או נסו שוב מאוחר יותר.';
         }
         if ($jsonTry < $maxJsonRetries) {
             continue;
