@@ -113,13 +113,20 @@ if (!function_exists('ai_chat_strip_action_block')) {
 }
 
 if (!function_exists('ai_chat_proposal_secret')) {
+    /**
+     * סוד חתימה יציב — ENCRYPTION_KEY + user_id בלבד (לא מפתח Gemini, כדי שלא יישבר בהחלפת מפתח).
+     */
     function ai_chat_proposal_secret(): string
     {
-        if (defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '') {
-            return hash('sha256', 'ai_chat_proposal:' . GEMINI_API_KEY, true);
-        }
+        $uid = 0;
         if (function_exists('session_status') && session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['id'])) {
-            return hash('sha256', 'ai_chat_proposal_sess:' . (string) ($_SESSION['id'] ?? '0'), true);
+            $uid = (int) ($_SESSION['id'] ?? 0);
+        }
+        if ($uid > 0 && defined('ENCRYPTION_KEY')) {
+            return hash_hmac('sha256', 'ai_chat_proposal_v1|' . $uid, (string) constant('ENCRYPTION_KEY'), true);
+        }
+        if ($uid > 0) {
+            return hash('sha256', 'ai_chat_proposal_sess:' . (string) $uid, true);
         }
 
         return hash('sha256', 'ai_chat_proposal_fallback', true);

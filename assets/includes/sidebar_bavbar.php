@@ -14,6 +14,23 @@ if (function_exists('selectOne') && isset($_SESSION['id'])) {
     }
 }
 
+/** מפתח Gemini אישי (לנעילת פיצ׳רי AI) */
+$tazrim_gemini_configured = false;
+$tazrim_gemini_mask = '';
+if (isset($_SESSION['id']) && isset($conn) && $conn instanceof mysqli) {
+    if (!function_exists('tazrim_user_get_gemini_key_mask_parts')) {
+        require_once ROOT_PATH . '/app/functions/user_gemini_key.php';
+    }
+    if (!function_exists('tazrim_app_csrf_token')) {
+        require_once ROOT_PATH . '/app/functions/app_session_csrf.php';
+    }
+    $gUid = (int) $_SESSION['id'];
+    $gParts = tazrim_user_get_gemini_key_mask_parts($conn, $gUid);
+    $tazrim_gemini_configured = $gParts['configured'];
+    $tazrim_gemini_mask = $gParts['mask'];
+    $GLOBALS['tazrim_gemini_configured'] = $tazrim_gemini_configured;
+}
+
 /**
  * הגדרת הניווט המרכזית
  * 'plus_modal' => אם קיים, יוצג כפתור פלוס משמאל לתפריט שיפתח את המודאל המבוקש.
@@ -113,6 +130,7 @@ require_once ROOT_PATH . '/app/features/ai_chat/bootstrap.php';
 $tazrim_email_verification_block = !empty($GLOBALS['tazrim_email_verification_block']);
 $emailForGate = (string) ($_SESSION['user_email'] ?? '');
 ?>
+<script>window.__TAZRIM_GEMINI_CONFIGURED__=<?php echo !empty($tazrim_gemini_configured) ? 'true' : 'false'; ?>;</script>
 
 <div class="floating-nav-wrapper<?php echo !empty($target_modal_id) ? ' floating-nav-wrapper--with-fab' : ''; ?>">
 
@@ -1093,4 +1111,6 @@ $skip_popup_campaigns = $popup_script === 'accept_tos.php' || $popup_script === 
 if (!$skip_popup_campaigns) {
     include ROOT_PATH . '/assets/includes/popup_campaigns_modal.php';
 }
+
+include ROOT_PATH . '/assets/includes/gemini_key_modal.php';
 

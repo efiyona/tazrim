@@ -3348,6 +3348,15 @@ body.auth-forgot .auth-switch a {
     text-align: right;
 }
 
+/* כפתור (לא רק קישור) — אותו מראה כמו קיצורי דרך ב-iOS */
+button.ios-shortcut-add-btn {
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    font: inherit;
+    font-family: inherit;
+}
+
 @media (hover: hover) {
     .ios-shortcut-add-btn:hover {
         border-color: var(--main);
@@ -4409,6 +4418,12 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
 .btn-ai-sort:active {
     transform: scale(0.95);
     box-shadow: 0 3px 8px #6feb8c;
+}
+
+.btn-ai-sort--locked {
+    opacity: 0.55;
+    filter: grayscale(0.25);
+    cursor: pointer;
 }
 
 /* שכבת הטעינה שמופעלת על בלוק הקטגוריה */

@@ -754,6 +754,82 @@ function tazrim_ensure_email_verification_schema(): void
 
 tazrim_ensure_email_verification_schema();
 
+/**
+ * טבלת מפתחות Gemini (מפתח ראשון + נוספים — רוטציה אוטומטית עם מלאי מלא).
+ */
+function tazrim_ensure_user_gemini_credentials_table(): void
+{
+    global $conn;
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    if (!$conn || !($conn instanceof mysqli)) {
+        return;
+    }
+
+    $chkTbl = mysqli_query($conn, "SHOW TABLES LIKE 'user_gemini_credentials'");
+    $tblExists = $chkTbl && mysqli_num_rows($chkTbl) > 0;
+
+    if (!$tblExists) {
+        mysqli_query(
+            $conn,
+            'CREATE TABLE `user_gemini_credentials` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `user_id` int(11) NOT NULL,
+              `sort_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+              `api_key_cipher` text NOT NULL,
+              `key_suffix` char(4) NOT NULL DEFAULT \'\',
+              `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+              `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+              PRIMARY KEY (`id`),
+              KEY `idx_ugk_user_ord` (`user_id`,`sort_order`,`id`),
+              CONSTRAINT `fk_ugc_user_gem` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+        );
+
+        return;
+    }
+
+    $chkId = mysqli_query($conn, "SHOW COLUMNS FROM `user_gemini_credentials` LIKE 'id'");
+    if ($chkId && mysqli_num_rows($chkId) > 0) {
+        return;
+    }
+
+    $suffix = strtolower(bin2hex(random_bytes(3)));
+    $tmp = 'user_gemini_creds_mig_' . $suffix;
+
+    mysqli_query($conn, "DROP TABLE IF EXISTS `{$tmp}`");
+
+    mysqli_query(
+        $conn,
+        "CREATE TABLE `{$tmp}` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `user_id` int(11) NOT NULL,
+          `sort_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+          `api_key_cipher` text NOT NULL,
+          `key_suffix` char(4) NOT NULL DEFAULT '',
+          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+          `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+          PRIMARY KEY (`id`),
+          KEY `idx_ugk_user_ord` (`user_id`,`sort_order`,`id`),
+          CONSTRAINT `fk_tmig_gem_{$suffix}` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+
+    mysqli_query(
+        $conn,
+        "INSERT INTO `{$tmp}` (`user_id`, `sort_order`, `api_key_cipher`, `key_suffix`)
+         SELECT `user_id`, 0, `api_key_cipher`, `key_suffix` FROM `user_gemini_credentials`"
+    );
+
+    mysqli_query($conn, 'DROP TABLE `user_gemini_credentials`');
+    mysqli_query($conn, "RENAME TABLE `{$tmp}` TO `user_gemini_credentials`");
+}
+
+tazrim_ensure_user_gemini_credentials_table();
+
 require_once ROOT_PATH . '/app/functions/home_bank_balance.php';
 tazrim_ensure_homes_bank_balance_columns();
 

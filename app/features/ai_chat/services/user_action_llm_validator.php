@@ -34,7 +34,7 @@ if (!function_exists('ai_chat_run_user_action_validator')) {
      * @param array<string,mixed> $action
      * @return array{ok:bool,approved:bool,confidence:string,analysis:string,warnings:array<int,mixed>,suggestion:string,model:string}
      */
-    function ai_chat_run_user_action_validator(string $apiKey, string $originalRequest, array $historyText, array $action): array
+    function ai_chat_run_user_action_validator(string|array $apiKeyOrKeys, string $originalRequest, array $historyText, array $action): array
     {
         if (!function_exists('ai_chat_gemini_generate_text_timed')) {
             return [
@@ -79,7 +79,7 @@ if (!function_exists('ai_chat_run_user_action_validator')) {
 
         $models = ['gemini-2.5-flash-lite', 'gemini-2.0-flash'];
         foreach ($models as $m) {
-            $text = ai_chat_gemini_generate_text_timed($apiKey, $m, $body, 24);
+            $text = ai_chat_gemini_generate_text_timed($apiKeyOrKeys, $m, $body, 24);
             if ($text === null || trim($text) === '') {
                 continue;
             }

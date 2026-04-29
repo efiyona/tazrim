@@ -197,11 +197,14 @@ if (!function_exists('admin_ai_chat_try_compress_history_rows')) {
      * @param array<int, array<string, mixed>> $rows
      * @return array<int, array<string, mixed>>
      */
-    function admin_ai_chat_try_compress_history_rows(mysqli $conn, string $apiKey, array $rows): array
+    function admin_ai_chat_try_compress_history_rows(mysqli $conn, string|array $apiKeyOrKeys, array $rows): array
     {
         $tailKeep = 14;
         $minTotal = $tailKeep + 6;
-        if ($apiKey === '' || count($rows) < $minTotal) {
+        $single = is_array($apiKeyOrKeys)
+            ? (trim((string) ($apiKeyOrKeys[0] ?? '')))
+            : trim((string) $apiKeyOrKeys);
+        if ($single === '' || count($rows) < $minTotal) {
             return $rows;
         }
         $head = array_slice($rows, 0, -$tailKeep);
@@ -221,7 +224,7 @@ if (!function_exists('admin_ai_chat_try_compress_history_rows')) {
             return $rows;
         }
 
-        $summary = admin_ai_chat_summarize_history_blob($apiKey, $blob);
+        $summary = admin_ai_chat_summarize_history_blob($apiKeyOrKeys, $blob);
         if ($summary === '') {
             return $rows;
         }
@@ -238,7 +241,7 @@ if (!function_exists('admin_ai_chat_try_compress_history_rows')) {
 }
 
 if (!function_exists('admin_ai_chat_summarize_history_blob')) {
-    function admin_ai_chat_summarize_history_blob(string $apiKey, string $blob): string
+    function admin_ai_chat_summarize_history_blob(string|array $apiKeyOrKeys, string $blob): string
     {
         if (!function_exists('admin_ai_chat_gemini_generate_text')) {
             return '';
@@ -257,7 +260,7 @@ if (!function_exists('admin_ai_chat_summarize_history_blob')) {
         ];
         $models = ['gemini-2.5-flash-lite', 'gemini-2.0-flash'];
         foreach ($models as $m) {
-            $t = admin_ai_chat_gemini_generate_text($apiKey, $m, $body);
+            $t = admin_ai_chat_gemini_generate_text($apiKeyOrKeys, $m, $body);
             if (is_string($t) && trim($t) !== '') {
                 $t = trim($t);
                 if (function_exists('mb_substr')) {

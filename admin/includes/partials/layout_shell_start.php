@@ -4,6 +4,19 @@
  * דורש לפני כן: $admin_nav_context (אופציונלי), init.php.
  */
 $u = tazrim_admin_current_user_row();
+
+$tazrim_gemini_configured = false;
+$tazrim_gemini_mask = '';
+global $conn;
+if (isset($_SESSION['id']) && isset($conn) && $conn instanceof mysqli) {
+    require_once ROOT_PATH . '/app/functions/user_gemini_key.php';
+    require_once ROOT_PATH . '/app/functions/app_session_csrf.php';
+    $admGk = tazrim_user_get_gemini_key_mask_parts($conn, (int) $_SESSION['id']);
+    $tazrim_gemini_configured = $admGk['configured'];
+    $tazrim_gemini_mask = $admGk['mask'];
+    $GLOBALS['tazrim_gemini_configured'] = $tazrim_gemini_configured;
+}
+
 $registry = tazrim_admin_registry();
 $navItems = tazrim_admin_nav_items();
 $sidebarMetrics = tazrim_admin_sidebar_metrics();
@@ -42,6 +55,7 @@ function admin_nav_link_class(bool $active): string
     return $cls . 'text-gray-700 hover:text-blue-600 hover:bg-gray-200';
 }
 ?>
+<script>window.__TAZRIM_GEMINI_CONFIGURED__=<?php echo !empty($tazrim_gemini_configured) ? 'true' : 'false'; ?>;</script>
 <div class="admin-tw-shell h-[100dvh] min-h-0 flex overflow-hidden min-w-0 max-w-[100vw]">
 
     <div class="md:hidden">

@@ -75,6 +75,16 @@
     if (!btn) return;
 
     function onEarlyClick(e) {
+      if (!window.__TAZRIM_GEMINI_CONFIGURED__) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (typeof window.tazrimRequireGeminiKey === "function") {
+          window.tazrimRequireGeminiKey();
+        } else if (window.tazrimGeminiKeyModal && window.tazrimGeminiKeyModal.open) {
+          window.tazrimGeminiKeyModal.open({});
+        }
+        return;
+      }
       if (window.ADMIN_AI_CHAT_LAZY_LOADED) return;
       e.preventDefault();
       e.stopImmediatePropagation();

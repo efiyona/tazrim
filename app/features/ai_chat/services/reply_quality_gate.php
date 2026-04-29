@@ -126,7 +126,7 @@ if (!function_exists('ai_chat_reply_polish_default_hint')) {
  * @return array{acceptable: bool, retry_instruction_he: string}
  */
 if (!function_exists('ai_chat_run_reply_polish_gate')) {
-    function ai_chat_run_reply_polish_gate(string $apiKey, string $originalUserMessage, string $draftAssistant, array $scanReasons): array
+    function ai_chat_run_reply_polish_gate(string|array $apiKeyOrKeys, string $originalUserMessage, string $draftAssistant, array $scanReasons): array
     {
         if (!function_exists('ai_chat_gemini_generate_text_timed')) {
             return ['acceptable' => true, 'retry_instruction_he' => ''];
@@ -156,7 +156,7 @@ if (!function_exists('ai_chat_run_reply_polish_gate')) {
 
         $models = ['gemini-2.5-flash-lite', 'gemini-2.0-flash'];
         foreach ($models as $m) {
-            $text = ai_chat_gemini_generate_text_timed($apiKey, $m, $body, 18);
+            $text = ai_chat_gemini_generate_text_timed($apiKeyOrKeys, $m, $body, 18);
             if ($text === null || trim($text) === '') {
                 continue;
             }

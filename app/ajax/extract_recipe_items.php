@@ -1,11 +1,11 @@
 <?php
 require_once('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
-require_once('../../secrets.php');
+require_once ROOT_PATH . '/app/functions/user_gemini_key.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['home_id'])) {
+if (!isset($_SESSION['home_id']) || !isset($_SESSION['id'])) {
     echo json_encode(['status' => 'error', 'message' => 'לא מורשה']);
     exit();
 }
@@ -79,9 +79,8 @@ function recipe_collect_uploaded_images(): array
     return $out;
 }
 
-function recipe_call_gemini_with_images(array $images): array
+function recipe_call_gemini_with_images(array $images, array $orderedApiKeys): array
 {
-    $apiKey = GEMINI_API_KEY;
     $models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
     $schema = recipe_build_schema();
 
@@ -116,34 +115,32 @@ function recipe_call_gemini_with_images(array $images): array
         ]
     ];
 
-    foreach ($models as $model) {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . $apiKey;
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_TIMEOUT => 55
-        ]);
-        $raw = curl_exec($ch);
-        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+    $recipeRetryable = [429, 500, 503];
 
-        if ($code !== 200 || !is_string($raw) || $raw === '') {
-            if (in_array($code, [429, 500, 503], true)) {
-                usleep(450000);
-                continue;
-            }
+    foreach ($models as $model) {
+        $gr = tazrim_user_gemini_v1beta_generate_content_with_key_rotation(
+            $orderedApiKeys,
+            $model,
+            $payload,
+            55,
+            false,
+            3,
+            $recipeRetryable
+        );
+        $raw = $gr['raw'];
+        if (!$gr['ok'] || $raw === '') {
             continue;
         }
 
         $decoded = json_decode($raw, true);
         $text = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
-        if (!is_string($text) || trim($text) === '') continue;
+        if (!is_string($text) || trim($text) === '') {
+            continue;
+        }
         $json = json_decode($text, true);
-        if (is_array($json)) return ['ok' => true, 'data' => $json];
+        if (is_array($json)) {
+            return ['ok' => true, 'data' => $json];
+        }
     }
 
     return ['ok' => false];
@@ -174,7 +171,18 @@ if (count($images) === 0) {
     exit();
 }
 
-$ai = recipe_call_gemini_with_images($images);
+$recipeUserId = (int) $_SESSION['id'];
+$recipeOrderedKeys = tazrim_user_gemini_plain_keys_ordered($conn, $recipeUserId);
+if ($recipeOrderedKeys === []) {
+    echo json_encode([
+        'status' => 'error',
+        'code' => 'gemini_key_missing',
+        'message' => 'נדרש מפתח Gemini אישי בהגדרות החשבון.',
+    ], JSON_UNESCAPED_UNICODE);
+    exit();
+}
+
+$ai = recipe_call_gemini_with_images($images, $recipeOrderedKeys);
 if (!$ai['ok']) {
     echo json_encode(['status' => 'error', 'message' => 'שירות הבינה עמוס כרגע, נסו שוב בעוד רגע.']);
     exit();

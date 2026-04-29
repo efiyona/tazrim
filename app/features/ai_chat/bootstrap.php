@@ -99,7 +99,9 @@ if (!function_exists('ai_chat_render_launcher_button')) {
     function ai_chat_render_launcher_button(): void
     {
         $an = AI_CHAT_ASSISTANT_NAME;
-        echo '<button type="button" id="aiChatLauncher" class="icon-btn ai-chat-launcher" title="צ\'אט עם ' . htmlspecialchars($an, ENT_QUOTES, 'UTF-8') . '" aria-label="פתיחת צ\'אט עם ' . htmlspecialchars($an, ENT_QUOTES, 'UTF-8') . '">';
+        $gemOk = empty($GLOBALS['tazrim_gemini_configured']) ? false : (bool) $GLOBALS['tazrim_gemini_configured'];
+        $extraClass = $gemOk ? '' : ' ai-chat-launcher--locked';
+        echo '<button type="button" id="aiChatLauncher" class="icon-btn ai-chat-launcher' . htmlspecialchars($extraClass, ENT_QUOTES, 'UTF-8') . '" data-gemini-configured="' . ($gemOk ? '1' : '0') . '" title="צ\'אט עם ' . htmlspecialchars($an, ENT_QUOTES, 'UTF-8') . '" aria-label="פתיחת צ\'אט עם ' . htmlspecialchars($an, ENT_QUOTES, 'UTF-8') . '">';
         echo '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>';
         echo '</button>';
     }

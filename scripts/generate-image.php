@@ -7,7 +7,7 @@
  * Usage:
  *   php scripts/generate-image.php "English image prompt" path/to/output.png
  *
- * Requires GEMINI_API_KEY in secrets.php (project root).
+ * Env TAZRIM_GEMINI_API_KEY or define in a local CLI wrapper (לא secrets.php גלובלי).
  */
 
 declare(strict_types=1);
@@ -30,12 +30,16 @@ if ($prompt === '') {
 
 require dirname(__DIR__) . '/secrets.php';
 
-if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
-    fwrite(STDERR, "Error: GEMINI_API_KEY is not set in secrets.php.\n");
+$cliGemini = getenv('TAZRIM_GEMINI_API_KEY') ?: '';
+if ($cliGemini === '' && defined('GEMINI_CLI_KEY')) {
+    $cliGemini = (string) constant('GEMINI_CLI_KEY');
+}
+if ($cliGemini === '') {
+    fwrite(STDERR, "Error: Set TAZRIM_GEMINI_API_KEY env or GEMINI_CLI_KEY for CLI image generation.\n");
     exit(1);
 }
 
-$apiKey = GEMINI_API_KEY;
+$apiKey = $cliGemini;
 $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
     . GEMINI_FREE_IMAGE_MODEL
     . ':generateContent';

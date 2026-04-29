@@ -1,18 +1,22 @@
 <?php
 require_once('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
-require_once('../../secrets.php'); 
+require_once ROOT_PATH . '/app/functions/user_gemini_key.php';
 
 header('Content-Type: application/json');
-session_start();
 
-if (!isset($_SESSION['home_id']) || !isset($_POST['items'])) {
+if (!isset($_SESSION['home_id']) || !isset($_SESSION['id']) || !isset($_POST['items'])) {
     echo json_encode(['status' => 'error', 'message' => 'נתונים חסרים']);
     exit();
 }
 
 $home_id = $_SESSION['home_id'];
-$api_key = GEMINI_API_KEY;
+$user_id = (int) $_SESSION['id'];
+$gemini_ordered_keys = tazrim_user_gemini_plain_keys_ordered($conn, $user_id);
+if ($gemini_ordered_keys === []) {
+    echo json_encode(['status' => 'error', 'code' => 'gemini_key_missing', 'message' => 'נדרש מפתח Gemini אישי בהגדרות החשבון.']);
+    exit();
+}
 // מודלים תקפים ל-v1beta generateContent (1.5 ללא סיומת גרסה / pro ללא מזהה מלא — עלולים 404). גיבוי: פלאש → פלאש-לייט → 2.0
 $gemini_models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
 
@@ -38,29 +42,20 @@ $max_attempts_per_model = 2;
 $retryable = [429, 500, 503];
 
 foreach ($gemini_models as $model_name) {
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model_name}:generateContent?key=" . $api_key;
-    for ($attempt = 0; $attempt < $max_attempts_per_model; $attempt++) {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_TIMEOUT => 45
-        ]);
-        $response = curl_exec($ch);
-        $http_code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_err = curl_error($ch);
-        curl_close($ch);
+    $gr = tazrim_user_gemini_v1beta_generate_content_with_key_rotation(
+        $gemini_ordered_keys,
+        $model_name,
+        $data,
+        45,
+        false,
+        $max_attempts_per_model,
+        $retryable
+    );
+    $http_code = $gr['http'];
+    $response = $gr['raw'];
+    $curl_err = $gr['curl_err'];
 
-        if ($http_code === 200) {
-            break 2;
-        }
-        if (in_array($http_code, $retryable, true)) {
-            usleep(500000);
-            continue;
-        }
+    if (!empty($gr['ok'])) {
         break;
     }
 }

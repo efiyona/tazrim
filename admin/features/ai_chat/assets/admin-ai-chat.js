@@ -2273,13 +2273,21 @@
           streamPreamble = payload.preamble || "";
         } else if (eventName === "error") {
           streamDeepPass = false;
-          const msg = (payload && payload.message) ? String(payload.message) : "אירעה שגיאה בקבלת תשובה.";
-          const detail = (payload && payload.detail) ? String(payload.detail) : "";
-          const code = (payload && payload.code) ? String(payload.code) : "";
-          // שומרים אך לא מציגים עדיין — כדי לא לדחוק טקסט שה-token אחריו עוד יחליף.
-          // אם לא יגיע token, זה יישאר כ-assistantText הסופי.
-          assistantText = msg + (detail ? "\n\nפרטים: " + detail : "") + (code ? "\n(קוד: " + code + ")" : "");
-          updateBubbleStreamingAssistant(assistantBubble, assistantText, { clearThinking: true });
+          if (payload && payload.message === "gemini_key_missing") {
+            assistantText = "נדרש מפתח Google Gemini אישי — נפתח חלון להוספה.";
+            updateBubbleStreamingAssistant(assistantBubble, assistantText, { clearThinking: true });
+            if (typeof window.tazrimRequireGeminiKey === "function") {
+              window.tazrimRequireGeminiKey();
+            } else if (window.tazrimGeminiKeyModal && window.tazrimGeminiKeyModal.open) {
+              window.tazrimGeminiKeyModal.open({});
+            }
+          } else {
+            const msg = (payload && payload.message) ? String(payload.message) : "אירעה שגיאה בקבלת תשובה.";
+            const detail = (payload && payload.detail) ? String(payload.detail) : "";
+            const code = (payload && payload.code) ? String(payload.code) : "";
+            assistantText = msg + (detail ? "\n\nפרטים: " + detail : "") + (code ? "\n(קוד: " + code + ")" : "");
+            updateBubbleStreamingAssistant(assistantBubble, assistantText, { clearThinking: true });
+          }
         } else if (eventName === "done") {
           streamHasDoneEvent = true;
           streamDonePayload = payload;

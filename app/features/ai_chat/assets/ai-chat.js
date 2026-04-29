@@ -963,8 +963,19 @@
           updateBubbleStreamingAssistant(assistantBubble, assistantText, { clearThinking: true });
         } else if (eventName === "error") {
           streamDeepPass = false;
-          assistantText = "אירעה שגיאה בקבלת תשובה.";
-          updateBubbleStreamingAssistant(assistantBubble, assistantText, { clearThinking: true });
+          if (payload && payload.message === "gemini_key_missing") {
+            assistantText =
+              "נדרש מפתח Google Gemini אישי — נפתח חלון להוספה.";
+            updateBubbleStreamingAssistant(assistantBubble, assistantText, { clearThinking: true });
+            if (typeof window.tazrimRequireGeminiKey === "function") {
+              window.tazrimRequireGeminiKey();
+            } else if (window.tazrimGeminiKeyModal && window.tazrimGeminiKeyModal.open) {
+              window.tazrimGeminiKeyModal.open({});
+            }
+          } else {
+            assistantText = "אירעה שגיאה בקבלת תשובה.";
+            updateBubbleStreamingAssistant(assistantBubble, assistantText, { clearThinking: true });
+          }
         } else if (eventName === "questions") {
           branchQuestions = payload;
         } else if (eventName === "action") {

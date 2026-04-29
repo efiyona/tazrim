@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/_init.php';
 require_once __DIR__ . '/agent_data.php';
 require_once __DIR__ . '/../services/agent_schema.php';
+require_once ROOT_PATH . '/app/functions/user_gemini_key.php';
 
 // קריאת Gemini יכולה לקחת עד 120 שנ' (3 ניסיונות × 40 שנ'). Hostinger מנתק
 // חיבורים אחרי wait_timeout קצר יחסית (~60 שנ' ברירת מחדל לשיתופיות).
@@ -176,66 +177,85 @@ function admin_ai_chat_gemini_record_error(string $info): void
     }
 }
 
-function admin_ai_chat_gemini_generate_text(string $apiKey, string $model, array $body): ?string
+function admin_ai_chat_gemini_generate_text(string|array $apiKeyOrKeys, string $model, array $body): ?string
 {
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+    $keys = is_array($apiKeyOrKeys)
+        ? array_values(array_filter($apiKeyOrKeys, static fn ($k): bool => is_string($k) && trim($k) !== ''))
+        : [trim((string) $apiKeyOrKeys)];
+    if ($keys === []) {
+        return null;
+    }
+
     $maxAttempts = 3;
     $lastHttp = 0;
     $lastSnippet = '';
     $lastCurlErr = '';
-    for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_UNICODE));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 40);
-        $raw = curl_exec($ch);
-        $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlErr = curl_error($ch);
-        curl_close($ch);
 
-        $lastHttp = $http;
-        $lastCurlErr = (string) $curlErr;
-        if (is_string($raw) && $raw !== '') {
-            $lastSnippet = function_exists('mb_substr') ? mb_substr($raw, 0, 220, 'UTF-8') : substr($raw, 0, 220);
-        }
+    foreach ($keys as $apiKey) {
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent?key=' . rawurlencode($apiKey);
+        $lastSnippet = '';
 
-        if ($raw !== false && $http === 200) {
-            $decoded = json_decode($raw, true);
-            if (!is_array($decoded)) {
-                admin_ai_chat_gemini_record_error("model={$model} non_json_response http=200");
-                return null;
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_UNICODE));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 40);
+            $raw = curl_exec($ch);
+            $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr = curl_error($ch);
+            curl_close($ch);
+
+            $lastHttp = $http;
+            $lastCurlErr = (string) $curlErr;
+            if (is_string($raw) && $raw !== '') {
+                $lastSnippet = function_exists('mb_substr') ? mb_substr($raw, 0, 220, 'UTF-8') : substr($raw, 0, 220);
             }
-            $text = (string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? '');
-            if ($text === '') {
-                // יתכן blockReason / finishReason חריג
-                $block = (string) ($decoded['promptFeedback']['blockReason'] ?? '');
-                $finish = (string) ($decoded['candidates'][0]['finishReason'] ?? '');
-                admin_ai_chat_gemini_record_error("model={$model} empty_text block={$block} finish={$finish}");
-                return null;
-            }
-            return $text;
-        }
 
-        if (!admin_ai_chat_should_retry_http_code($http) || $attempt >= $maxAttempts) {
-            $snip = preg_replace('/\s+/', ' ', (string) $lastSnippet);
-            admin_ai_chat_gemini_record_error("model={$model} http={$lastHttp} curl_err={$lastCurlErr} body=" . (string) $snip);
-            return null;
+            if ($raw !== false && $http === 200) {
+                $decoded = json_decode($raw, true);
+                if (!is_array($decoded)) {
+                    admin_ai_chat_gemini_record_error("model={$model} non_json_response http=200");
+
+                    return null;
+                }
+                $text = (string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? '');
+                if ($text === '') {
+                    $block = (string) ($decoded['promptFeedback']['blockReason'] ?? '');
+                    $finish = (string) ($decoded['candidates'][0]['finishReason'] ?? '');
+                    admin_ai_chat_gemini_record_error("model={$model} empty_text block={$block} finish={$finish}");
+
+                    return null;
+                }
+
+                return $text;
+            }
+
+            $rawStr = is_string($raw) ? $raw : '';
+            if (function_exists('tazrim_gemini_response_should_rotate_to_next_user_api_key')
+                && tazrim_gemini_response_should_rotate_to_next_user_api_key($http, $rawStr)) {
+                continue 2;
+            }
+
+            if (!admin_ai_chat_should_retry_http_code($http) || $attempt >= $maxAttempts) {
+                break;
+            }
+            admin_ai_chat_backoff_usleep($attempt);
         }
-        admin_ai_chat_backoff_usleep($attempt);
     }
 
     $snip = preg_replace('/\s+/', ' ', (string) $lastSnippet);
     admin_ai_chat_gemini_record_error("model={$model} exhausted http={$lastHttp} curl_err={$lastCurlErr} body=" . (string) $snip);
+
     return null;
 }
 
 require_once __DIR__ . '/../services/stream_history.php';
 require_once __DIR__ . '/../services/reply_quality_gate.php';
 
-function admin_ai_chat_route_decision(string $apiKey, string $message): array
+function admin_ai_chat_route_decision(string|array $apiKeyOrKeys, string $message): array
 {
     $default = [
         'complexity_tier' => 'simple',
@@ -267,7 +287,7 @@ function admin_ai_chat_route_decision(string $apiKey, string $message): array
             if ($jsonMime) {
                 $body['generationConfig']['responseMimeType'] = 'application/json';
             }
-            $text = admin_ai_chat_gemini_generate_text($apiKey, $routerModel, $body);
+            $text = admin_ai_chat_gemini_generate_text($apiKeyOrKeys, $routerModel, $body);
             if ($text === null) {
                 continue;
             }
@@ -736,7 +756,7 @@ function admin_ai_chat_chunk_and_emit(string $text): void
 /**
  * וולידטור — קריאת AI נפרדת שבודקת אם הפעולה תואמת את הבקשה המקורית.
  */
-function admin_ai_chat_run_validator(string $apiKey, string $originalRequest, array $chatHistoryText, array $action): array
+function admin_ai_chat_run_validator(string|array $apiKeyOrKeys, string $originalRequest, array $chatHistoryText, array $action): array
 {
     $validatorInstruction = admin_ai_chat_build_validator_instruction();
 
@@ -766,7 +786,7 @@ function admin_ai_chat_run_validator(string $apiKey, string $originalRequest, ar
 
     $models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
     foreach ($models as $m) {
-        $text = admin_ai_chat_gemini_generate_text($apiKey, $m, $body);
+        $text = admin_ai_chat_gemini_generate_text($apiKeyOrKeys, $m, $body);
         if ($text === null) {
             continue;
         }
@@ -803,7 +823,7 @@ function admin_ai_chat_run_validator(string $apiKey, string $originalRequest, ar
  * @param list<string> $scanReasons
  * @return array{acceptable: bool, retry_instruction_he: string, model: string}
  */
-function admin_ai_chat_run_reply_polish_gate(string $apiKey, string $originalUserMessage, string $draftAssistant, array $scanReasons): array
+function admin_ai_chat_run_reply_polish_gate(string|array $apiKeyOrKeys, string $originalUserMessage, string $draftAssistant, array $scanReasons): array
 {
     $reasonStr = implode(',', $scanReasons);
     $sys = "אתה **בודק איכות תשובה** לסוכן AI בפאנל ניהול (עברית).\n\n"
@@ -829,7 +849,7 @@ function admin_ai_chat_run_reply_polish_gate(string $apiKey, string $originalUse
 
     $models = ['gemini-2.5-flash-lite', 'gemini-2.0-flash'];
     foreach ($models as $m) {
-        $text = admin_ai_chat_gemini_generate_text($apiKey, $m, $body);
+        $text = admin_ai_chat_gemini_generate_text($apiKeyOrKeys, $m, $body);
         if ($text === null) {
             continue;
         }
@@ -914,14 +934,14 @@ admin_ai_chat_repo_touch($conn, $chatId, $scopeSnapshot);
 admin_ai_chat_repo_add_message($conn, $chatId, 'user', $message);
 admin_ai_chat_repo_update_title_if_default($conn, $chatId, $message);
 
-$apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
-if ($apiKey === '') {
+$geminiOrderedKeys = tazrim_user_gemini_plain_keys_ordered($conn, $userId);
+if ($geminiOrderedKeys === []) {
     admin_ai_chat_sse_event('error', ['message' => 'gemini_key_missing']);
     exit;
 }
 
 $historyRows = admin_ai_chat_repo_get_messages($conn, $chatId, $userId, 48);
-$historyRows = admin_ai_chat_try_compress_history_rows($conn, $apiKey, $historyRows);
+$historyRows = admin_ai_chat_try_compress_history_rows($conn, $geminiOrderedKeys, $historyRows);
 $history = [];
 $historyText = [];
 foreach ($historyRows as $row) {
@@ -955,7 +975,7 @@ if (is_array($pageCtx)) {
 }
 $pageBlock = admin_ai_chat_format_client_page_context($pagePath, $pageTitle, $pageEntity);
 
-$route = admin_ai_chat_route_decision($apiKey, $message);
+$route = admin_ai_chat_route_decision($geminiOrderedKeys, $message);
 $complexityTier = strtolower((string) ($route['complexity_tier'] ?? 'simple'));
 if (!in_array($complexityTier, ['simple', 'moderate', 'complex'], true)) {
     $complexityTier = !empty($route['needs_deep']) ? 'moderate' : 'simple';
@@ -1020,7 +1040,7 @@ while (true) {
 
     $rawText = null;
     foreach ($agentModels as $modelName) {
-        $rawText = admin_ai_chat_gemini_generate_text($apiKey, $modelName, $requestBody);
+        $rawText = admin_ai_chat_gemini_generate_text($geminiOrderedKeys, $modelName, $requestBody);
         if ($rawText !== null) {
             $usedModel = $modelName;
             break;
@@ -1130,7 +1150,7 @@ while (true) {
             break;
         }
 
-        $validation = admin_ai_chat_run_validator($apiKey, $message, $historyText, $actionForValidation);
+        $validation = admin_ai_chat_run_validator($geminiOrderedKeys, $message, $historyText, $actionForValidation);
 
         if ($validation['approved']) {
             $finalText = admin_ai_chat_strip_action_block($rawText);
@@ -1193,7 +1213,7 @@ while (true) {
 
     $scan = admin_ai_chat_reply_quality_scan($candidateText);
     if ($scan['suspicious'] && $replyPolishRetries < $maxReplyPolishRetries) {
-        $gate = admin_ai_chat_run_reply_polish_gate($apiKey, $message, $candidateText, $scan['reasons']);
+        $gate = admin_ai_chat_run_reply_polish_gate($geminiOrderedKeys, $message, $candidateText, $scan['reasons']);
         if (!$gate['acceptable']) {
             $replyPolishRetries++;
             $history[] = [

@@ -18,17 +18,15 @@ try {
     include(ROOT_PATH . '/app/database/db.php');
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-    $secrets = ROOT_PATH . '/secrets.php';
-    if (is_file($secrets)) {
-        require_once $secrets;
-    }
-
     require_once __DIR__ . '/_auth.php';
+    require_once ROOT_PATH . '/app/functions/user_gemini_key.php';
     $auth = shopping_api_require_user($conn);
     $home_id = $auth['home_id'];
+    $api_uid = (int) ($auth['user']['id'] ?? 0);
 
-    if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
-        echo json_encode(['status' => 'error', 'message' => 'מפתח AI לא מוגדר בשרת.']);
+    $gemini_ordered_keys = tazrim_user_gemini_plain_keys_ordered($conn, $api_uid);
+    if ($gemini_ordered_keys === []) {
+        echo json_encode(['status' => 'error', 'code' => 'gemini_key_missing', 'message' => 'נדרש מפתח Gemini אישי במסך החשבון.']);
         exit();
     }
 
@@ -52,7 +50,6 @@ try {
         exit();
     }
 
-    $api_key = GEMINI_API_KEY;
     $gemini_models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
 
     $items_list_for_ai = '';
@@ -86,29 +83,20 @@ try {
     $retryable = [429, 500, 503];
 
     foreach ($gemini_models as $model_name) {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model_name}:generateContent?key=" . $api_key;
-        for ($attempt = 0; $attempt < $max_attempts_per_model; $attempt++) {
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($data),
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_TIMEOUT => 45,
-            ]);
-            $response = curl_exec($ch);
-            $http_code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curl_err = curl_error($ch);
-            curl_close($ch);
+        $gr = tazrim_user_gemini_v1beta_generate_content_with_key_rotation(
+            $gemini_ordered_keys,
+            $model_name,
+            $data,
+            45,
+            false,
+            $max_attempts_per_model,
+            $retryable
+        );
+        $http_code = $gr['http'];
+        $response = $gr['raw'];
+        $curl_err = $gr['curl_err'];
 
-            if ($http_code === 200) {
-                break 2;
-            }
-            if (in_array($http_code, $retryable, true)) {
-                usleep(500000);
-                continue;
-            }
+        if (!empty($gr['ok'])) {
             break;
         }
     }

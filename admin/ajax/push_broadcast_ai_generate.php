@@ -30,8 +30,15 @@ if (function_exists('mb_strlen') && mb_strlen($instructions, 'UTF-8') > 6000) {
     tazrim_admin_json_response(['status' => 'error', 'message' => 'הוראות ארוכות מדי.'], 400);
 }
 
-if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
-    tazrim_admin_json_response(['status' => 'error', 'message' => 'מפתח AI לא מוגדר בשרת (GEMINI_API_KEY).'], 503);
+require_once ROOT_PATH . '/app/functions/user_gemini_key.php';
+$pushGeminiUid = (int) ($_SESSION['id'] ?? 0);
+$pushGeminiOrderedKeys = tazrim_user_gemini_plain_keys_ordered($conn, $pushGeminiUid);
+if ($pushGeminiOrderedKeys === []) {
+    tazrim_admin_json_response([
+        'status' => 'error',
+        'code' => 'gemini_key_missing',
+        'message' => 'נדרש מפתח Gemini אישי — הוסיפו מהחשבון שלכם או מפופאפ הבינה.',
+    ], 403);
 }
 
 // --- SSE setup ---
@@ -124,7 +131,6 @@ if ($phase === 'answer' && !empty($answersFromUser)) {
 }
 
 // --- Gemini call with retries & model fallback ---
-$api_key = GEMINI_API_KEY;
 $gemini_models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
 $maxAttemptsPerModel = 2;
 $retryableCodes = [429, 500, 502, 503, 504];
@@ -132,7 +138,7 @@ $maxJsonRetries = 2;
 
 pb_sse('thinking', ['hint' => 'מנתח את ההנחיות ומנסח הודעה…']);
 
-function pb_call_gemini(array $conversationHistory, string $apiKey, array $models, int $maxAttempts, array $retryable): array
+function pb_call_gemini(array $conversationHistory, array $orderedGeminiKeys, array $models, int $maxAttempts, array $retryable): array
 {
     $data = [
         'contents' => $conversationHistory,
@@ -145,33 +151,28 @@ function pb_call_gemini(array $conversationHistory, string $apiKey, array $model
 
     $httpCode = 0;
     $response = '';
-    foreach ($models as $modelName) {
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $modelName . ':generateContent?key=' . $apiKey;
-        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($data, JSON_UNESCAPED_UNICODE),
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_TIMEOUT => 90,
-            ]);
-            $response = curl_exec($ch);
-            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+    $lastModel = '';
 
-            if ($httpCode === 200) {
-                return ['http' => 200, 'body' => $response, 'model' => $modelName];
-            }
-            if (in_array($httpCode, $retryable, true)) {
-                usleep(600000 + random_int(0, 300000));
-                continue;
-            }
-            break;
+    foreach ($models as $modelName) {
+        $lastModel = $modelName;
+        $r = tazrim_user_gemini_v1beta_generate_content_with_key_rotation(
+            $orderedGeminiKeys,
+            $modelName,
+            $data,
+            90,
+            false,
+            $maxAttempts,
+            $retryable
+        );
+        $httpCode = $r['http'];
+        $response = $r['raw'];
+
+        if (!empty($r['ok'])) {
+            return ['http' => 200, 'body' => $response, 'model' => $modelName];
         }
     }
-    return ['http' => $httpCode, 'body' => $response, 'model' => $models[count($models) - 1] ?? ''];
+
+    return ['http' => $httpCode, 'body' => $response, 'model' => $lastModel];
 }
 
 function pb_extract_json(string $rawText): ?array
@@ -199,7 +200,7 @@ for ($jsonTry = 0; $jsonTry <= $maxJsonRetries; $jsonTry++) {
         ]]];
     }
 
-    $result = pb_call_gemini($conversationHistory, $api_key, $gemini_models, $maxAttemptsPerModel, $retryableCodes);
+    $result = pb_call_gemini($conversationHistory, $pushGeminiOrderedKeys, $gemini_models, $maxAttemptsPerModel, $retryableCodes);
 
     if ($result['http'] !== 200) {
         $friendly = 'שגיאת תקשורת עם שירות הבינה';
@@ -277,7 +278,7 @@ if ($title === '' || $bodyText === '') {
         'התשובה חסרה title או body. החזר JSON מלא עם שני המפתחות: title (2–5 מילים) ו-body (1–2 משפטים קצרים, plain text). אל תשאל שאלות, פשוט צור.'
     ]]];
 
-    $result2 = pb_call_gemini($conversationHistory, $api_key, $gemini_models, $maxAttemptsPerModel, $retryableCodes);
+    $result2 = pb_call_gemini($conversationHistory, $pushGeminiOrderedKeys, $gemini_models, $maxAttemptsPerModel, $retryableCodes);
     if ($result2['http'] === 200) {
         $data2 = json_decode($result2['body'], true);
         $raw2 = $data2['candidates'][0]['content']['parts'][0]['text'] ?? '';

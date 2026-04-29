@@ -11,6 +11,7 @@ require_once dirname(__DIR__) . '/services/user_agent_transport.php';
 require_once dirname(__DIR__) . '/services/reply_quality_gate.php';
 require_once dirname(__DIR__) . '/services/user_action_llm_validator.php';
 require_once dirname(__DIR__) . '/services/allowed_chat_pages.php';
+require_once dirname(__DIR__, 3) . '/functions/user_gemini_key.php';
 
 header('Content-Type: text/event-stream; charset=utf-8');
 header('X-Accel-Buffering: no');
@@ -54,39 +55,57 @@ function ai_chat_backoff_usleep(int $attempt): void
 }
 
 /**
+ * @param non-empty-array<int,string>|array<int,string>|string $apiKeyOrKeys מפתח בודד או כמה מפתחות לפי סדר רוטציה (מלאי / מפתח הבא).
+ *
  * @return string|null טקסט מועמד ראשון או null
  */
-function ai_chat_gemini_generate_text_timed(string $apiKey, string $model, array $body, int $timeoutSec = 22): ?string
+function ai_chat_gemini_generate_text_timed(string|array $apiKeyOrKeys, string $model, array $body, int $timeoutSec = 22): ?string
 {
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+    $keys = is_array($apiKeyOrKeys)
+        ? array_values(array_filter($apiKeyOrKeys, static fn ($k): bool => is_string($k) && trim($k) !== ''))
+        : [trim((string) $apiKeyOrKeys)];
+    if ($keys === []) {
+        return null;
+    }
+
     $maxAttempts = 2;
-    for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_UNICODE));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 12);
-        curl_setopt($ch, CURLOPT_TIMEOUT, $timeoutSec);
-        $raw = curl_exec($ch);
-        $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
-        if ($raw !== false && $http === 200) {
-            $decoded = json_decode($raw, true);
-            if (!is_array($decoded)) {
-                return null;
+    foreach ($keys as $apiKey) {
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent?key=' . rawurlencode($apiKey);
+        for ($attempt = 1; $attempt <= $maxAttempts; ++$attempt) {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_UNICODE));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 12);
+            curl_setopt($ch, CURLOPT_TIMEOUT, $timeoutSec);
+            $raw = curl_exec($ch);
+            $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($raw !== false && $http === 200) {
+                $decoded = json_decode($raw, true);
+                if (!is_array($decoded)) {
+                    return null;
+                }
+                $text = (string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? '');
+
+                return $text !== '' ? $text : null;
             }
-            $text = (string) ($decoded['candidates'][0]['content']['parts'][0]['text'] ?? '');
 
-            return $text !== '' ? $text : null;
-        }
+            $rawStr = is_string($raw) ? $raw : '';
+            if (function_exists('tazrim_gemini_response_should_rotate_to_next_user_api_key')
+                && tazrim_gemini_response_should_rotate_to_next_user_api_key($http, $rawStr)) {
+                continue 2;
+            }
 
-        if (!ai_chat_should_retry_http_code($http) || $attempt >= $maxAttempts) {
-            return null;
+            if (!ai_chat_should_retry_http_code($http) || $attempt >= $maxAttempts) {
+                break;
+            }
+            ai_chat_backoff_usleep($attempt);
         }
-        ai_chat_backoff_usleep($attempt);
     }
 
     return null;
@@ -95,7 +114,7 @@ function ai_chat_gemini_generate_text_timed(string $apiKey, string $model, array
 /**
  * @return array<string,mixed>
  */
-function ai_chat_route_decision_v2(string $apiKey, string $message, string $routerUserBlock): array
+function ai_chat_route_decision_v2(string|array $apiKeyOrKeys, string $message, string $routerUserBlock): array
 {
     $defaults = ai_chat_router_normalize(null, null);
     $anchor = ai_chat_build_server_time_anchor_block();
@@ -123,7 +142,7 @@ function ai_chat_route_decision_v2(string $apiKey, string $message, string $rout
             if ($jsonMime) {
                 $body['generationConfig']['responseMimeType'] = 'application/json';
             }
-            $text = ai_chat_gemini_generate_text_timed($apiKey, $routerModel, $body, 22);
+            $text = ai_chat_gemini_generate_text_timed($apiKeyOrKeys, $routerModel, $body, 22);
             if ($text === null) {
                 continue;
             }
@@ -374,15 +393,15 @@ foreach ($historyRows as $row) {
     ];
 }
 
-$apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
-if ($apiKey === '') {
+$geminiOrderedKeys = tazrim_user_gemini_plain_keys_ordered($conn, $userId);
+if ($geminiOrderedKeys === []) {
     ai_chat_sse_event('error', ['message' => 'gemini_key_missing']);
     exit;
 }
 
 $prefs = ai_user_pref_list_for_prompt($conn, $userId);
 $routerViewBlock = ai_chat_format_current_view_for_router($currentView !== [] ? $currentView : null);
-$route = ai_chat_route_decision_v2($apiKey, $message, $routerViewBlock);
+$route = ai_chat_route_decision_v2($geminiOrderedKeys, $message, $routerViewBlock);
 $route = ai_chat_router_normalize($route, $currentView !== [] ? $currentView : null);
 
 $needsDeep = !empty($route['needs_deep']);
@@ -478,7 +497,7 @@ $draftText = null;
 $draftModel = $draftModels[0];
 foreach ($draftModels as $tryModel) {
     $draftModel = $tryModel;
-    $draftText = ai_chat_gemini_generate_text_timed($apiKey, $tryModel, $innerBody, 38);
+    $draftText = ai_chat_gemini_generate_text_timed($geminiOrderedKeys, $tryModel, $innerBody, 38);
     if ($draftText !== null && trim($draftText) !== '') {
         break;
     }
@@ -546,7 +565,7 @@ if ($action !== null) {
         'label' => 'וולידטור AI',
         'hint' => 'בודקים שהפעולה תואמת את בקשתך ובטוחה לביצוע…',
     ]);
-    $val = ai_chat_run_user_action_validator($apiKey, $message, $validatorHistoryText, $action);
+    $val = ai_chat_run_user_action_validator($geminiOrderedKeys, $message, $validatorHistoryText, $action);
     if (!$val['approved']) {
         $clean = trim(ai_chat_strip_action_block($draftText));
         $analysis = $val['analysis'] !== '' ? $val['analysis'] : 'הפעולה לא אושרה בבדיקת האיכות.';
@@ -625,7 +644,7 @@ while (true) {
         $finalText = $candidate;
         break;
     }
-    $gate = ai_chat_run_reply_polish_gate($apiKey, $message, $candidate, $scan['reasons']);
+    $gate = ai_chat_run_reply_polish_gate($geminiOrderedKeys, $message, $candidate, $scan['reasons']);
     if ($gate['acceptable']) {
         $finalText = $candidate;
         break;
@@ -657,7 +676,7 @@ while (true) {
     ];
     $nextDraft = null;
     foreach ($draftModels as $tryModel) {
-        $nextDraft = ai_chat_gemini_generate_text_timed($apiKey, $tryModel, $refineBody, 38);
+        $nextDraft = ai_chat_gemini_generate_text_timed($geminiOrderedKeys, $tryModel, $refineBody, 38);
         if ($nextDraft !== null && trim($nextDraft) !== '') {
             $currentModel = $tryModel;
             break;
@@ -682,7 +701,7 @@ if ($scanFinal['suspicious']) {
         ],
         'generationConfig' => ['temperature' => 0.2, 'maxOutputTokens' => $polishMaxOut],
     ];
-    $polished = ai_chat_gemini_generate_text_timed($apiKey, 'gemini-2.0-flash', $polishBody, 22);
+    $polished = ai_chat_gemini_generate_text_timed($geminiOrderedKeys, 'gemini-2.0-flash', $polishBody, 22);
     if ($polished !== null && trim($polished) !== '') {
         $finalText = trim($polished);
     }

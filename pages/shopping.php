@@ -27,6 +27,9 @@ $is_setup_needed = ($cats_count == 0);
     <div class="dashboard-container">
         
         <?php include(ROOT_PATH . '/assets/includes/sidebar_bavbar.php'); ?>
+        <script>
+        window.__TAZRIM_GEMINI_CONFIGURED__ = <?php echo !empty($tazrim_gemini_configured) ? 'true' : 'false'; ?>;
+        </script>
 
             <div class="content-wrapper">
 
@@ -269,6 +272,16 @@ $is_setup_needed = ($cats_count == 0);
         let shoppingStoreTabLongPressTimer = null;
         let shoppingStoreTabLongPressTriggered = false;
         const shoppingStoreTabLongPressMs = 420;
+
+        document.addEventListener('tazrim:gemini-key-changed', function (ev) {
+            const d = (ev && ev.detail) || {};
+            window.__TAZRIM_GEMINI_CONFIGURED__ = !!d.configured;
+            if (window.__TAZRIM_GEMINI_CONFIGURED__) {
+                document.querySelectorAll('.btn-ai-sort--locked').forEach(function (el) {
+                    el.classList.remove('btn-ai-sort--locked');
+                });
+            }
+        });
 
         const SHOPPING_STORE_ICONS = [
             'fa-cart-shopping', 'fa-store', 'fa-leaf', 'fa-basket-shopping', 'fa-shop', 'fa-bag-shopping',
@@ -522,6 +535,17 @@ $is_setup_needed = ($cats_count == 0);
         }
 
         function openRecipeToShoppingModal() {
+            if (!window.__TAZRIM_GEMINI_CONFIGURED__) {
+                if (typeof window.tazrimRequireGeminiKey === 'function') {
+                    window.tazrimRequireGeminiKey();
+                } else if (
+                    window.tazrimGeminiKeyModal
+                    && typeof window.tazrimGeminiKeyModal.open === 'function'
+                ) {
+                    window.tazrimGeminiKeyModal.open({});
+                }
+                return;
+            }
             shoppingRecipeState.items = [];
             shoppingRecipeState.lastSourceMode = '';
             shoppingRecipeReleasePreviewUrls();
@@ -584,6 +608,16 @@ $is_setup_needed = ($cats_count == 0);
                         }
                     }
 
+                    if (res.code === 'gemini_key_missing') {
+                        shoppingRecipeSetLoading(false, '');
+                        shoppingRecipeShowMessage('#shopping-recipe-msg', '', true);
+                        if (typeof window.tazrimRequireGeminiKey === 'function') {
+                            window.tazrimRequireGeminiKey();
+                        } else if (window.tazrimGeminiKeyModal && window.tazrimGeminiKeyModal.open) {
+                            window.tazrimGeminiKeyModal.open({});
+                        }
+                        return;
+                    }
                     if (res.status !== 'success') {
                         shoppingRecipeSetLoading(false, '');
                         shoppingRecipeShowMessage('#shopping-recipe-msg', res.message || 'לא הצלחנו לחלץ מצרכים מהתמונות.', true);
@@ -1377,8 +1411,13 @@ function handleEmptyCategoryClick(id, name, icon, element) {
 
             let aiButtonHtml = '';
             if (activeItemsCount >= 3) {
+                const aiLocked = !window.__TAZRIM_GEMINI_CONFIGURED__;
+                const aiCls =
+                    'btn-ai-sort' + (aiLocked ? ' btn-ai-sort--locked' : '');
                 aiButtonHtml =
-                    '<button type="button" class="btn-ai-sort" title="סידור חכם לפי מעברי הסופר" onclick="sortCategoryAI(' +
+                    '<button type="button" class="' +
+                    aiCls +
+                    '" title="סידור חכם לפי מעברי הסופר" onclick="sortCategoryAI(' +
                     category.id +
                     ', event)">' +
                     '<i class="fa-solid fa-wand-magic-sparkles"></i></button>';
@@ -1429,7 +1468,18 @@ function handleEmptyCategoryClick(id, name, icon, element) {
         function sortCategoryAI(categoryId, event) {
             // עוצר את הלחיצה כדי לא לסגור את הקטגוריה בטעות
             event.stopPropagation();
-            
+            if (!window.__TAZRIM_GEMINI_CONFIGURED__) {
+                if (typeof window.tazrimRequireGeminiKey === 'function') {
+                    window.tazrimRequireGeminiKey();
+                } else if (
+                    window.tazrimGeminiKeyModal
+                    && typeof window.tazrimGeminiKeyModal.open === 'function'
+                ) {
+                    window.tazrimGeminiKeyModal.open({});
+                }
+                return;
+            }
+
             const $catBlock = $(`#cat-block-${categoryId}`);
             
             // 1. הזרקת שכבת הטעינה המגניבה לתוך הקטגוריה
@@ -1576,8 +1626,12 @@ function handleEmptyCategoryClick(id, name, icon, element) {
             let $aiBtn = $actions.find('.btn-ai-sort');
             if (activeItemsCount >= 3) {
                 if ($aiBtn.length === 0) {
+                    const aiLocked = !window.__TAZRIM_GEMINI_CONFIGURED__;
+                    const aiCls = 'btn-ai-sort' + (aiLocked ? ' btn-ai-sort--locked' : '');
                     const aiHtml =
-                        '<button type="button" class="btn-ai-sort" title="סידור חכם לפי מעברי הסופר" onclick="sortCategoryAI(' +
+                        '<button type="button" class="' +
+                        aiCls +
+                        '" title="סידור חכם לפי מעברי הסופר" onclick="sortCategoryAI(' +
                         categoryId +
                         ', event)">' +
                         '<i class="fa-solid fa-wand-magic-sparkles"></i></button>';

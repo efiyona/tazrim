@@ -44,6 +44,13 @@ require_once ROOT_PATH . '/app/helpers/phone_uniqueness.php';
 $show_ios_tazrim_panel = tazrim_show_ios_tazrim_panel($user_agent);
 
 require_once ROOT_PATH . '/app/features/ai_chat/services/user_preferences_repository.php';
+require_once ROOT_PATH . '/app/functions/user_gemini_key.php';
+require_once ROOT_PATH . '/app/functions/app_session_csrf.php';
+$user_gemini_parts = tazrim_user_get_gemini_key_mask_parts($conn, (int) $user_id);
+$user_gemini_configured = $user_gemini_parts['configured'];
+$user_gemini_mask = $user_gemini_parts['mask'];
+$profile_gemini_csrf = tazrim_app_csrf_token();
+
 $ai_prefs_flash = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ai_pref_delete'], $_POST['ai_pref_key']) && is_string($_POST['ai_pref_key'])) {
     $delKey = trim($_POST['ai_pref_key']);
@@ -176,6 +183,154 @@ if ($conn instanceof mysqli) {
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        /* בינה מלאכותית (Gemini) — עיצוב כמו «קיצורי דרך ל־iOS» באותו דף */
+        .profile-gemini-card-header--ios h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .profile-gemini-card-header__g-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(145deg, #4285f4 0%, #ea4335 35%, #fbbc05 65%, #34a853 100%);
+            color: #fff;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.35);
+        }
+        .profile-gemini-card-header__emoji {
+            font-size: 1.15rem;
+            line-height: 1;
+            display: inline-block;
+            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
+        }
+        #profile-gemini-keys-list .manage-categories-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 10px;
+            margin-bottom: 16px;
+            min-width: 0;
+        }
+        #profile-gemini-keys-list .manage-categories-toolbar .section-subtitle {
+            flex: 1 1 12rem;
+            min-width: 0;
+            margin: 0;
+        }
+        #profile-gemini-keys-list .transaction-item.profile-gemini-key-row {
+            cursor: default;
+            align-items: center;
+            flex-wrap: nowrap;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        @media (hover: hover) {
+            #profile-gemini-keys-list .transaction-item.profile-gemini-key-row:hover {
+                transform: none;
+                background-color: var(--white);
+            }
+        }
+        #profile-gemini-keys-list .transaction-item.profile-gemini-key-row:active {
+            transform: none;
+        }
+        #profile-gemini-keys-list .profile-gemini-key-row .cat-icon-wrapper i {
+            color: #4285f4;
+        }
+        #profile-gemini-keys-list .details .desc {
+            word-break: break-word;
+        }
+        .profile-gemini-card-header__titles {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            min-width: 0;
+            text-align: right;
+        }
+        .profile-gemini-card-header__titles span:first-child {
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: var(--text-dark);
+        }
+        .profile-gemini-card-header__subtitle {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-light);
+            letter-spacing: 0.02em;
+        }
+        .profile-gemini-ios__lead {
+            margin-bottom: 16px !important;
+        }
+        .profile-gemini-ios button.ios-shortcut-add-btn[disabled] {
+            opacity: 0.65;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .profile-gemini-ios__icon-gradient {
+            background: linear-gradient(145deg, #1a73e8, #22c55e) !important;
+            border: none !important;
+            color: #fff !important;
+            box-shadow: 0 1px 6px rgba(26, 115, 232, 0.35);
+        }
+        .profile-gemini-ios__icon-warn {
+            background: linear-gradient(145deg, #f59e0b, #fbbf24) !important;
+            border: none !important;
+            color: #fff !important;
+        }
+        .profile-gemini-ios__icon-danger {
+            background: linear-gradient(145deg, #e11d48, #fb7185) !important;
+            border: none !important;
+            color: #fff !important;
+        }
+        .profile-gemini-ios__status-box {
+            margin-bottom: 8px;
+        }
+        .profile-gemini-ios__status-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .profile-gemini-ios__status-badge {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: linear-gradient(145deg, #22c55e, #16a34a);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            border: none;
+        }
+        .profile-gemini-ios__mask {
+            font-family: ui-monospace, monospace;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #475569;
+            word-break: break-all;
+        }
+        .profile-gemini-ios .ios-shortcuts-section.profile-gemini-ios__actions {
+            margin-top: 18px;
+            padding-top: 16px;
+        }
+        .profile-gemini-ios .ios-shortcuts-section.profile-gemini-ios__actions--only {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+        .profile-gemini-ios__locked-banner {
+            margin-bottom: 14px;
         }
 
         .notif-section-block { margin-bottom: 4px; }
@@ -539,6 +694,71 @@ if ($conn instanceof mysqli) {
                         </div>
                     </div>
 
+                    <?php $gemini_key_rows = $user_gemini_parts['keys'] ?? []; ?>
+                    <div class="card full-width-card" id="profile-gemini-card">
+                        <div class="card-header profile-gemini-card-header--ios">
+                            <h3>
+                                <span class="profile-gemini-card-header__g-icon" aria-hidden="true"><span class="profile-gemini-card-header__emoji">🤖</span></span>
+                                <span class="profile-gemini-card-header__titles">
+                                    <span>בינה מלאכותית אישית</span>
+                                    <span class="profile-gemini-card-header__subtitle">מפתחות Google AI לשירות Gemini</span>
+                                </span>
+                            </h3>
+                        </div>
+                        <div class="card-body-padding profile-gemini-ios ios-tazrim-panel">
+                            <p class="ios-tazrim-lead profile-gemini-ios__lead">
+                                צ׳אט חכם, מיון קניות ופענוח מתכונים — מתבצעים עם <strong>מפתחות API אישיים</strong> לחשבון Google שלך (ב-<strong>AI Studio</strong> אפשר ליצור מפתחות בשכבה חינמית). אפשר לשמור כמה מפתחות למעבר חכם במכסה.
+                            </p>
+
+                            <?php if (!$user_gemini_configured): ?>
+                                <div class="notif-device-banner warn profile-gemini-ios__locked-banner" role="status">
+                                    <strong>לא הוגדר מפתח.</strong> פיצ׳רי הבינה לא ייפתחו עד להוספה ואימות.
+                                </div>
+                            <?php endif; ?>
+
+                            <div id="profile-gemini-keys-list">
+                                <div class="manage-categories-toolbar">
+                                    <h2 class="section-subtitle"><?php echo $user_gemini_configured ? 'מפתחות שנשמרו' : 'התחלה'; ?></h2>
+                                    <button type="button" class="btn-primary" id="profile-gemini-add-btn" style="width: max-content; margin: 0; padding: 8px 20px; font-size: 0.95rem; box-shadow: 0 4px 10px rgba(35, 114, 39, 0.2);">
+                                        הוספת מפתח <i class="fa-solid fa-plus"></i>
+                                    </button>
+                                </div>
+                                <?php if ($gemini_key_rows !== []): ?>
+                                    <?php foreach ($gemini_key_rows as $gemRow): ?>
+                                        <?php
+                                        $kid = (int) ($gemRow['id'] ?? 0);
+                                        $kmsk = htmlspecialchars((string) ($gemRow['mask'] ?? ''), ENT_QUOTES, 'UTF-8');
+                                        ?>
+                                        <div class="transaction-item profile-gemini-key-row">
+                                            <div class="transaction-info">
+                                                <div class="cat-icon-wrapper">
+                                                    <i class="fa-solid fa-key" aria-hidden="true"></i>
+                                                </div>
+                                                <div class="details">
+                                                    <span class="desc" dir="ltr"><?php echo $kmsk; ?></span>
+                                                    <span class="date">מפתח API · Google Gemini</span>
+                                                </div>
+                                            </div>
+                                            <div class="transaction-actions">
+                                                <div class="transaction-row-actions">
+                                                    <?php if ($kid > 0): ?>
+                                                        <button type="button" class="transaction-action-pill transaction-action-pill--danger profile-gemini-delete-one-btn" title="מחק מפתח" data-key-id="<?php echo $kid; ?>" aria-label="מחק מפתח">
+                                                            <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="empty-state text-center" style="padding: 28px 20px; background: var(--white); border-radius: 15px;">
+                                        <p style="color: var(--text-light); margin: 0; font-weight: 600;">לא נשמרו מפתחות. לחצו «הוספת מפתח».</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
                     <?php if ($show_ios_tazrim_panel): ?>
                     <div class="card full-width-card" id="ios-tazrim-card">
                         <div class="card-header ios-tazrim-card-header">
@@ -570,6 +790,72 @@ if ($conn instanceof mysqli) {
             </div>
         </main>
     </div>
+
+    <script>
+        (function () {
+            document.addEventListener('DOMContentLoaded', function () {
+                var csrf = <?php echo json_encode($profile_gemini_csrf, JSON_UNESCAPED_UNICODE); ?>;
+                function openGk() {
+                    if (window.tazrimGeminiKeyModal && window.tazrimGeminiKeyModal.open) {
+                        window.tazrimGeminiKeyModal.open({});
+                    }
+                }
+                var addBtn = document.getElementById('profile-gemini-add-btn');
+                if (addBtn) addBtn.addEventListener('click', openGk);
+
+                function deleteGeminiKeyFromProfile(keyId) {
+                    var payload = { csrf_token: csrf };
+                    var idNum = parseInt(keyId, 10);
+                    if (!isNaN(idNum) && idNum > 0) {
+                        payload.key_id = idNum;
+                    }
+                    fetch('<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>app/ajax/user_gemini_key_delete.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) {
+                            if (d && d.status === 'ok') {
+                                window.location.reload();
+                            } else if (typeof tazrimAlert === 'function') {
+                                tazrimAlert({ title: 'שגיאה', message: 'לא ניתן למחוק.' });
+                            }
+                        })
+                        .catch(function () {
+                            if (typeof tazrimAlert === 'function') {
+                                tazrimAlert({ title: 'שגיאה', message: 'שגיאת רשת.' });
+                            }
+                        });
+                }
+
+                var gemList = document.getElementById('profile-gemini-keys-list');
+                if (gemList) {
+                    gemList.addEventListener('click', function (ev) {
+                        var btn = ev.target && ev.target.closest ? ev.target.closest('.profile-gemini-delete-one-btn') : null;
+                        if (!btn || !gemList.contains(btn)) return;
+                        var keyAttr = btn.getAttribute('data-key-id') || '';
+                        function runDelete() {
+                            deleteGeminiKeyFromProfile(keyAttr);
+                        }
+                        if (typeof tazrimConfirm === 'function') {
+                            tazrimConfirm({
+                                title: 'מחיקת מפתח',
+                                message: 'המפתח יוסר מהחשבון. אם לא יישארו מפתחות — פיצ׳רי הבינה ייחסמו עד שתוסיפו מפתח.',
+                                confirmText: 'מחיקה',
+                                cancelText: 'ביטול',
+                                danger: true
+                            }).then(function (ok) {
+                                if (ok) runDelete();
+                            });
+                        } else if (confirm('למחוק את המפתח?')) {
+                            runDelete();
+                        }
+                    });
+                }
+            });
+        })();
+    </script>
 
     <script>
         // עדכון פרטים אישיים
