@@ -79,6 +79,116 @@
 
   function setMonthNav(y, m) { currentYear = y; currentMonth = m; }
 
+  function buildPageUrl(y, m) {
+    const cfg = getCfg();
+    const base = (cfg.pageUrl || (typeof window !== 'undefined' && window.location ? window.location.pathname : ''));
+    return base + '?m=' + m + '&y=' + y;
+  }
+
+  function todayParts() {
+    const t = new Date();
+    return { y: t.getFullYear(), m: t.getMonth() + 1 };
+  }
+
+  function shiftMonth(y, m, delta) {
+    let nm = m + delta;
+    let ny = y;
+    while (nm < 1) { nm += 12; ny -= 1; }
+    while (nm > 12) { nm -= 12; ny += 1; }
+    return { y: ny, m: nm };
+  }
+
+  function updateMonthNavHeader(y, m) {
+    const nav = el('work-month-nav');
+    const curLabel = nav && nav.querySelector('[data-role="current-label"]');
+    if (curLabel) curLabel.textContent = (HE_MONTHS[m - 1] || '') + ' ' + y;
+
+    const prev = el('work-month-prev');
+    if (prev) {
+      const p = shiftMonth(y, m, -1);
+      prev.setAttribute('data-y', String(p.y));
+      prev.setAttribute('data-m', String(p.m));
+      prev.setAttribute('href', buildPageUrl(p.y, p.m));
+      const lbl = prev.querySelector('[data-role="month-label"]');
+      if (lbl) lbl.textContent = HE_MONTHS[p.m - 1] || '';
+    }
+    const next = el('work-month-next');
+    if (next) {
+      const nx = shiftMonth(y, m, 1);
+      next.setAttribute('data-y', String(nx.y));
+      next.setAttribute('data-m', String(nx.m));
+      next.setAttribute('href', buildPageUrl(nx.y, nx.m));
+      const lbl = next.querySelector('[data-role="month-label"]');
+      if (lbl) lbl.textContent = HE_MONTHS[nx.m - 1] || '';
+    }
+    const today = el('work-month-today');
+    const t = todayParts();
+    const isCurrent = (y === t.y && m === t.m);
+    if (today) {
+      today.setAttribute('data-y', String(t.y));
+      today.setAttribute('data-m', String(t.m));
+      today.setAttribute('href', buildPageUrl(t.y, t.m));
+      if (isCurrent) today.setAttribute('hidden', '');
+      else today.removeAttribute('hidden');
+    }
+    if (nav) nav.classList.toggle('home-month-nav--has-today', !isCurrent);
+  }
+
+  function navigateToMonth(y, m, opts) {
+    opts = opts || {};
+    if (!y || !m) return;
+    if (Number(currentYear) === Number(y) && Number(currentMonth) === Number(m) && !opts.force) {
+      return;
+    }
+    setMonthNav(y, m);
+    updateMonthNavHeader(y, m);
+    if (!opts.skipHistory) {
+      try {
+        const url = buildPageUrl(y, m);
+        const state = { workScheduleMonth: true, year: y, month: m };
+        if (opts.replace) {
+          window.history.replaceState(state, '', url);
+        } else {
+          window.history.pushState(state, '', url);
+        }
+      } catch (e) { /* ignore */ }
+    }
+    closeDaySheet();
+    monthShifts = [];
+    renderCalendarShell();
+    renderDots();
+    renderLegend();
+    return loadShifts();
+  }
+
+  function bindMonthNav() {
+    const nav = el('work-month-nav');
+    if (!nav) return;
+    nav.addEventListener('click', function (ev) {
+      const a = ev.target.closest('a[data-y][data-m]');
+      if (!a || !nav.contains(a)) return;
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button === 1) return;
+      ev.preventDefault();
+      const y = parseInt(a.getAttribute('data-y'), 10);
+      const m = parseInt(a.getAttribute('data-m'), 10);
+      if (!y || !m) return;
+      navigateToMonth(y, m);
+    });
+    window.addEventListener('popstate', function (ev) {
+      const st = ev.state;
+      if (st && st.workScheduleMonth && st.year && st.month) {
+        navigateToMonth(parseInt(st.year, 10), parseInt(st.month, 10), { skipHistory: true });
+        return;
+      }
+      const sp = new URLSearchParams(window.location.search);
+      const y = parseInt(sp.get('y') || '', 10);
+      const m = parseInt(sp.get('m') || '', 10);
+      if (y && m) {
+        navigateToMonth(y, m, { skipHistory: true });
+      }
+    });
+  }
+
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
   function ymd(y, m, d) {
@@ -796,6 +906,17 @@
       if (q && q.style.display === 'block') closeModal(q);
     });
     if (el('work-main-calendar')) {
+      bindMonthNav();
+      try {
+        const st = window.history.state;
+        if (!st || !st.workScheduleMonth) {
+          window.history.replaceState(
+            { workScheduleMonth: true, year: currentYear, month: currentMonth },
+            '',
+            window.location.href
+          );
+        }
+      } catch (e) { /* ignore */ }
       renderCalendarShell();
       loadJobs().then(function () { return loadShifts(); });
     }

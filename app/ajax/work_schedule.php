@@ -323,6 +323,8 @@ switch ($action) {
         if ($y < 1970 || $y > 2100 || $m < 1 || $m > 12) {
             ws_json(false, null, 'תאריך לא תקין.');
         }
+        $_SESSION['view_month'] = $m;
+        $_SESSION['view_year'] = $y;
         $start = sprintf('%04d-%02d-01 00:00:00', $y, $m);
         $mEnd = $m + 1;
         $yEnd = $y;

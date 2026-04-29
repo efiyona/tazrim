@@ -53,7 +53,9 @@ $hebrew_months = [
 ];
 $GLOBALS['tazrim_work_schedule_hide_fab'] = $work_enabled && $needs_wizard;
 
-$is_current_cal_month = ($cal_m === (int) date('m') && $cal_y === (int) date('Y'));
+$today_m = (int) date('m');
+$today_y = (int) date('Y');
+$is_current_cal_month = ($cal_m === $today_m && $cal_y === $today_y);
 
 $prev_m = $cal_m - 1;
 $prev_y = $cal_y;
@@ -133,26 +135,24 @@ $account_work_url = BASE_URL . 'pages/settings/user_profile.php#work-account-job
                         <div class="page-header-actions__title-wrap">
                             <h1 class="section-title" style="margin-bottom:0">סידור עבודה</h1>
                         </div>
-                        <div class="home-month-nav shopping-tabs-bar<?php echo !$is_current_cal_month ? ' home-month-nav--has-today' : ''; ?>" aria-label="ניווט בין חודשים">
+                        <div class="home-month-nav shopping-tabs-bar<?php echo !$is_current_cal_month ? ' home-month-nav--has-today' : ''; ?>" id="work-month-nav" aria-label="ניווט בין חודשים">
                             <div class="shopping-store-tabs">
-                                <a href="<?php echo htmlspecialchars($page_url . '?m=' . $prev_m . '&y=' . $prev_y, ENT_QUOTES, 'UTF-8'); ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש קודם">
+                                <a id="work-month-prev" href="<?php echo htmlspecialchars($page_url . '?m=' . $prev_m . '&y=' . $prev_y, ENT_QUOTES, 'UTF-8'); ?>" data-m="<?php echo (int) $prev_m; ?>" data-y="<?php echo (int) $prev_y; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש קודם">
                                     <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-                                    <span><?php echo htmlspecialchars($hebrew_months[$prev_m], ENT_QUOTES, 'UTF-8'); ?></span>
+                                    <span data-role="month-label"><?php echo htmlspecialchars($hebrew_months[$prev_m], ENT_QUOTES, 'UTF-8'); ?></span>
                                 </a>
                                 <div class="home-month-nav__center-cell">
-                                    <span class="shopping-tab-chip active home-month-nav__current" aria-current="page">
+                                    <span class="shopping-tab-chip active home-month-nav__current" id="work-month-current" aria-current="page">
                                         <i class="fa-regular fa-calendar-days" aria-hidden="true"></i>
-                                        <span><?php echo htmlspecialchars($hebrew_months[$cal_m] . ' ' . $cal_y, ENT_QUOTES, 'UTF-8'); ?></span>
+                                        <span data-role="current-label"><?php echo htmlspecialchars($hebrew_months[$cal_m] . ' ' . $cal_y, ENT_QUOTES, 'UTF-8'); ?></span>
                                     </span>
-                                    <?php if (!$is_current_cal_month): ?>
-                                        <a href="<?php echo htmlspecialchars($page_url . '?m=' . date('m') . '&y=' . date('Y'), ENT_QUOTES, 'UTF-8'); ?>" class="shopping-tab-chip shopping-tab-add home-month-nav__today" title="חזרה לחודש הנוכחי">
-                                            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
-                                            <span>היום</span>
-                                        </a>
-                                    <?php endif; ?>
+                                    <a id="work-month-today" href="<?php echo htmlspecialchars($page_url . '?m=' . $today_m . '&y=' . $today_y, ENT_QUOTES, 'UTF-8'); ?>" data-m="<?php echo (int) $today_m; ?>" data-y="<?php echo (int) $today_y; ?>" class="shopping-tab-chip shopping-tab-add home-month-nav__today" title="חזרה לחודש הנוכחי"<?php echo $is_current_cal_month ? ' hidden' : ''; ?>>
+                                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                                        <span>היום</span>
+                                    </a>
                                 </div>
-                                <a href="<?php echo htmlspecialchars($page_url . '?m=' . $next_m . '&y=' . $next_y, ENT_QUOTES, 'UTF-8'); ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש הבא">
-                                    <span><?php echo htmlspecialchars($hebrew_months[$next_m], ENT_QUOTES, 'UTF-8'); ?></span>
+                                <a id="work-month-next" href="<?php echo htmlspecialchars($page_url . '?m=' . $next_m . '&y=' . $next_y, ENT_QUOTES, 'UTF-8'); ?>" data-m="<?php echo (int) $next_m; ?>" data-y="<?php echo (int) $next_y; ?>" class="shopping-tab-chip home-month-nav__jump" title="חודש הבא">
+                                    <span data-role="month-label"><?php echo htmlspecialchars($hebrew_months[$next_m], ENT_QUOTES, 'UTF-8'); ?></span>
                                     <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
                                 </a>
                             </div>
@@ -251,7 +251,12 @@ function workWizardStep(n) {
 })();
 </script>
 <?php if ($work_enabled): ?>
-<script src="<?php echo htmlspecialchars(BASE_URL . 'assets/js/work_schedule.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
+<?php
+$ws_js_path = ROOT_PATH . '/assets/js/work_schedule.js';
+$ws_js_ver = is_file($ws_js_path) ? filemtime($ws_js_path) : time();
+$ws_js_url = BASE_URL . 'assets/js/work_schedule.js?v=' . $ws_js_ver;
+?>
+<script src="<?php echo htmlspecialchars($ws_js_url, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <?php endif; ?>
 </body>
 </html>

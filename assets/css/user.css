@@ -3724,6 +3724,9 @@ a.shopping-tab-chip:not(.active):not(.shopping-tab-add) {
     white-space: nowrap;
     z-index: 1;
 }
+.home-month-nav .shopping-tab-chip.home-month-nav__today[hidden] {
+    display: none !important;
+}
 .home-month-nav .shopping-tab-chip.home-month-nav__current {
     cursor: default;
 }
