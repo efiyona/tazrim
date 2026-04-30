@@ -1,6 +1,24 @@
 <?php
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 
+/**
+ * Home data (used by the top bar subtitle).
+ * Some pages define `$home_data` before including this file, but not all.
+ * Keep a safe default to avoid "Undefined variable" notices.
+ */
+if (!isset($home_data) || !is_array($home_data)) {
+    $home_data = ['name' => ''];
+    if (function_exists('selectOne') && !empty($_SESSION['home_id'])) {
+        $hid = (int) $_SESSION['home_id'];
+        if ($hid > 0) {
+            $h = selectOne('homes', ['id' => $hid]);
+            if (is_array($h)) {
+                $home_data = $h;
+            }
+        }
+    }
+}
+
 /** סנכרון תפקיד + דגלים מהמסד לסשן (קישור פאנל אדמין עקבי עם אימות בשרת) */
 $urow = null;
 $work_schedule_enabled = false;
@@ -199,7 +217,7 @@ $emailForGate = (string) ($_SESSION['user_email'] ?? '');
                         <?php echo $_SESSION['first_name']; ?>
                         <?php echo !empty($_SESSION['nickname']) ? ' (' . $_SESSION['nickname'] . ')' : ''; ?>
                     </h3>
-                    <span class="home-name-sub"><?php echo $home_data['name']; ?></span>
+                    <span class="home-name-sub"><?php echo htmlspecialchars((string) ($home_data['name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></span>
                 </div>
             </div>
         </div>
@@ -234,6 +252,8 @@ $emailForGate = (string) ($_SESSION['user_email'] ?? '');
             </div>
         </div>
     </header>
+
+    
 
     <?php if ($tazrim_email_verification_block): ?>
     <div class="tazrim-email-modal" id="tazrimEmailModal" role="alertdialog" aria-modal="true" aria-labelledby="tazrimEmailTitleSend" aria-describedby="tazrimEmailDescSend">

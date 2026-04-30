@@ -59,6 +59,7 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
     <div class="dashboard-container">
         
         <?php include(ROOT_PATH . '/assets/includes/sidebar_bavbar.php'); ?>
+        <?php include(ROOT_PATH . '/assets/includes/banner_alert.php'); ?>
 
             <div class="content-wrapper">
     
