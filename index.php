@@ -375,19 +375,22 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
             return `app/ajax/fetch_category_details.php?mode=type&trans_type=${encodeURIComponent(ctx.type)}&m=${currentMonth}&y=${currentYear}`;
         }
         if (ctx.id) {
-            return `app/ajax/fetch_category_details.php?cat_id=${ctx.id}&m=${currentMonth}&y=${currentYear}`;
+            const t = ctx.type ? `&trans_type=${encodeURIComponent(ctx.type)}` : '';
+            return `app/ajax/fetch_category_details.php?cat_id=${ctx.id}${t}&m=${currentMonth}&y=${currentYear}`;
         }
         return null;
     }
 
-    function loadCategoryDetails(catId, catName) {
+    function loadCategoryDetails(catId, catName, type) {
         const modal = document.getElementById('category-details-modal');
         const content = document.getElementById('cat-details-content');
         const title = document.getElementById('selected-cat-name');
+        const normalizedType = type === 'income' ? 'income' : 'expense';
+        const typeLabel = normalizedType === 'income' ? 'הכנסות' : 'הוצאות';
 
-        window.categoryDetailsContext = { mode: 'category', id: catId, name: catName };
+        window.categoryDetailsContext = { mode: 'category', id: catId, name: catName, type: normalizedType };
         modal.style.display = 'block';
-        title.innerText = 'פירוט הוצאות: ' + catName;
+        title.innerText = 'פירוט ' + typeLabel + ': ' + catName;
         content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> רגע…</div>';
 
         fetch(getDetailsRequestUrl(window.categoryDetailsContext))

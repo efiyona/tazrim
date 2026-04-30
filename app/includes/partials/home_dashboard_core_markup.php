@@ -1,7 +1,16 @@
 <?php
 /** @var mysqli_result|false $pending_result */
 /** @var mysqli_result|false $recent_result */
-/** @var mysqli_result|false $result_categories */
+/** @var float|int $total_income */
+/** @var float|int $total_expense */
+/** @var string $today_il */
+/** @var float|int $current_bank_balance */
+/** @var float|int $current_bank_balance_raw */
+/** @var int $show_bank_balance */
+/** @var bool $has_more_pending */
+/** @var bool $has_more_recent */
+/** @var array<int, array<string, mixed>> $expense_categories_nonzero */
+/** @var array<int, array<string, mixed>> $income_categories_nonzero */
 ?>
                 <div class="kpi-grid kpi-grid--home">
                     <div class="kpi-card kpi-card--home kpi-card--income">
@@ -195,18 +204,14 @@
                     <?php endif; ?>
                 </div>
 
+                <?php if (!empty($expense_categories_nonzero)): ?>
                 <section class="budget-section">
-                    <h2 class="section-subtitle" style="margin: 30px 0 20px;">קטגוריות</h2>
+                    <h2 class="section-subtitle" style="margin: 30px 0 20px;">קטגוריות הוצאה</h2>
 
                     <div class="category-grid">
-                        <?php if ($result_categories) {
-                            while ($cat = mysqli_fetch_assoc($result_categories)):
+                        <?php foreach ($expense_categories_nonzero as $cat):
                             $budget = $cat['budget_limit'];
                             $spent = $cat['current_spending'];
-
-                            if ($spent == 0) {
-                                continue;
-                            }
 
                             $percent = ($budget > 0) ? min(($spent / $budget) * 100, 100) : 0;
                             $is_over_budget = ($budget > 0 && $spent > $budget);
@@ -243,13 +248,67 @@
                                 </div>
 
                                 <div class="cat-card-footer" style="margin-top: 15px; border-top: 1px solid #f0f0f0; padding-top: 10px;">
-                                    <button type="button" class="btn-cat-details" onclick="loadCategoryDetails(<?php echo (int) $cat['id']; ?>, '<?php echo htmlspecialchars($cat['name'], ENT_QUOTES); ?>')">
+                                    <button type="button" class="btn-cat-details" onclick="loadCategoryDetails(<?php echo (int) $cat['id']; ?>, '<?php echo htmlspecialchars($cat['name'], ENT_QUOTES); ?>', 'expense')">
                                         פירוט <i class="fa-solid fa-chevron-left" style="font-size: 0.7rem; margin-right: 5px;"></i>
                                     </button>
                                 </div>
 
                             </div>
-                        <?php endwhile;
-                        } ?>
+                        <?php endforeach; ?>
                     </div>
                 </section>
+                <?php endif; ?>
+
+                <?php if (!empty($income_categories_nonzero)): ?>
+                <section class="budget-section">
+                    <h2 class="section-subtitle" style="margin: 30px 0 20px;">קטגוריות הכנסה</h2>
+
+                    <div class="category-grid">
+                        <?php foreach ($income_categories_nonzero as $cat):
+                            $budget = $cat['budget_limit'];
+                            $earned = $cat['current_income'];
+
+                            $percent = ($budget > 0) ? min(($earned / $budget) * 100, 100) : 0;
+                        ?>
+                            <div class="category-card">
+                                <div class="cat-card-header">
+                                    <div class="cat-icon-circle">
+                                        <i class="fa-solid <?php echo $cat['icon'] ?: 'fa-tag'; ?>"></i>
+                                    </div>
+                                    <span class="cat-name"><?php echo htmlspecialchars($cat['name']); ?></span>
+                                </div>
+
+                                <div class="cat-card-body">
+
+                                    <div class="spending-info">
+                                        <span class="spent-amount"><?php echo number_format($earned, 0); ?> ₪</span>
+                                        <span class="budget-total">
+                                            <?php echo ($budget > 0) ? "מתוך " . number_format($budget, 0) . " ₪" : "אין יעד מוגדר"; ?>
+                                        </span>
+                                    </div>
+
+                                    <?php if ($budget > 0): ?>
+                                        <div class="percent-label" style="text-align: left; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--main);">
+                                            <?php
+                                                $real_percent = round(($earned / $budget) * 100);
+                                                echo $real_percent . "%";
+                                            ?>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div class="progress-container">
+                                        <div class="progress-bar" style="width: <?php echo ($budget > 0) ? min($percent, 100) : '0'; ?>%;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="cat-card-footer" style="margin-top: 15px; border-top: 1px solid #f0f0f0; padding-top: 10px;">
+                                    <button type="button" class="btn-cat-details" onclick="loadCategoryDetails(<?php echo (int) $cat['id']; ?>, '<?php echo htmlspecialchars($cat['name'], ENT_QUOTES); ?>', 'income')">
+                                        פירוט <i class="fa-solid fa-chevron-left" style="font-size: 0.7rem; margin-right: 5px;"></i>
+                                    </button>
+                                </div>
+
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+                <?php endif; ?>

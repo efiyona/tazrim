@@ -88,6 +88,42 @@ function tazrim_render_home_dashboard_core(mysqli $conn, int $home_id, int $sele
                         ORDER BY current_spending DESC";
     $result_categories = mysqli_query($conn, $categories_budget_query);
 
+    $categories_income_query = "SELECT 
+                            c.id, c.name, c.icon, c.budget_limit,
+                            COALESCE(SUM(CASE 
+                                WHEN t.type = 'income' 
+                                AND MONTH(t.transaction_date) = $selected_month 
+                                AND YEAR(t.transaction_date) = $selected_year 
+                                THEN t.amount ELSE 0 END), 0) as current_income
+                        FROM categories c
+                        LEFT JOIN transactions t ON c.id = t.category AND t.home_id = $home_id
+                        WHERE c.home_id = $home_id 
+                        AND c.type = 'income'
+                        AND c.is_active = 1
+                        GROUP BY c.id, c.name, c.icon, c.budget_limit
+                        ORDER BY current_income DESC";
+    $result_income_categories = mysqli_query($conn, $categories_income_query);
+
+    $expense_categories_nonzero = [];
+    if ($result_categories) {
+        while ($cat = mysqli_fetch_assoc($result_categories)) {
+            if (((float) ($cat['current_spending'] ?? 0)) <= 0) {
+                continue;
+            }
+            $expense_categories_nonzero[] = $cat;
+        }
+    }
+
+    $income_categories_nonzero = [];
+    if ($result_income_categories) {
+        while ($cat = mysqli_fetch_assoc($result_income_categories)) {
+            if (((float) ($cat['current_income'] ?? 0)) <= 0) {
+                continue;
+            }
+            $income_categories_nonzero[] = $cat;
+        }
+    }
+
     ob_start();
     include __DIR__ . '/partials/home_dashboard_core_markup.php';
     $inner = ob_get_clean();

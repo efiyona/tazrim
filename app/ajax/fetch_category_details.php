@@ -2,6 +2,8 @@
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
 
+$today_il = date('Y-m-d');
+
 $cat_id = $_GET['cat_id'] ?? null;
 $mode = $_GET['mode'] ?? 'category';
 $requested_type = $_GET['trans_type'] ?? 'expense';
@@ -31,21 +33,22 @@ if ($mode === 'type') {
         ? 'אין הכנסות רשומות החודש.'
         : 'אין הוצאות רשומות החודש.';
 } elseif ($cat_id) {
-    $selected_type = 'expense';
     $query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name 
               FROM transactions t 
               LEFT JOIN categories c ON t.category = c.id 
               LEFT JOIN users u ON t.user_id = u.id
               WHERE t.category = $cat_id 
               AND t.home_id = $home_id 
-              AND t.type = 'expense'
+              AND t.type = '$selected_type'
               AND MONTH(t.transaction_date) = $selected_month
               AND YEAR(t.transaction_date) = $selected_year
               ORDER BY 
                 CASE WHEN t.transaction_date > '$today_il' THEN 1 ELSE 0 END DESC,
                 CASE WHEN t.transaction_date > '$today_il' THEN t.transaction_date END ASC,
                 t.transaction_date DESC";
-    $empty_text = 'אין פעולות רשומות לקטגוריה זו החודש.';
+    $empty_text = $selected_type === 'income'
+        ? 'אין הכנסות רשומות לקטגוריה זו החודש.'
+        : 'אין הוצאות רשומות לקטגוריה זו החודש.';
 } else {
     exit;
 }
