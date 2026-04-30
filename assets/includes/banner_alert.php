@@ -317,12 +317,4 @@ if ($banner_type === 'success') {
         </div>
     </div>
 
-    <div class="header-left">
-        <?php if ($is_shift_banner && $banner_href !== ''): ?>
-            <a class="btn-primary tazrim-banner__cta-btn" href="<?php echo htmlspecialchars($banner_href, ENT_QUOTES, 'UTF-8'); ?>">
-                <span><?php echo htmlspecialchars($banner_link_text, ENT_QUOTES, 'UTF-8'); ?></span>
-                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-            </a>
-        <?php endif; ?>
-    </div>
 </section>
