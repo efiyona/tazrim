@@ -105,6 +105,7 @@
     "/index.php",
     "/pages/reports.php",
     "/pages/shopping.php",
+    "/pages/work_schedule.php",
     "/pages/welcome.php",
     "/pages/settings/user_profile.php",
     "/pages/settings/manage_home.php",
@@ -600,6 +601,19 @@
     if (kind === "update_user_nickname") {
       return "עדכון כינוי במערכת";
     }
+    if (kind === "create_work_shift") {
+      const jn =
+        p.job_display_name && String(p.job_display_name).trim() !== ""
+          ? String(p.job_display_name).trim()
+          : "עבודה מהסידור";
+      return 'הוספת משמרת — "' + jn + '"';
+    }
+    if (kind === "update_work_shift") {
+      return "עדכון משמרת קיימת בסידור";
+    }
+    if (kind === "delete_work_shift") {
+      return "מחיקת משמרת מהסידור";
+    }
     return "פעולה במערכת";
   }
 
@@ -651,6 +665,59 @@
     }
     if (k === "update_user_nickname") {
       return hitlDetailRow("כינוי חדש", escapeHtml(String(payload.nickname || "")));
+    }
+    if (k === "create_work_shift") {
+      let h = "";
+      const jLabel =
+        payload.job_display_name && String(payload.job_display_name).trim() !== ""
+          ? String(payload.job_display_name).trim()
+          : "עבודה מסידור #" + String(payload.job_id || "");
+      h += hitlDetailRow("עבודה", escapeHtml(jLabel));
+      const stId = payload.shift_type_id != null ? Number(payload.shift_type_id) : 0;
+      if (stId > 0) {
+        h += hitlDetailRow("סוג משמרת (מזהה)", escapeHtml(String(stId)));
+      }
+      h += hitlDetailRow("התחלה", escapeHtml(String(payload.starts_at || "")));
+      h += hitlDetailRow("סיום", escapeHtml(String(payload.ends_at || "")));
+      if (payload.note && String(payload.note).trim() !== "") {
+        h += hitlDetailRow("הערה", escapeHtml(String(payload.note).trim().slice(0, 400)));
+      }
+      return h;
+    }
+    if (k === "update_work_shift") {
+      let h = "";
+      const jLabel =
+        payload.job_display_name && String(payload.job_display_name).trim() !== ""
+          ? String(payload.job_display_name).trim()
+          : "עבודה מסידור #" + String(payload.job_id || "");
+      h += hitlDetailRow("עבודה", escapeHtml(jLabel));
+      if (payload.shift_window_label && String(payload.shift_window_label).trim() !== "") {
+        h += hitlDetailRow("חלון קודם", escapeHtml(String(payload.shift_window_label).trim()));
+      }
+      h += hitlDetailRow("התחלה (חדש)", escapeHtml(String(payload.starts_at || "")));
+      h += hitlDetailRow("סיום (חדש)", escapeHtml(String(payload.ends_at || "")));
+      const stId = payload.shift_type_id != null ? Number(payload.shift_type_id) : 0;
+      if (stId > 0) {
+        h += hitlDetailRow("סוג משמרת (מזהה)", escapeHtml(String(stId)));
+      }
+      if (payload.note && String(payload.note).trim() !== "") {
+        h += hitlDetailRow("הערה", escapeHtml(String(payload.note).trim().slice(0, 400)));
+      }
+      return h;
+    }
+    if (k === "delete_work_shift") {
+      let h = "";
+      const jLabel =
+        payload.job_display_name && String(payload.job_display_name).trim() !== ""
+          ? String(payload.job_display_name).trim()
+          : "";
+      if (jLabel !== "") {
+        h += hitlDetailRow("עבודה", escapeHtml(jLabel));
+      }
+      if (payload.shift_window_label && String(payload.shift_window_label).trim() !== "") {
+        h += hitlDetailRow("משמרת", escapeHtml(String(payload.shift_window_label).trim()));
+      }
+      return h || hitlDetailRow("פעולה", escapeHtml("מחיקת משמרת לאישורך"));
     }
     return hitlDetailRow("סוג", escapeHtml(k || "—"));
   }
@@ -1000,7 +1067,12 @@
       if (buffer.trim() !== "") {
         handleSseEvent(buffer);
       }
-      if (!streamHasDoneEvent && assistantText === "" && !branchQuestions && !branchAction) {
+      if (
+        !streamHasDoneEvent &&
+        assistantText === "" &&
+        !branchQuestions &&
+        !branchAction
+      ) {
         assistantText = "לא התקבלה תשובה מלאה. נסו שוב.";
       }
       if (branchQuestions) {

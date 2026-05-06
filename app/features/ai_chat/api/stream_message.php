@@ -270,6 +270,64 @@ function ai_chat_validate_user_action_shape(array $action): array
         return ['ok' => true];
     }
 
+    if ($kind === 'create_work_shift') {
+        $jid = (int) ($action['job_id'] ?? 0);
+        $s = trim((string) ($action['starts_at'] ?? ''));
+        $e = trim((string) ($action['ends_at'] ?? ''));
+        if ($jid < 1 || $s === '' || $e === '') {
+            return ['ok' => false, 'error' => 'bad_work_shift_fields'];
+        }
+        $ts1 = strtotime($s);
+        $ts2 = strtotime($e);
+        if ($ts1 === false || $ts2 === false || $ts2 <= $ts1) {
+            return ['ok' => false, 'error' => 'bad_work_shift_time'];
+        }
+        $tid = (int) ($action['shift_type_id'] ?? 0);
+        if ($tid < 0) {
+            return ['ok' => false, 'error' => 'bad_work_shift_type'];
+        }
+        $note = (string) ($action['note'] ?? '');
+        $nLen = function_exists('mb_strlen') ? mb_strlen($note, 'UTF-8') : strlen($note);
+        if ($nLen > 500) {
+            return ['ok' => false, 'error' => 'bad_work_shift_note'];
+        }
+
+        return ['ok' => true];
+    }
+    if ($kind === 'update_work_shift') {
+        $sid = (int) ($action['shift_id'] ?? 0);
+        $jid = (int) ($action['job_id'] ?? 0);
+        $s = trim((string) ($action['starts_at'] ?? ''));
+        $e = trim((string) ($action['ends_at'] ?? ''));
+        if ($sid < 1 || $jid < 1 || $s === '' || $e === '') {
+            return ['ok' => false, 'error' => 'bad_work_shift_update_fields'];
+        }
+        $ts1 = strtotime($s);
+        $ts2 = strtotime($e);
+        if ($ts1 === false || $ts2 === false || $ts2 <= $ts1) {
+            return ['ok' => false, 'error' => 'bad_work_shift_time'];
+        }
+        $tid = (int) ($action['shift_type_id'] ?? 0);
+        if ($tid < 0) {
+            return ['ok' => false, 'error' => 'bad_work_shift_type'];
+        }
+        $note = (string) ($action['note'] ?? '');
+        $nLen = function_exists('mb_strlen') ? mb_strlen($note, 'UTF-8') : strlen($note);
+        if ($nLen > 500) {
+            return ['ok' => false, 'error' => 'bad_work_shift_note'];
+        }
+
+        return ['ok' => true];
+    }
+    if ($kind === 'delete_work_shift') {
+        $sid = (int) ($action['shift_id'] ?? 0);
+        if ($sid < 1) {
+            return ['ok' => false, 'error' => 'bad_work_shift_delete'];
+        }
+
+        return ['ok' => true];
+    }
+
     return ['ok' => false, 'error' => 'unknown_kind'];
 }
 
@@ -379,6 +437,9 @@ if (!$chat) {
     exit;
 }
 
+$uWorkRow = selectOne('users', ['id' => $userId]);
+$workScheduleAgentEnabled = $uWorkRow && !empty($uWorkRow['work_schedule_enabled']);
+
 ai_chat_repo_touch($conn, $chatId, $scopeSnapshot);
 ai_chat_repo_add_message($conn, $chatId, 'user', $message);
 ai_chat_repo_update_title_if_default($conn, $chatId, $message);
@@ -435,6 +496,14 @@ if (!$guardCtx['ok'] && ($guardCtx['error'] ?? '') === 'context_too_large') {
     $modelContext = (string) $guardCtx['content'];
 }
 
+if ($workScheduleAgentEnabled) {
+    require_once dirname(__DIR__) . '/services/work_schedule_agent.php';
+    $wsPrompt = ai_chat_work_schedule_catalog_for_prompt($conn, $userId);
+    if ($wsPrompt !== '') {
+        $modelContext .= "\n\n---\n" . $wsPrompt;
+    }
+}
+
 if ($needsDeep) {
     $modelContext .= "\n\n---\n" . ai_chat_build_deep_system_layer_suffix();
 } else {
@@ -446,7 +515,7 @@ $innerInstr = $modelContext . "\n\n---\n"
     . "כעת נסח את התשובה הסופית למשתמש.\n"
     . "- **קישורי מערכת (PAGE):** ב־[[PAGE:נתיב|כפתור]] — **רק** הנתיבים מהרשימה הבאה. נתיב אחר ייחשב שגוי ולא יוצג כקישור:\n"
     . ai_chat_format_allowed_pages_for_prompt() . "\n"
-    . "- **פרטיות טכנית:** אסור להציג למשתמש מזהי קטגוריה, מזהי פעולה, מספרי id, את המילה category_id, או JSON/שמות שדות מהמערכת. מזהים מספריים מותרים **רק** בתוך בלוק [[ACTION]] כשמוסיפים פעולה — לא בהסבר חופשי, לא ברשימות \"למידע\".\n"
+    . "- **פרטיות טכנית:** אסור להציג למשתמש מזהי קטגוריה, מזהי פעולה, מזהי משמרת/עבודה (shift_id וכו׳) או category_id כטקסט גלוי. מזהים מספריים מותרים **רק** בתוך בלוק [[ACTION]] — לא בהסבר חופשי, לא ברשימות \"למידע\".\n"
     . "- **עיצוב:** חלק לקטעים קצרים; כותרות משנה עם **הדגשה** (למשל **הכנסות**); רשימות עם * בשורה נפרדת; שורה ריקה בין נושאים — לא גוש טקסט אחד.\n"
     . "- תשובות שלמות: אל תחתוך באמצע מילה או משפט. אל תשאיר רשימות עם שורות ריקות או תבניות ריקות.\n"
     . "- גרפים: בחלון הצ'אט אין גרף חי. אם מבקשים גרף — הפנה ל־[[PAGE:/pages/reports.php|דוחות]] או לדף הבית, ואפשר לסכם בקצרה בטקסט לפי הנתונים שקיבלת.\n"
@@ -455,6 +524,13 @@ $innerInstr = $modelContext . "\n\n---\n"
     . "- הוספת הוצאה/הכנסה לקטגוריה **קיימת**: בלוק [[ACTION]] עם `create_transaction`; **חובה** `category_id` פנימי מהמיפוי בנתוני המערכת (לא להציג למשתמש). סכום חיובי, תיאור, תאריך YYYY-MM-DD.\n"
     . "- עדכון כינוי במערכת: בלוק [[ACTION]] עם `{\"kind\":\"update_user_nickname\",\"nickname\":\"...\"}` — רק אחרי שהמשתמש ביקש במפורש; לא לשלוח טלפון/אימייל.\n"
     . "- שמירת העדפה לטווח ארוך: `save_user_preference` עם מפתח goal_* או fact_*.\n"
+    . ($workScheduleAgentEnabled
+        ? "- **סידור עבודה:** אם מתאים לפי ההקשר, אפשר **ליצור / לעדכן / למחוק משמרות** בבלוק [[ACTION]] עם מזהים **רק** מהמיפוי הפנימי של סידור העבודה (בתחתית ההקשר):\n"
+            . "  - `{\"kind\":\"create_work_shift\",\"job_id\":...,\"starts_at\":\"YYYY-MM-DD HH:MM:SS\",\"ends_at\":\"YYYY-MM-DD HH:MM:SS\",\"shift_type_id\":0 או מזהה,\"note\":\"\"}` — משמרות לילה: `ends_at` אחרי `starts_at` (למשל מסיים למחרת).\n"
+            . "  - `{\"kind\":\"update_work_shift\",\"shift_id\":...,\"job_id\":...,\"starts_at\":\"...\",\"ends_at\":\"...\",\"shift_type_id\":0 או מזהה,\"note\":\"\"}`.\n"
+            . "  - `{\"kind\":\"delete_work_shift\",\"shift_id\":...}`.\n"
+            . 'אחרי אישור המשתמש הפעולה מתבצעת בפועל. אפשר גם הפניה ל־[[PAGE:/pages/work_schedule.php|סידור עבודה]].' . "\n"
+        : "- **אין** להשתמש ב־`create_work_shift`, `update_work_shift` או `delete_work_shift` — לחשבון זה אין סידור עבודה פעיל.\n")
     . "- אפשר משפט מבוא קצר אחד לפני בלוק ACTION/QUESTIONS. אם אין צורך בכלים — עברית רגילה בלבד בלי בלוקים.\n";
 
 $innerBody = [
@@ -553,6 +629,19 @@ if ($action !== null) {
         exit;
     }
 
+    $actionKindQuick = strtolower(trim((string) ($action['kind'] ?? $action['action'] ?? '')));
+    $workAgentKinds = ['create_work_shift', 'update_work_shift', 'delete_work_shift'];
+    if (in_array($actionKindQuick, $workAgentKinds, true) && !$workScheduleAgentEnabled) {
+        $cleanDenied = trim(ai_chat_strip_action_block($draftText));
+        $denyMsg = ($cleanDenied !== '' ? $cleanDenied . "\n\n" : '')
+            . 'פעולות סידור עבודה (משמרות) אינן זמינות לחשבון זה.';
+        ai_chat_emit_text_as_tokens(trim($denyMsg));
+        ai_chat_repo_add_message($conn, $chatId, 'assistant', trim($denyMsg), $draftModel);
+        ai_chat_repo_touch($conn, $chatId, $scopeSnapshot);
+        ai_chat_sse_event('done', ['chat_id' => $chatId, 'has_action' => false]);
+        exit;
+    }
+
     $validatorHistoryText = [];
     foreach ($historyRows as $row) {
         $validatorHistoryText[] = [
@@ -613,6 +702,31 @@ if ($action !== null) {
                 if ($nRow && trim((string) ($nRow['name'] ?? '')) !== '') {
                     $actionPayload['category_display_name'] = trim((string) $nRow['name']);
                 }
+            }
+        }
+    }
+    $kindEnrich = (string) ($actionPayload['kind'] ?? '');
+    if (
+        in_array($kindEnrich, ['create_work_shift', 'update_work_shift', 'delete_work_shift'], true)
+        && $userId > 0
+    ) {
+        require_once dirname(__DIR__) . '/services/work_schedule_agent.php';
+        $jidEn = (int) ($actionPayload['job_id'] ?? 0);
+        $sidEn = (int) ($actionPayload['shift_id'] ?? 0);
+        if ($sidEn > 0) {
+            $sR = ai_chat_ws_agent_shift($conn, $userId, $sidEn);
+            if ($sR) {
+                $actionPayload['shift_window_label'] =
+                    trim((string) ($sR['starts_at'] ?? '')) . ' → ' . trim((string) ($sR['ends_at'] ?? ''));
+                if ($jidEn < 1 && isset($sR['job_id'])) {
+                    $jidEn = (int) $sR['job_id'];
+                }
+            }
+        }
+        if ($jidEn > 0) {
+            $jR = ai_chat_ws_agent_job($conn, $userId, $jidEn);
+            if ($jR && trim((string) ($jR['title'] ?? '')) !== '') {
+                $actionPayload['job_display_name'] = trim((string) $jR['title']);
             }
         }
     }

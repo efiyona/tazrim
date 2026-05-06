@@ -226,6 +226,13 @@ if (!function_exists('ai_user_agent_dispatch')) {
             return ['ok' => true, 'message' => 'הפעולה נרשמה'];
         }
 
+        $workKinds = ['create_work_shift', 'update_work_shift', 'delete_work_shift'];
+        if (in_array($kind, $workKinds, true)) {
+            require_once __DIR__ . '/work_schedule_agent.php';
+
+            return ai_chat_dispatch_work_schedule_action($conn, $userId, $action);
+        }
+
         return ['ok' => false, 'message' => 'פעולה לא נתמכת'];
     }
 }

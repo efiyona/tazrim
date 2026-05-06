@@ -44,11 +44,11 @@
   }
 
   function injectShell(html) {
+    let h = html.trim();
     const wrap = document.createElement("div");
-    wrap.innerHTML = html.trim();
-    const node = wrap.firstElementChild;
-    if (node) {
-      document.body.appendChild(node);
+    wrap.innerHTML = h;
+    while (wrap.firstElementChild) {
+      document.body.appendChild(wrap.firstElementChild);
     }
   }
 

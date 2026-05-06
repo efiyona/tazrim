@@ -71,6 +71,7 @@ if ($next_m > 12) {
 }
 
 $ws_api = BASE_URL . 'app/ajax/work_schedule.php';
+$ws_extract_schedule_url = BASE_URL . 'app/ajax/extract_work_schedule_images.php';
 $page_url = BASE_URL . 'pages/work_schedule.php';
 $account_work_url = BASE_URL . 'pages/settings/user_profile.php#work-account-jobs';
 ?>
@@ -84,6 +85,9 @@ $account_work_url = BASE_URL . 'pages/settings/user_profile.php#work-account-job
 <div class="sidebar-overlay" id="overlay"></div>
 <div class="dashboard-container">
     <?php include ROOT_PATH . '/assets/includes/sidebar_bavbar.php'; ?>
+    <script>
+        window.__TAZRIM_GEMINI_CONFIGURED__ = <?php echo !empty($tazrim_gemini_configured) ? 'true' : 'false'; ?>;
+    </script>
     <div class="content-wrapper">
         <div class="work-schedule-page" id="work-schedule-root">
             <?php if (!$work_enabled): ?>
@@ -160,6 +164,12 @@ $account_work_url = BASE_URL . 'pages/settings/user_profile.php#work-account-job
                     </div>
                     <div class="work-cal-legend" id="work-cal-legend" aria-label="מקרא עבודות"></div>
                     <div class="work-cal-grid work-cal-grid--modern" id="work-cal-grid" role="grid" aria-label="לוח שנה"></div>
+                    <div class="work-schedule-ai-bar">
+                        <button type="button" class="shopping-recipe-secondary-btn work-schedule-ai-entry-btn" id="work-schedule-ai-open-btn">
+                            <i class="fa-regular fa-images" aria-hidden="true"></i> מתמונה לסידור חודשי
+                        </button>
+                        <p class="work-schedule-ai-bar__hint">צילום מסך מהסידור — הבינה ממלאת משמרות (נדרש מפתח Gemini בהגדרות).</p>
+                    </div>
                     <div id="work-day-sheet-wrap" class="work-day-sheet-wrap" aria-hidden="true">
                         <button type="button" class="work-day-sheet__backdrop" id="work-day-sheet-backdrop" aria-label="סגור"></button>
                         <div id="work-day-sheet" class="work-day-sheet" role="dialog" aria-modal="true" aria-labelledby="work-day-sheet-title">
@@ -218,15 +228,19 @@ $account_work_url = BASE_URL . 'pages/settings/user_profile.php#work-account-job
     </div>
 </div>
 
+<?php include ROOT_PATH . '/app/partials/work_schedule_ai_import_modal.php'; ?>
+
 <?php endif; ?>
 
 <script>
 var TAZRIM_WORK_SCHEDULE = {
   api: <?php echo json_encode($ws_api, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+  extractScheduleUrl: <?php echo json_encode($ws_extract_schedule_url, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
   pageUrl: <?php echo json_encode($page_url, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
   accountWorkUrl: <?php echo json_encode($account_work_url, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
   year: <?php echo (int) $cal_y; ?>,
-  month: <?php echo (int) $cal_m; ?>
+  month: <?php echo (int) $cal_m; ?>,
+  hebrewMonths: <?php echo json_encode($hebrew_months, JSON_UNESCAPED_UNICODE); ?>
 };
 
 function workWizardStep(n) {
@@ -255,8 +269,12 @@ function workWizardStep(n) {
 $ws_js_path = ROOT_PATH . '/assets/js/work_schedule.js';
 $ws_js_ver = is_file($ws_js_path) ? filemtime($ws_js_path) : time();
 $ws_js_url = BASE_URL . 'assets/js/work_schedule.js?v=' . $ws_js_ver;
+$ws_ai_js_path = ROOT_PATH . '/assets/js/work_schedule_ai_import.js';
+$ws_ai_ver = is_file($ws_ai_js_path) ? filemtime($ws_ai_js_path) : time();
+$ws_ai_url = BASE_URL . 'assets/js/work_schedule_ai_import.js?v=' . $ws_ai_ver;
 ?>
 <script src="<?php echo htmlspecialchars($ws_js_url, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo htmlspecialchars($ws_ai_url, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <?php endif; ?>
 </body>
 </html>

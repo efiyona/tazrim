@@ -76,6 +76,21 @@
   let monthShifts = [];
   let selectedDayStr = null;
   var pendingOvernight = false;
+  /** מזהי עבודות מוסתרות מלוח השנה (ריק = הכל מוצג; מתאפס ברענון עמוד) */
+  const hiddenJobIds = new Set();
+
+  function isJobVisibleOnCalendar(jobId) {
+    return !hiddenJobIds.has(String(jobId));
+  }
+
+  function toggleJobCalendarFilter(jobId) {
+    const k = String(jobId);
+    if (hiddenJobIds.has(k)) hiddenJobIds.delete(k);
+    else hiddenJobIds.add(k);
+    renderDots();
+    renderLegend();
+    if (selectedDayStr) openDaySheet(selectedDayStr);
+  }
 
   function setMonthNav(y, m) { currentYear = y; currentMonth = m; }
 
@@ -141,6 +156,11 @@
       return;
     }
     setMonthNav(y, m);
+    const gCfg = typeof TAZRIM_WORK_SCHEDULE === 'object' && TAZRIM_WORK_SCHEDULE ? TAZRIM_WORK_SCHEDULE : null;
+    if (gCfg) {
+      gCfg.year = y;
+      gCfg.month = m;
+    }
     updateMonthNavHeader(y, m);
     if (!opts.skipHistory) {
       try {
@@ -365,6 +385,7 @@
     monthShifts.forEach(function (s) {
       if (!s.starts_at || s.starts_at.substring(0, 10) !== dayStr) return;
       const jid = String(s.job_id);
+      if (!isJobVisibleOnCalendar(jid)) return;
       if (seen[jid]) return;
       seen[jid] = true;
       out.push(s.job_color || '#5B8DEF');
@@ -377,6 +398,7 @@
     const seenDays = {};
     monthShifts.forEach(function (s) {
       if (!s.starts_at) return;
+      if (!isJobVisibleOnCalendar(s.job_id)) return;
       const d0 = s.starts_at.substring(0, 10);
       seenDays[d0] = true;
     });
@@ -443,10 +465,16 @@
     const list = el('work-day-sheet-list');
     if (!wrap || !title || !list) return;
     title.innerHTML = formatSheetHeaderHtml(dayStr);
-    const rows = monthShifts.filter(function (s) {
+    const allDayRows = monthShifts.filter(function (s) {
       return s.starts_at && s.starts_at.substring(0, 10) === dayStr;
+    });
+    const rows = allDayRows.filter(function (s) {
+      return isJobVisibleOnCalendar(s.job_id);
     }).sort(function (a, b) { return String(a.starts_at).localeCompare(String(b.starts_at)); });
-    if (rows.length === 0) {
+    if (rows.length === 0 && allDayRows.length > 0) {
+      list.innerHTML = '<div class="work-day-sheet__empty-state">' +
+        '<p class="work-day-sheet__empty work-day-sheet__empty--muted">כל המשמרות ביום זה שייכות לעבודות מוסתרות. הפעילו את העבודה במקרא למעלה.</p></div>';
+    } else if (rows.length === 0) {
       list.innerHTML = '<div class="work-day-sheet__empty-state">' +
         '<div class="work-day-sheet__empty-ic" aria-hidden="true"><i class="fa-regular fa-calendar-xmark"></i></div>' +
         '<p class="work-day-sheet__empty">אין משמרות ביום זה</p>' +
@@ -540,6 +568,9 @@
     });
   }
 
+  /** לשימוש אחר ייבוא AI / עדכונים חיצוניים */
+  window.workScheduleReloadShifts = loadShifts;
+
   function loadJobs() {
     return postAction('list_jobs', {}).then(function (res) {
       if (res && res.ok && Array.isArray(res.data)) {
@@ -554,12 +585,22 @@
     const leg = el('work-cal-legend');
     if (!leg) return;
     if (!jobsCache.length) { leg.innerHTML = ''; return; }
-    leg.innerHTML = '<div class="work-legend-items">' + jobsCache.map(function (j) {
-      const n = countShiftsForJobInViewMonth(j.id);
-      return '<span class="work-legend-item"><span class="work-legend-ring" style="border-color:' + escapeHtml(j.color) + '"></span> ' +
-        '<span class="work-legend-name">' + escapeHtml(j.title) + '</span>' +
-        '<span class="work-legend-count" aria-label="משמרות בחודש: ' + n + '">' + n + '</span></span>';
-    }).join('') + '</div>';
+    leg.innerHTML = '<p class="work-cal-legend__hint">לחיצה על עבודה מציגה או מסתירה אותה בלוח</p>' +
+      '<div class="work-store-chip-wrap work-cal-legend-chips" role="group" aria-label="סינון עבודות בלוח">' +
+      jobsCache.map(function (j) {
+        const n = countShiftsForJobInViewMonth(j.id);
+        const jid = String(j.id);
+        const on = isJobVisibleOnCalendar(jid);
+        const offCls = on ? '' : ' work-cal-legend-chip--off';
+        return '<button type="button" class="work-store-chip work-cal-legend-chip' + offCls + '" data-job-toggle="' + escapeHtml(jid) + '" ' +
+          'aria-pressed="' + (on ? 'true' : 'false') + '" ' +
+          'title="' + (on ? 'מוצג בלוח — לחיצה להסתרה' : 'מוסתר בלוח — לחיצה להצגה') + '" ' +
+          'style="--work-chip-c:' + escapeHtml(j.color) + '">' +
+          '<span class="work-store-chip__dot" aria-hidden="true"></span>' +
+          '<span class="work-store-chip__name">' + escapeHtml(j.title) + '</span>' +
+          '<span class="work-shift-count-badge" aria-label="משמרות בחודש זה: ' + n + '">' + n + '</span>' +
+          '</button>';
+      }).join('') + '</div>';
   }
 
   function renderJobChips() {
@@ -907,6 +948,16 @@
     });
     if (el('work-main-calendar')) {
       bindMonthNav();
+      const legendRoot = el('work-cal-legend');
+      if (legendRoot) {
+        legendRoot.addEventListener('click', function (ev) {
+          const btn = ev.target.closest('[data-job-toggle]');
+          if (!btn || !legendRoot.contains(btn)) return;
+          const jid = btn.getAttribute('data-job-toggle');
+          if (jid == null || jid === '') return;
+          toggleJobCalendarFilter(jid);
+        });
+      }
       try {
         const st = window.history.state;
         if (!st || !st.workScheduleMonth) {

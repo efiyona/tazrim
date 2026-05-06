@@ -478,6 +478,80 @@ switch ($action) {
         ws_json(true, ['id' => $id]);
     }
 
+    /** מערך משמרות מאותה עבודה: [{ shift_type_id?, starts_at, ends_at, note? }, ...] — JSON ב־POST.shifts */
+    case 'bulk_create_shifts': {
+        $jobId = (int) ($_POST['job_id'] ?? 0);
+        if ($jobId < 1 || !ws_job_for_user($conn, $uid, $jobId)) {
+            ws_json(false, null, 'עבודה לא נמצאה.');
+        }
+        $decoded = json_decode((string) ($_POST['shifts'] ?? ''), true);
+        if (!is_array($decoded) || $decoded === []) {
+            ws_json(false, null, 'אין משמרות לשמירה.');
+        }
+        if (count($decoded) > 80) {
+            ws_json(false, null, 'יותר מדי משמרות בבת אחת (מקס׳ 80).');
+        }
+        $created = 0;
+        $conn->begin_transaction();
+        try {
+            foreach ($decoded as $item) {
+                if (!is_array($item)) {
+                    throw new InvalidArgumentException('row');
+                }
+                $typeId = (int) ($item['shift_type_id'] ?? 0);
+                if ($typeId > 0) {
+                    $trow = ws_shift_type_for_user($conn, $uid, $typeId);
+                    if (!$trow || (int) $trow['job_id'] !== $jobId) {
+                        throw new InvalidArgumentException('type');
+                    }
+                } else {
+                    $typeId = 0;
+                }
+                $startsAt = trim((string) ($item['starts_at'] ?? ''));
+                $endsAt = trim((string) ($item['ends_at'] ?? ''));
+                if ($startsAt === '' || $endsAt === '') {
+                    throw new InvalidArgumentException('times');
+                }
+                $ts1 = strtotime($startsAt);
+                $ts2 = strtotime($endsAt);
+                if ($ts1 === false || $ts2 === false) {
+                    throw new InvalidArgumentException('times');
+                }
+                if ($ts2 <= $ts1) {
+                    throw new InvalidArgumentException('range');
+                }
+                $note = trim((string) ($item['note'] ?? ''));
+                if (mb_strlen($note) > 500) {
+                    $note = mb_substr($note, 0, 500);
+                }
+                $noteDb = $note === '' ? '' : $note;
+                $s = date('Y-m-d H:i:s', $ts1);
+                $e = date('Y-m-d H:i:s', $ts2);
+
+                if ($typeId > 0) {
+                    $st = $conn->prepare(
+                        'INSERT INTO `user_work_shifts` (`user_id`,`job_id`,`shift_type_id`,`starts_at`,`ends_at`,`note`) VALUES (?,?,?,?,?,?)'
+                    );
+                    mysqli_stmt_bind_param($st, 'iiisss', $uid, $jobId, $typeId, $s, $e, $noteDb);
+                } else {
+                    $st = $conn->prepare(
+                        'INSERT INTO `user_work_shifts` (`user_id`,`job_id`,`starts_at`,`ends_at`,`note`) VALUES (?,?,?,?,?)'
+                    );
+                    mysqli_stmt_bind_param($st, 'iisss', $uid, $jobId, $s, $e, $noteDb);
+                }
+                mysqli_stmt_execute($st);
+                mysqli_stmt_close($st);
+                $created++;
+            }
+            $conn->commit();
+        } catch (Throwable $e) {
+            $conn->rollback();
+            $msg = 'שמירת המשמרות נכשלה. בדקו שהשעות תקינות ושכל סוג משמרת שייך לעבודה הנבחרת.';
+            ws_json(false, null, $msg);
+        }
+        ws_json(true, ['created' => $created]);
+    }
+
     case 'wizard_setup': {
         $title = trim((string) ($_POST['title'] ?? ''));
         if ($title === '' || mb_strlen($title) > 120) {

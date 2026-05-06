@@ -16,6 +16,7 @@ if (!function_exists('ai_chat_allowed_page_paths')) {
             '/index.php',
             '/pages/reports.php',
             '/pages/shopping.php',
+            '/pages/work_schedule.php',
             '/pages/welcome.php',
             '/pages/settings/user_profile.php',
             '/pages/settings/manage_home.php',
