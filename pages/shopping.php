@@ -1101,8 +1101,14 @@ $is_setup_needed = ($cats_count == 0);
 
             function addItemsFromGhostInput($ghost, names) {
                 const catId = $ghost.data('cat-id');
+                let qtyFromGhost = $ghost.find('.item-qty-input').val();
+                if (qtyFromGhost === '' || parseInt(qtyFromGhost, 10) === 0 || isNaN(parseInt(qtyFromGhost, 10))) {
+                    qtyFromGhost = '1';
+                } else {
+                    qtyFromGhost = String(parseInt(qtyFromGhost, 10));
+                }
                 names.forEach(function(name) {
-                    const newRowHtml = buildItemRowHtml({ id: 'new', item_name: name, quantity: '1' }, catId, false);
+                    const newRowHtml = buildItemRowHtml({ id: 'new', item_name: name, quantity: qtyFromGhost }, catId, false);
                     $(newRowHtml).insertAfter($ghost).hide().css('opacity', 0).slideDown(220, function() {
                         $(this).animate({ opacity: 1 }, 180);
                     });
