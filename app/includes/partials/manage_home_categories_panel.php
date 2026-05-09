@@ -7,7 +7,7 @@ $expenses_cats = $expenses_cats ?? [];
 $income_cats = $income_cats ?? [];
 ?>
 <div class="manage-categories-toolbar">
-    <h2 class="section-subtitle" style="margin: 0;">קטגוריות ותקציב</h2>
+    <h2 class="section-subtitle" style="margin: 0;">קטגוריות ויעדים חודשיים</h2>
     <button type="button" class="btn-primary" style="width: max-content; margin: 0; padding: 8px 20px; font-size: 0.95rem; box-shadow: 0 4px 10px rgba(35, 114, 39, 0.2);" onclick="openAddCategoryModal()">
     הוספה <i class="fa-solid fa-plus"></i>
     </button>
@@ -75,6 +75,7 @@ $income_cats = $income_cats ?? [];
     <?php else: ?>
         <?php foreach ($income_cats as $cat):
             $cat_icon = $cat['icon'] ?: 'fa-tag';
+            $has_goal = ((float) $cat['budget_limit']) > 0;
         ?>
             <div class="transaction-item income"
                 onclick='openEditCategoryModal(<?php echo (int) $cat['id']; ?>, <?php echo json_encode($cat['name'], JSON_UNESCAPED_UNICODE); ?>, <?php echo json_encode((float) $cat['budget_limit']); ?>, <?php echo json_encode($cat['type']); ?>, <?php echo json_encode($cat_icon); ?>)'
@@ -85,9 +86,19 @@ $income_cats = $income_cats ?? [];
                     </div>
                     <div class="details">
                         <span class="desc"><?php echo htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                        <span class="date"><?php echo $has_goal ? 'יעד חודשי מוגדר' : 'ללא יעד מוגדר'; ?></span>
                     </div>
                 </div>
                 <div class="transaction-actions">
+                    <div class="transaction-amount"<?php if (!$has_goal) {
+                        echo ' style="color: var(--text-light); font-weight: 600; font-size: 1rem;"';
+                    } ?>>
+                        <?php if ($has_goal): ?>
+                            <?php echo number_format((float) $cat['budget_limit'], 0); ?> ₪
+                        <?php else: ?>
+                            —
+                        <?php endif; ?>
+                    </div>
                     <div class="transaction-row-actions">
                         <div class="transaction-action-pill" title="ערוך קטגוריה">
                             <i class="fa-solid fa-pen" style="font-size: 0.9rem;"></i>

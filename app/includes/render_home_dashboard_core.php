@@ -7,6 +7,8 @@ function tazrim_render_home_dashboard_core(mysqli $conn, int $home_id, int $sele
 {
     global $today_il;
 
+    require_once ROOT_PATH . '/app/functions/category_budget_ui.php';
+
     $limit = 4;
 
     $home_data = selectOne('homes', ['id' => $home_id]);

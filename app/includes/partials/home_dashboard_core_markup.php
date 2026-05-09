@@ -269,6 +269,7 @@
                             $earned = $cat['current_income'];
 
                             $percent = ($budget > 0) ? min(($earned / $budget) * 100, 100) : 0;
+                            $income_goal_color = tazrim_income_goal_progress_color((float) $earned, (float) $budget);
                         ?>
                             <div class="category-card">
                                 <div class="cat-card-header">
@@ -288,7 +289,7 @@
                                     </div>
 
                                     <?php if ($budget > 0): ?>
-                                        <div class="percent-label" style="text-align: left; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--main);">
+                                        <div class="percent-label" style="text-align: left; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: <?php echo htmlspecialchars($income_goal_color, ENT_QUOTES, 'UTF-8'); ?>;">
                                             <?php
                                                 $real_percent = round(($earned / $budget) * 100);
                                                 echo $real_percent . "%";
@@ -297,7 +298,7 @@
                                     <?php endif; ?>
 
                                     <div class="progress-container">
-                                        <div class="progress-bar" style="width: <?php echo ($budget > 0) ? min($percent, 100) : '0'; ?>%;"></div>
+                                        <div class="progress-bar" style="width: <?php echo ($budget > 0) ? min($percent, 100) : '0'; ?>%;<?php echo ($budget > 0) ? ' background-color: ' . htmlspecialchars($income_goal_color, ENT_QUOTES, 'UTF-8') . ';' : ''; ?>"></div>
                                     </div>
                                 </div>
 

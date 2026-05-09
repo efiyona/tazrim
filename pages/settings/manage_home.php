@@ -315,10 +315,10 @@ $members_result = mysqli_query($conn, $members_query);
                     <input type="hidden" name="category_id" id="cat-id">
 
                     <div class="modern-toggle" id="cat-type-toggle" style="margin-bottom: 20px;">
-                        <input type="radio" name="cat_type" id="cat-type-exp" value="expense" checked onchange="toggleBudget()">
+                        <input type="radio" name="cat_type" id="cat-type-exp" value="expense" checked onchange="toggleBudgetHint()">
                         <label for="cat-type-exp" class="toggle-option expense">הוצאה (-)</label>
                         
-                        <input type="radio" name="cat_type" id="cat-type-inc" value="income" onchange="toggleBudget()">
+                        <input type="radio" name="cat_type" id="cat-type-inc" value="income" onchange="toggleBudgetHint()">
                         <label for="cat-type-inc" class="toggle-option income">הכנסה (+)</label>
                     </div>
 
@@ -331,7 +331,7 @@ $members_result = mysqli_query($conn, $members_query);
                     </div>
 
                     <div class="input-group" id="budget-input-wrapper">
-                        <label>תקציב חודשי (₪) - השאר 0 ללא הגבלה</label>
+                        <label id="cat-budget-label">תקציב חודשי להוצאה (₪) — 0 ללא הגבלה</label>
                         <div class="input-with-icon">
                             <i class="fa-solid fa-bullseye"></i>
                             <input type="number" name="cat_budget" id="cat-budget" step="1" min="0" value="0" required>
@@ -880,17 +880,13 @@ $members_result = mysqli_query($conn, $members_query);
             if(element) element.classList.add('selected');
         }
 
-        // === פונקציה שמסתירה/מציגה את שדה התקציב לפי סוג הקטגוריה ===
-        function toggleBudget() {
+        function toggleBudgetHint() {
             const isExpense = document.getElementById('cat-type-exp').checked;
-            const budgetWrapper = document.getElementById('budget-input-wrapper');
-            const budgetInput = document.getElementById('cat-budget');
-            
-            if (isExpense) {
-                budgetWrapper.style.display = 'block';
-            } else {
-                budgetWrapper.style.display = 'none';
-                budgetInput.value = 0; // מאפסים ל-0 כדי שלא יישמר זבל במסד
+            const label = document.getElementById('cat-budget-label');
+            if (label) {
+                label.textContent = isExpense
+                    ? 'תקציב חודשי להוצאה (₪) — 0 ללא הגבלה'
+                    : 'יעד חודשי להכנסה (₪) — 0 ללא יעד';
             }
         }
 
@@ -902,7 +898,7 @@ $members_result = mysqli_query($conn, $members_query);
             selectIcon('fa-tag', document.querySelector('.icon-option')); 
             
             document.getElementById('cat-type-exp').checked = true; // מחזיר להוצאה כברירת מחדל
-            toggleBudget(); // מוודא ששדה התקציב מוצג
+            toggleBudgetHint();
             
             catModal.style.display = 'block';
         }
@@ -921,7 +917,7 @@ $members_result = mysqli_query($conn, $members_query);
                 document.getElementById('cat-type-inc').checked = true;
             }
             
-            toggleBudget(); // מסתיר את שדה התקציב אם עורכים קטגוריית הכנסה קיימת
+            toggleBudgetHint();
 
             const iconVal = icon || 'fa-tag';
             document.getElementById('cat-icon').value = iconVal;
