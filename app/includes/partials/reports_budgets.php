@@ -36,6 +36,9 @@
                     echo ' (חריגה!)';
                 } ?>
             </div>
+            <button type="button" class="btn-cat-details" onclick='loadCategoryDetails(<?php echo (int) ($b["id"] ?? 0); ?>, <?php echo json_encode($b["name"] ?? "", JSON_UNESCAPED_UNICODE); ?>, "expense")'>
+                פירוט <i class="fa-solid fa-chevron-left" style="font-size: 0.7rem; margin-right: 5px;"></i>
+            </button>
         </div>
     <?php endforeach; ?>
 <?php endif; ?>

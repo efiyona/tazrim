@@ -120,6 +120,8 @@ $house_users = [];
 while ($user_row = mysqli_fetch_assoc($users_result)) {
     $house_users[] = $user_row;
 }
+
+$categories_array = array_merge($expense_categories, $income_categories);
 ?>
 
 <!DOCTYPE html>
@@ -219,6 +221,7 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
         .cat-picker__icon--on { background: var(--main); color: #fff; border: 2px solid var(--main); }
         .cat-picker__cat-icon { font-size: .85rem; color: #667085; width: 18px; text-align: center; flex-shrink: 0; }
         .cat-picker__name { font-size: .9rem; color: #344054; font-weight: 500; }
+        #budgets-progress-container .btn-cat-details { margin-top: 10px; }
         @media (max-width: 768px) {
             .excel-export-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .excel-export-footer { width: 100%; }
@@ -407,13 +410,72 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
         </main>
     </div>
 
+    <div id="category-details-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="selected-cat-name"></h3>
+                <button type="button" onclick="closeCatDetails()" class="close-modal-btn" aria-label="סגור" title="סגור"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="cat-details-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-transaction-modal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>עריכת פעולה</h3>
+                <button type="button" onclick="closeEditTransModal()" class="close-modal-btn" aria-label="סגור" title="סגור"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-transaction-form" class="form-fields-pill">
+                    <input type="hidden" name="transaction_id" id="edit-trans-id">
+                    <input type="hidden" id="edit-trans-type">
+
+                    <div class="input-group">
+                        <label>תיאור הפעולה</label>
+                        <div class="input-with-icon">
+                            <i class="fa-solid fa-pen"></i>
+                            <input type="text" name="description" id="edit-trans-desc" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>סכום (₪)</label>
+                        <div class="input-with-icon">
+                            <i class="fa-solid fa-shekel-sign"></i>
+                            <input type="number" name="amount" id="edit-trans-amount" step="0.01" min="0.01" required style="font-size: 1.2rem; font-weight: 800;">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>קטגוריה</label>
+                        <div id="edit-category-grid-container"></div>
+                        <input type="hidden" name="category_id" id="edit-selected-category-id" required>
+                    </div>
+
+                    <div id="edit-trans-msg" style="margin-bottom: 15px; font-weight: 700; text-align: center; display: none; padding: 10px; border-radius: 8px;"></div>
+
+                    <button type="submit" class="btn-primary" id="submit-edit-trans-btn" style="margin-top: 5px;">
+                        <i class="fa-solid fa-save"></i> שמור שינויים
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="<?php echo htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8'); ?>assets/js/tazrim_dialogs.js"></script>
+
     <script>
-        const TAZRIM_REPORTS = {
+        var TAZRIM_REPORTS = {
             api: <?php echo json_encode(BASE_URL . 'app/ajax/fetch_reports_data.php', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
+            ajaxBase: <?php echo json_encode(rtrim(BASE_URL, '/') . '/app/ajax/', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
             pageUrl: <?php echo json_encode(BASE_URL . 'pages/reports.php', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
             month: <?php echo (int) $current_month; ?>,
             year: <?php echo (int) $current_year; ?>
         };
+        window.TAZRIM_REPORTS = TAZRIM_REPORTS;
 
         let pieChartInstance = null;
         const PIE_COLORS = [
@@ -613,6 +675,10 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
                     );
                 }
             } catch (e) { /* ignore */ }
+
+            window.__tazrimReportsReload = function () {
+                return loadMonth(Number(TAZRIM_REPORTS.year), Number(TAZRIM_REPORTS.month), { skipHistory: true });
+            };
         })();
 
         const exportScope = document.getElementById('exportScope');
@@ -729,6 +795,316 @@ while ($user_row = mysqli_fetch_assoc($users_result)) {
         });
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && excelExportModal.style.display === 'block') closeExcelExportModal();
+        });
+    </script>
+
+    <script>
+        (function () {
+            if (typeof window.tazrimMessageFromAjaxText === 'function') return;
+            window.tazrimMessageFromAjaxText = function (text) {
+                if (!text || typeof text !== 'string') return 'אירעה שגיאה. נסו שוב או רעננו את הדף.';
+                var t = text.trim();
+                if (!t) return 'אירעה שגיאה. נסו שוב או רעננו את הדף.';
+                if (t.charAt(0) === '{' || t.charAt(0) === '[') {
+                    try {
+                        var o = JSON.parse(t);
+                        if (o && typeof o.message === 'string' && o.message.length) return o.message;
+                    } catch (e) {}
+                }
+                return 'אירעה שגיאה. נסו שוב או רעננו את הדף.';
+            };
+        })();
+
+        var allCategories = <?php echo json_encode($categories_array, JSON_UNESCAPED_UNICODE); ?>;
+
+        function getDetailsRequestUrl(ctx) {
+            if (!ctx) return null;
+            var base = TAZRIM_REPORTS.ajaxBase;
+            if (ctx.mode === 'type' && ctx.type) {
+                return base + 'fetch_category_details.php?mode=type&trans_type=' + encodeURIComponent(ctx.type)
+                    + '&m=' + TAZRIM_REPORTS.month + '&y=' + TAZRIM_REPORTS.year + '&ui_context=reports';
+            }
+            if (ctx.id) {
+                var tp = ctx.type ? '&trans_type=' + encodeURIComponent(ctx.type) : '';
+                return base + 'fetch_category_details.php?cat_id=' + encodeURIComponent(ctx.id) + tp
+                    + '&m=' + TAZRIM_REPORTS.month + '&y=' + TAZRIM_REPORTS.year + '&ui_context=reports';
+            }
+            return null;
+        }
+
+        function loadCategoryDetails(catId, catName, type) {
+            var modal = document.getElementById('category-details-modal');
+            var content = document.getElementById('cat-details-content');
+            var title = document.getElementById('selected-cat-name');
+            var normalizedType = type === 'income' ? 'income' : 'expense';
+            var typeLabel = normalizedType === 'income' ? 'הכנסות' : 'הוצאות';
+
+            window.categoryDetailsContext = { mode: 'category', id: catId, name: catName, type: normalizedType };
+            modal.style.display = 'block';
+            title.innerText = 'פירוט ' + typeLabel + ': ' + catName;
+            content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> רגע…</div>';
+
+            fetch(getDetailsRequestUrl(window.categoryDetailsContext))
+                .then(function (response) { return response.text().then(function (t) { return { ok: response.ok, t: t }; }); })
+                .then(function (_ref) {
+                    var ok = _ref.ok;
+                    var t = _ref.t;
+                    if (!ok) {
+                        var msg = typeof tazrimMessageFromAjaxText === 'function' ? tazrimMessageFromAjaxText(t) : 'הפעולה נכשלה';
+                        content.innerHTML = '<p style="text-align:center;padding:24px;color:var(--error);font-weight:700;">' + msg + '</p>';
+                        return;
+                    }
+                    content.innerHTML = t;
+                });
+        }
+
+        function closeCatDetails() {
+            window.categoryDetailsContext = null;
+            document.getElementById('category-details-modal').style.display = 'none';
+        }
+
+        function refreshOpenCategoryDetailsIfAny() {
+            var modal = document.getElementById('category-details-modal');
+            if (!modal || modal.style.display !== 'block') return;
+            var ctx = window.categoryDetailsContext;
+            if (!ctx) return;
+            var url = getDetailsRequestUrl(ctx);
+            if (!url) return;
+            var content = document.getElementById('cat-details-content');
+            content.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> רגע…</div>';
+            return fetch(url)
+                .then(function (r) { return r.text().then(function (t) { return { ok: r.ok, t: t }; }); })
+                .then(function (_ref2) {
+                    var ok = _ref2.ok;
+                    var t = _ref2.t;
+                    if (!ok) {
+                        var msg = typeof tazrimMessageFromAjaxText === 'function' ? tazrimMessageFromAjaxText(t) : 'הפעולה נכשלה';
+                        content.innerHTML = '<p style="text-align:center;padding:24px;color:var(--error);font-weight:700;">' + msg + '</p>';
+                        return;
+                    }
+                    content.innerHTML = t;
+                });
+        }
+
+        window.addEventListener('click', function (event) {
+            var modal = document.getElementById('category-details-modal');
+            if (modal && event.target === modal) {
+                window.categoryDetailsContext = null;
+                modal.style.display = 'none';
+            }
+        });
+
+        function buildCustomSelectReports(containerId, hiddenInputId, type, selectedId) {
+            var container = document.getElementById(containerId);
+            var hiddenInput = document.getElementById(hiddenInputId);
+            container.innerHTML = '';
+
+            var filteredCats = allCategories.filter(function (cat) { return cat.type === type; });
+
+            if (filteredCats.length === 0) {
+                container.innerHTML = '<div style="color:var(--error); font-size:0.9rem; padding: 10px;">לא נמצאו קטגוריות</div>';
+                hiddenInput.value = '';
+                return;
+            }
+
+            var wrapper = document.createElement('div');
+            wrapper.className = 'custom-select-wrapper';
+
+            var selectedCat = filteredCats.find(function (cat) { return String(cat.id) === String(selectedId); });
+            var triggerHTML = '';
+
+            if (!selectedCat) {
+                hiddenInput.value = '';
+                triggerHTML =
+                    '<div class="selected-cat-info" style="color: #888;">' +
+                    '<i class="fa-solid fa-list-ul" style="color: #ccc;"></i> <span>בחירת קטגוריה...</span>' +
+                    '</div>' +
+                    '<i class="fa-solid fa-chevron-down" style="color: #ccc; font-size: 0.9rem;"></i>';
+            } else {
+                hiddenInput.value = selectedCat.id;
+                var iconClassInit = selectedCat.icon ? selectedCat.icon : 'fa-tag';
+                triggerHTML =
+                    '<div class="selected-cat-info">' +
+                    '<i class="fa-solid ' + iconClassInit + '" style="color: var(--main);"></i> <span>' + selectedCat.name + '</span>' +
+                    '</div>' +
+                    '<i class="fa-solid fa-chevron-down" style="color: #ccc; font-size: 0.9rem;"></i>';
+            }
+
+            var optionsHTML = '';
+            filteredCats.forEach(function (cat) {
+                var iconClass = cat.icon ? cat.icon : 'fa-tag';
+                optionsHTML +=
+                    '<div class="custom-option" data-value="' + cat.id + '" data-name="' +
+                    String(cat.name).replace(/&/g, '&amp;').replace(/"/g, '&quot;') +
+                    '" data-icon="' + iconClass + '">' +
+                    '<i class="fa-solid ' + iconClass + '"></i> <span>' + cat.name + '</span></div>';
+            });
+
+            wrapper.innerHTML =
+                '<div class="custom-select-trigger">' + triggerHTML + '</div>' +
+                '<div class="custom-select-options">' + optionsHTML + '</div>';
+
+            container.appendChild(wrapper);
+
+            var trigger = wrapper.querySelector('.custom-select-trigger');
+            var options = wrapper.querySelectorAll('.custom-option');
+
+            trigger.addEventListener('click', function (e) {
+                e.stopPropagation();
+                document.querySelectorAll('.custom-select-wrapper').forEach(function (w) {
+                    if (w !== wrapper) w.classList.remove('open');
+                });
+                wrapper.classList.toggle('open');
+            });
+
+            options.forEach(function (option) {
+                option.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var val = option.getAttribute('data-value');
+                    var name = option.getAttribute('data-name');
+                    var icon = option.getAttribute('data-icon');
+                    hiddenInput.value = val;
+                    wrapper.querySelector('.selected-cat-info').innerHTML =
+                        '<i class="fa-solid ' + icon + '" style="color: var(--main);"></i> <span style="color: var(--text);">' + name + '</span>';
+                    wrapper.classList.remove('open');
+                });
+            });
+        }
+
+        var editModal = document.getElementById('edit-transaction-modal');
+        var editForm = document.getElementById('edit-transaction-form');
+
+        function openEditTransModal(id, amount, categoryId, desc, type, source) {
+            window.transactionActionSource = source || 'main';
+            document.getElementById('edit-trans-id').value = id;
+            document.getElementById('edit-trans-amount').value = amount;
+            document.getElementById('edit-trans-desc').value = desc;
+            document.getElementById('edit-trans-type').value = type;
+            buildCustomSelectReports('edit-category-grid-container', 'edit-selected-category-id', type, categoryId);
+            editModal.style.display = 'block';
+        }
+
+        function closeEditTransModal() {
+            editModal.style.display = 'none';
+            document.getElementById('edit-trans-msg').style.display = 'none';
+        }
+
+        function deleteTransaction(id, source) {
+            var src = source || window.transactionActionSource || 'main';
+            tazrimConfirm({
+                title: 'מחיקת פעולה',
+                message: 'האם אתה בטוח שברצונך למחוק פעולה זו? התקציב ויתרת הבנק יעודכנו בהתאם.',
+                confirmText: 'מחק',
+                cancelText: 'ביטול',
+                danger: true
+            }).then(function (ok) {
+                if (!ok) return;
+
+                var formData = new FormData();
+                formData.append('id', id);
+
+                fetch(TAZRIM_REPORTS.ajaxBase + 'delete_transaction.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.status !== 'success') {
+                        tazrimAlert({
+                            title: 'שגיאה במחיקה',
+                            message: data.message || 'אירעה שגיאה.'
+                        });
+                        return;
+                    }
+                    closeEditTransModal();
+                    if (src === 'reports-category-details' && typeof window.__tazrimReportsReload === 'function') {
+                        Promise.resolve(window.__tazrimReportsReload()).then(function () { refreshOpenCategoryDetailsIfAny(); });
+                    } else {
+                        closeCatDetails();
+                        if (typeof window.__tazrimReportsReload === 'function') window.__tazrimReportsReload();
+                    }
+                })
+                .catch(function () {
+                    tazrimAlert({ title: 'שגיאה', message: 'שגיאת תקשורת.' });
+                });
+            });
+        }
+
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.custom-select-wrapper').forEach(function (w) {
+                w.classList.remove('open');
+            });
+        });
+
+        editForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var submitBtn = document.getElementById('submit-edit-trans-btn');
+            var msgBox = document.getElementById('edit-trans-msg');
+            var selectedCatId = document.getElementById('edit-selected-category-id').value;
+            if (!selectedCatId) {
+                msgBox.style.display = 'block';
+                msgBox.style.backgroundColor = '#fee2e2';
+                msgBox.style.color = 'var(--error)';
+                msgBox.innerText = 'נא לבחור קטגוריה מהרשימה.';
+                return;
+            }
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> שומר...';
+            msgBox.style.display = 'none';
+
+            fetch(TAZRIM_REPORTS.ajaxBase + 'edit_transaction.php', {
+                method: 'POST',
+                body: new FormData(editForm)
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.status === 'success') {
+                        msgBox.style.display = 'block';
+                        msgBox.style.backgroundColor = 'var(--sub_main-light)';
+                        msgBox.style.color = 'var(--main)';
+                        msgBox.innerText = 'הפעולה עודכנה בהצלחה!';
+                        var src = window.transactionActionSource || 'main';
+                        setTimeout(function () {
+                            closeEditTransModal();
+                            if (src === 'reports-category-details' && typeof window.__tazrimReportsReload === 'function') {
+                                Promise.resolve(window.__tazrimReportsReload()).then(function () { refreshOpenCategoryDetailsIfAny(); });
+                            } else {
+                                closeCatDetails();
+                                if (typeof window.__tazrimReportsReload === 'function') window.__tazrimReportsReload();
+                            }
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> שמור שינויים';
+                        }, 500);
+                    } else {
+                        msgBox.style.display = 'block';
+                        msgBox.style.backgroundColor = '#fee2e2';
+                        msgBox.style.color = 'var(--error)';
+                        msgBox.innerText = data.message;
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> שמור שינויים';
+                    }
+                })
+                .catch(function () {
+                    msgBox.style.display = 'block';
+                    msgBox.style.backgroundColor = '#fee2e2';
+                    msgBox.style.color = 'var(--error)';
+                    msgBox.innerText = 'שגיאת תקשורת.';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> שמור שינויים';
+                });
+        });
+
+        window.addEventListener('click', function (event) {
+            if (event.target === editModal) {
+                closeEditTransModal();
+            }
+        });
+
+        window.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') return;
+            var excel = document.getElementById('excel-export-modal');
+            if (excel && excel.style.display === 'block') return;
+            if (document.getElementById('category-details-modal').style.display === 'block') closeCatDetails();
         });
     </script>
 </body>

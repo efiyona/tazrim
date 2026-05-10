@@ -16,6 +16,10 @@ $home_id = $_SESSION['home_id'];
 $selected_month = isset($_GET['m']) ? (int)$_GET['m'] : (int)date('m');
 $selected_year = isset($_GET['y']) ? (int)$_GET['y'] : (int)date('Y');
 
+$js_action_source = (isset($_GET['ui_context']) && $_GET['ui_context'] === 'reports')
+    ? 'reports-category-details'
+    : 'category-details';
+
 if ($mode === 'type') {
     $query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name 
               FROM transactions t 
@@ -72,7 +76,7 @@ if (mysqli_num_rows($result) > 0) {
         $amount_prefix = $row['type'] === 'income' ? '+' : '-';
 
         echo '<div class="transaction-item ' . $row['type'] . ' ' . $pending_class . '" 
-            onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . $safe_desc . '\', \'' . $row['type'] . '\', \'category-details\')"
+            onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . $safe_desc . '\', \'' . $row['type'] . '\', \'' . $js_action_source . '\')"
             style="margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer;">';
         echo '  <div class="transaction-info">';
         echo '      <div class="cat-icon-wrapper"><i class="' . $icon_class . '"></i></div>';
@@ -84,10 +88,10 @@ if (mysqli_num_rows($result) > 0) {
         echo '  <div class="transaction-actions">';
         echo '      <div class="transaction-amount">' . $amount_prefix . ' ' . number_format($row['amount'], 0) . ' ₪</div>';
         echo '      <div class="transaction-row-actions">';
-        echo '          <button type="button" onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . $safe_desc . '\', \'' . $row['type'] . '\', \'category-details\')" class="transaction-action-pill" title="ערוך פעולה">';
+        echo '          <button type="button" onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . $safe_desc . '\', \'' . $row['type'] . '\', \'' . $js_action_source . '\')" class="transaction-action-pill" title="ערוך פעולה">';
         echo '              <i class="fa-solid fa-pen" style="font-size: 1rem;"></i>';
         echo '          </button>';
-        echo '          <button type="button" onclick="event.stopPropagation(); deleteTransaction(' . $row['id'] . ', \'category-details\')" class="transaction-action-pill transaction-action-pill--danger" title="מחק פעולה">';
+        echo '          <button type="button" onclick="event.stopPropagation(); deleteTransaction(' . $row['id'] . ', \'' . $js_action_source . '\')" class="transaction-action-pill transaction-action-pill--danger" title="מחק פעולה">';
         echo '              <i class="fa-solid fa-trash-can" style="font-size: 1rem;"></i>';
         echo '          </button>';
         echo '      </div>';
