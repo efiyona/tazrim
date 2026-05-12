@@ -132,6 +132,8 @@ if ($banner_type === 'success') {
     box-shadow: 0 6px 18px rgba(41, 182, 105, 0.08);
     border-radius: 100px;
     z-index: 10;
+
+    overflow: scroll;
 }
 
 .tazrim-banner::before { display: none; }
