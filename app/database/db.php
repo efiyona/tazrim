@@ -2,6 +2,7 @@
 session_start();
 
 require("connect.php");
+require_once ROOT_PATH . '/app/functions/payment_methods.php';
 require_once ROOT_PATH . '/app/functions/tos_runtime.php';
 tazrim_ensure_tos_terms_table();
 

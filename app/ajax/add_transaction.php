@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $currency_code = tazrim_normalize_currency_code($_POST['currency_code'] ?? 'ILS');
     $debug_run_id = uniqid('add_tx_', true);
     $category_id = isset($_POST['category_id']) ? (int)$_POST['category_id'] : 0;
+$payment_method_id = $_POST['payment_method_id'] ?? null;
     $description = mysqli_real_escape_string($conn, trim($_POST['description']));
     $transaction_date = $_POST['transaction_date'] ?? date('Y-m-d');
     $is_recurring = isset($_POST['is_recurring']) ? 1 : 0;
@@ -34,7 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    $cat_check = mysqli_query(
+    $payment_method_id = tazrim_resolve_payment_method_id((int)$home_id, $payment_method_id);
+
+$cat_check = mysqli_query(
         $conn,
         "SELECT id, type FROM categories WHERE id = $category_id AND home_id = $home_id AND is_active = 1 LIMIT 1"
     );
@@ -73,8 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'is_recurring' => $is_recurring,
     ], 'H3', $debug_run_id);
     // #endregion
-    $insert_query = "INSERT INTO transactions (home_id, user_id, type, amount, currency_code, category, description, transaction_date) 
-                     VALUES ($home_id, $user_id, '$type', $amount_ils, '$currency_code_esc', $category_id, '$description', '$transaction_date')";
+    $insert_query = "INSERT INTO transactions (home_id, user_id, payment_method_id, type, amount, currency_code, category, description, transaction_date) 
+                     VALUES ($home_id, $user_id, $payment_method_id, '$type', $amount_ils, '$currency_code_esc', $category_id, '$description', '$transaction_date')";
     
     if (mysqli_query($conn, $insert_query)) {
         
@@ -82,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $day_of_month = (int)date('d', strtotime($transaction_date));
             $current_month_start = date('Y-m-01');
 
-            $insert_recurring = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, currency_code, category, description, day_of_month, interval_months, last_injected_month, is_active) 
-                                 VALUES ($home_id, $user_id, '$type', $amount, '$currency_code_esc', $category_id, '$description', $day_of_month, $interval_months, '$current_month_start', 1)";
+            $insert_recurring = "INSERT INTO recurring_transactions (home_id, user_id, payment_method_id, type, amount, currency_code, category, description, day_of_month, interval_months, last_injected_month, is_active) 
+                                 VALUES ($home_id, $user_id, $payment_method_id, '$type', $amount, '$currency_code_esc', $category_id, '$description', $day_of_month, $interval_months, '$current_month_start', 1)";
             mysqli_query($conn, $insert_recurring);
         }
 

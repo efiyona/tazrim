@@ -23,6 +23,7 @@ if (mysqli_num_rows($recurring_result) > 0) {
         $template_id = $template['id'];
         $debug_run_id = uniqid('proc_rec_', true);
         $user_id = $template['user_id'];
+        $payment_method_id = !empty($template['payment_method_id']) ? (int)$template['payment_method_id'] : tazrim_default_payment_method_id((int)$home_id);
         $type = $template['type'];
         $amount = (float) $template['amount'];
         $currency_code = tazrim_normalize_currency_code($template['currency_code'] ?? 'ILS');
@@ -86,8 +87,8 @@ if (mysqli_num_rows($recurring_result) > 0) {
             // #endregion
 
             // 1. הזרקה לטבלת הפעולות הרגילה
-            $insert_trans = "INSERT INTO transactions (home_id, user_id, amount, currency_code, type, category, description, transaction_date) 
-                             VALUES ($home_id, $user_id, $amount_ils, '$currency_code_esc', '$type', $category, '$description', '$transaction_date')";
+            $insert_trans = "INSERT INTO transactions (home_id, user_id, payment_method_id, amount, currency_code, type, category, description, transaction_date) 
+                             VALUES ($home_id, $user_id, $payment_method_id, $amount_ils, '$currency_code_esc', '$type', $category, '$description', '$transaction_date')";
             
             if (mysqli_query($conn, $insert_trans)) {
                 global $today_il;

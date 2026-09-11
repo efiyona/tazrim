@@ -30,6 +30,7 @@ $debug_run_id = uniqid('shortcut_tx_', true);
 
 $description = mysqli_real_escape_string($conn, trim($_POST['description'] ?? ''));
 $category_id = (int)($_POST['category_id'] ?? 0);
+$payment_method_id = $_POST['payment_method_id'] ?? null;
 
 // קליטת סוג הפעולה מהאייפון. אם לא נשלח, ברירת המחדל היא הוצאה.
 $type = $_POST['type'] ?? 'expense';
@@ -55,6 +56,8 @@ if (mysqli_num_rows($token_result) === 0) {
 $auth_data = mysqli_fetch_assoc($token_result);
 $home_id = $auth_data['home_id'];
 $user_id = $auth_data['user_id'];
+
+$payment_method_id = tazrim_resolve_payment_method_id((int)$home_id, $payment_method_id);
 
 $cat_check = mysqli_query(
     $conn,
@@ -102,8 +105,8 @@ $amount_ils = (float) $conversion['converted_amount'];
 $currency_code_esc = mysqli_real_escape_string($conn, $currency_code);
 
 // הזרקת הפעולה למערכת
-$insert_query = "INSERT INTO transactions (home_id, user_id, type, amount, currency_code, category, description, transaction_date) 
-                 VALUES ($home_id, $user_id, '$type', $amount_ils, '$currency_code_esc', $category_id, '$description', '$transaction_date')";
+$insert_query = "INSERT INTO transactions (home_id, user_id, payment_method_id, type, amount, currency_code, category, description, transaction_date) 
+                 VALUES ($home_id, $user_id, $payment_method_id, '$type', $amount_ils, '$currency_code_esc', $category_id, '$description', '$transaction_date')";
 
 if (mysqli_query($conn, $insert_query)) {
     $today_ledger = date('Y-m-d');
