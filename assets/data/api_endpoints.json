@@ -29,7 +29,8 @@
       "starts_at": "string",
       "ends_at": "string"
     },
-    "stability": "Supported"
+    "stability": "Supported",
+    "description": "מוסיף משמרת חדשה לסידור העבודה של המשתמש, כולל עבודה, שעות וסוג משמרת אופציונלי."
   },
   {
     "path": "/app/api/delete_shift.php",
@@ -52,7 +53,8 @@
       "message": "string",
       "id": 1
     },
-    "stability": "Supported"
+    "stability": "Supported",
+    "description": "מוחק משמרת קיימת של המשתמש מסידור העבודה לפי מזהה המשמרת."
   },
   {
     "path": "/app/api/get_categories.php",
@@ -75,7 +77,8 @@
       "message": "string",
       "categories": "string"
     },
-    "stability": "Supported"
+    "stability": "Supported",
+    "description": "מחזיר את קטגוריות ההוצאה או ההכנסה הפעילות של הבית לבחירה בקיצור דרך."
   },
   {
     "path": "/app/api/get_shifts.php",
@@ -105,7 +108,8 @@
       "jobs": "string",
       "shifts": "string"
     },
-    "stability": "Supported"
+    "stability": "Supported",
+    "description": "מחזיר את העבודות והמשמרות של המשתמש בחודש מבוקש."
   },
   {
     "path": "/app/api/save_transaction.php",
@@ -131,7 +135,8 @@
       "status": "success",
       "message": "string"
     },
-    "stability": "Supported"
+    "stability": "Supported",
+    "description": "מוסיף הוצאה או הכנסה חדשה לתאריך של היום, כולל קטגוריה ואמצעי תשלום."
   },
   {
     "path": "/app/api/save_transaction_dated.php",
@@ -158,7 +163,8 @@
       "status": "success",
       "message": "string"
     },
-    "stability": "Supported"
+    "stability": "Supported",
+    "description": "מוסיף הוצאה או הכנסה חדשה בתאריך שנשלח, או בתאריך של היום אם לא נשלח תאריך."
   },
   {
     "path": "/app/api/shopping/add_shopping_item.php",
@@ -183,7 +189,8 @@
       "message": "string",
       "new_id": "string"
     },
-    "stability": "Supported"
+    "stability": "Supported",
+    "description": "מוסיף פריט וכמות לרשימת הקניות של הבית בחנות שנבחרה."
   },
   {
     "path": "/app/api/shopping/get_stores.php",
@@ -204,6 +211,7 @@
       "message": "string",
       "categories": "string"
     },
-    "stability": "Supported"
+    "stability": "Supported",
+    "description": "מחזיר את רשימת החנויות של הבית לבחירה לפני הוספת פריט קניות."
   }
 ]
