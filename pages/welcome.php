@@ -76,9 +76,19 @@ if ($has_active_categories) {
         
         .hint-text { font-size: 0.85rem; color: #888; margin-top: 5px; }
 
-        .welcome-payment-method { position:relative; display:flex; align-items:center; gap:14px; padding:14px; margin:9px 0; border:1px solid #dbe7dc; border-radius:14px; background:#f8fcf8; }
-        .welcome-payment-method > i { color:var(--main); font-size:1.35rem; width:32px; }
-        .welcome-payment-method small { display:block; color:#777; margin-top:2px; }
+        .payment-method-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:24px 0; }
+        .welcome-payment-method { position:relative; border:2px solid #e5e7eb; background:#fff; border-radius:16px; padding:20px 14px; cursor:pointer; text-align:center; transition:.2s; }
+        .welcome-payment-method:hover { border-color:#b8d8bb; transform:translateY(-2px); }
+        .welcome-payment-method.selected { border-color:var(--main); background:#f0fdf4; box-shadow:0 4px 12px rgba(35,114,39,.12); }
+        .welcome-payment-method > i { color:var(--main); font-size:1.8rem; display:block; margin-bottom:10px; }
+        .welcome-payment-method strong { display:block; font-size:1rem; }
+        .welcome-payment-method small { display:block; color:#777; margin-top:4px; }
+        .payment-method-check { position:absolute;top:8px;left:8px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#e5e7eb;color:#fff;font-size:.75rem; }
+        .welcome-payment-method.selected .payment-method-check { background:var(--main); }
+        .payment-method-editor { display:none;text-align:right;background:#fafafa;border:1px solid #eee;border-radius:14px;padding:16px;margin-top:12px; }
+        .payment-method-editor.active { display:block; }
+        .payment-method-editor-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+        .payment-method-editor label {display:block;font-size:.82rem;font-weight:700;margin-bottom:5px}.payment-method-editor input{width:100%;padding:11px;border:2px solid #e5e7eb;border-radius:10px;font:inherit}
         @media (max-width: 600px) {
             .welcome-card { padding: 30px 20px; }
             .cat-suggest-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -131,11 +141,14 @@ if ($has_active_categories) {
 
             <div class="step" id="step-3">
                 <h2 style="font-weight: 800; margin-bottom: 5px;">איך משלמים בבית?</h2>
-                <p style="color:#666">יצרנו אמצעי ברירת מחדל בשם "בנק". אפשר להוסיף עכשיו כרטיסים או אמצעים נוספים.</p>
-                <div id="welcome-methods" style="text-align:right;margin:22px 0">
-                    <div class="welcome-payment-method" data-type="bank_transfer" data-name="בנק" data-last4="" data-issuer=""><i class="fa-solid fa-building-columns"></i><div><strong>בנק</strong><small>ברירת מחדל</small></div></div>
+                <p style="color:#666">בחרו את אמצעי התשלום שישמשו את הבית. אפשר לשנות ולהוסיף עוד בכל רגע בהגדרות.</p>
+                <div id="welcome-methods" class="payment-method-grid">
+                    <button type="button" class="welcome-payment-method selected" data-type="cash" data-name="מזומן" data-last4="" data-issuer="" onclick="toggleWelcomeMethod(this)"><span class="payment-method-check"><i class="fa-solid fa-check"></i></span><i class="fa-solid fa-money-bill-wave"></i><strong>מזומן</strong><small>תשלום במזומן</small></button>
+                    <button type="button" class="welcome-payment-method selected" data-type="bank_transfer" data-name="העברה" data-last4="" data-issuer="" onclick="toggleWelcomeMethod(this)"><span class="payment-method-check"><i class="fa-solid fa-check"></i></span><i class="fa-solid fa-building-columns"></i><strong>העברה</strong><small>העברה בנקאית</small></button>
+                    <button type="button" class="welcome-payment-method" data-type="credit_card" data-name="כרטיס אשראי" data-last4="" data-issuer="" onclick="toggleWelcomeMethod(this)"><span class="payment-method-check"><i class="fa-solid fa-check"></i></span><i class="fa-solid fa-credit-card"></i><strong>כרטיס אשראי</strong><small>הוספת פרטי זיהוי</small></button>
+                    <button type="button" class="welcome-payment-method" data-type="check" data-name="צ'ק" data-last4="" data-issuer="" onclick="toggleWelcomeMethod(this)"><span class="payment-method-check"><i class="fa-solid fa-check"></i></span><i class="fa-solid fa-money-check"></i><strong>צ'ק</strong><small>תשלום בצ'ק</small></button>
                 </div>
-                <button type="button" class="cat-add-btn" style="width:100%;min-height:auto" onclick="addWelcomePaymentMethod()"><i class="fa-solid fa-plus"></i><span>הוספת אמצעי תשלום</span></button>
+                <div id="welcome-card-editor" class="payment-method-editor"><h3 style="margin:0 0 12px"><i class="fa-solid fa-credit-card" style="color:var(--main)"></i> פרטי הכרטיס לתצוגה</h3><div class="payment-method-editor-grid"><div><label>שם הכרטיס</label><input id="welcome-card-name" value="כרטיס אשראי" oninput="syncWelcomeCard()"></div><div><label>4 ספרות אחרונות</label><input id="welcome-card-last4" inputmode="numeric" maxlength="4" placeholder="3403" oninput="syncWelcomeCard()"></div><div style="grid-column:1/-1"><label>חברת אשראי / מנפיק (רשות)</label><input id="welcome-card-issuer" placeholder="למשל: max" oninput="syncWelcomeCard()"></div></div><p class="hint-text"><i class="fa-solid fa-shield-halved"></i> נשמרות רק 4 ספרות אחרונות. לעולם לא מספר כרטיס מלא.</p></div>
                 <button type="button" class="btn-welcome" onclick="nextStep(4)">המשך לקטגוריות <i class="fa-solid fa-arrow-left"></i></button>
             </div>
 
@@ -290,22 +303,20 @@ if ($has_active_categories) {
             }
         }
 
-        function addWelcomePaymentMethod() {
-            const type = prompt('סוג: אשראי / מזומן / צק / העברה בנקאית', 'אשראי');
-            if (!type) return;
-            const normalized = type.includes('אשראי') ? 'credit_card' : (type.includes('מזומן') ? 'cash' : (type.includes('צ') ? 'check' : 'bank_transfer'));
-            const name = prompt('שם שיופיע במערכת', normalized === 'credit_card' ? 'כרטיס אשראי' : type);
-            if (!name || !name.trim()) return;
-            let last4='', issuer='';
-            if (normalized === 'credit_card') {
-                last4 = (prompt('4 ספרות אחרונות בלבד') || '').trim();
-                if (!/^\d{4}$/.test(last4)) { alert('יש להזין בדיוק 4 ספרות.'); return; }
-                issuer = (prompt('חברת אשראי / מנפיק (רשות)') || '').trim();
+        function toggleWelcomeMethod(tile) {
+            const selecting = !tile.classList.contains('selected');
+            tile.classList.toggle('selected', selecting);
+            if (tile.dataset.type === 'credit_card') {
+                document.getElementById('welcome-card-editor').classList.toggle('active', selecting);
+                if (selecting) setTimeout(() => document.getElementById('welcome-card-name').focus(), 50);
             }
-            const el=document.createElement('div'); el.className='welcome-payment-method';
-            Object.assign(el.dataset,{type:normalized,name:name.trim(),last4,issuer});
-            el.innerHTML=`<i class="fa-solid ${normalized==='credit_card'?'fa-credit-card':'fa-wallet'}"></i><div><strong></strong><small>${last4?'•••• '+last4:'אמצעי תשלום'}</small></div><button type="button" class="btn-delete-cat" onclick="this.parentElement.remove()"><i class="fa-solid fa-trash"></i></button>`;
-            el.querySelector('strong').textContent=name.trim(); document.getElementById('welcome-methods').appendChild(el);
+        }
+        function syncWelcomeCard() {
+            const tile=document.querySelector('.welcome-payment-method[data-type="credit_card"]');
+            tile.dataset.name=document.getElementById('welcome-card-name').value.trim()||'כרטיס אשראי';
+            tile.dataset.last4=document.getElementById('welcome-card-last4').value.replace(/\D/g,'').slice(0,4);
+            document.getElementById('welcome-card-last4').value=tile.dataset.last4;
+            tile.dataset.issuer=document.getElementById('welcome-card-issuer').value.trim();
         }
 
         // בניית הנתונים ושליחה לשרת
@@ -331,8 +342,10 @@ if ($has_active_categories) {
             formData.append('initial_balance', document.getElementById('initial_balance').value);
             const showCb = document.getElementById('welcome_show_bank_balance');
             formData.append('show_bank_balance', showCb && showCb.checked ? '1' : '0');
-            const methods = Array.from(document.querySelectorAll('.welcome-payment-method')).map(el => ({type:el.dataset.type,name:el.dataset.name,last4:el.dataset.last4||'',issuer:el.dataset.issuer||''}));
-            if (methods.length === 0) { msgBox.style.display='block'; msgBox.innerText='חובה להגדיר לפחות אמצעי תשלום אחד.'; return; }
+            const methods = Array.from(document.querySelectorAll('.welcome-payment-method.selected')).map(el => ({type:el.dataset.type,name:el.dataset.name,last4:el.dataset.last4||'',issuer:el.dataset.issuer||''}));
+            if (methods.length === 0) { msgBox.style.display='block'; msgBox.style.background='#fee2e2'; msgBox.style.color='#dc2626'; msgBox.innerText='חובה לבחור לפחות אמצעי תשלום אחד.'; return; }
+            const selectedCard=methods.find(m=>m.type==='credit_card');
+            if(selectedCard && !/^\d{4}$/.test(selectedCard.last4)){ nextStep(3); document.getElementById('welcome-card-editor').classList.add('active'); document.getElementById('welcome-card-last4').focus(); alert('יש להזין 4 ספרות אחרונות לכרטיס.'); return; }
             formData.append('payment_methods', JSON.stringify(methods));
 
             let hasEmptyCustomNames = false;

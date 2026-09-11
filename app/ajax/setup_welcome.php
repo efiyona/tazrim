@@ -40,7 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 2. אמצעי תשלום. גם אם הלקוח לא שלח נתונים, הבית מתחיל עם "בנק".
     $methods = json_decode((string)($_POST['payment_methods'] ?? '[]'), true);
     if (!is_array($methods) || count($methods) === 0) {
-        $methods = [['type' => 'bank_transfer', 'name' => 'בנק', 'last4' => '', 'issuer' => '']];
+        $methods = [
+            ['type' => 'cash', 'name' => 'מזומן', 'last4' => '', 'issuer' => ''],
+            ['type' => 'bank_transfer', 'name' => 'העברה', 'last4' => '', 'issuer' => ''],
+        ];
     }
     $allowed_method_types = ['cash','credit_card','check','bank_transfer','bank_debit'];
     $methods_added = 0;
