@@ -104,6 +104,32 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
 
     </div>
 
+    <?php $show_payment_announcement = in_array((string)($_SESSION['role'] ?? ''), ['home_admin','admin','program_admin'], true); ?>
+    <?php if ($show_payment_announcement): ?>
+    <div id="payment-feature-announcement" class="payment-feature-announcement" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="payment-feature-announcement-title">
+        <div class="payment-feature-announcement__card">
+            <button type="button" class="payment-feature-announcement__close" aria-label="סגור"><i class="fa-solid fa-xmark"></i></button>
+            <div class="payment-feature-announcement__icon"><i class="fa-solid fa-credit-card"></i></div>
+            <h2 id="payment-feature-announcement-title">חדש בהתזרים: אמצעי תשלום 💳</h2>
+            <p>מעכשיו אפשר להוסיף ולנהל אמצעי תשלום, לבחור ברירת מחדל ולשייך כל פעולה לאמצעי המתאים</p>
+            <a href="<?php echo BASE_URL; ?>pages/settings/manage_home.php#manage-home-payment-methods-panel" class="payment-feature-announcement__action">לניהול אמצעי תשלום</a>
+        </div>
+    </div>
+    <script>
+    (function(){
+      var popup=document.getElementById('payment-feature-announcement');
+      var key='tazrim_payment_methods_announcement_v1_<?php echo (int)($_SESSION['id'] ?? 0); ?>';
+      if(!popup)return;
+      function dismiss(){try{localStorage.setItem(key,'1');}catch(e){} popup.hidden=true;popup.setAttribute('aria-hidden','true');}
+      var dismissed=false;try{dismissed=localStorage.getItem(key)==='1';}catch(e){}
+      if(!dismissed){popup.hidden=false;popup.setAttribute('aria-hidden','false');}
+      popup.querySelector('.payment-feature-announcement__close').addEventListener('click',dismiss);
+      popup.addEventListener('click',function(e){if(e.target===popup)dismiss();});
+      popup.querySelector('.payment-feature-announcement__action').addEventListener('click',function(){try{localStorage.setItem(key,'1');}catch(e){}});
+    })();
+    </script>
+    <?php endif; ?>
+
     <div id="category-details-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
