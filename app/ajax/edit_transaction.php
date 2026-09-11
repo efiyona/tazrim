@@ -36,6 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    $category_check = mysqli_query($conn, "SELECT id FROM categories WHERE id = $category_id AND home_id = $home_id AND type = '" . mysqli_real_escape_string($conn, (string) $oldRow['type']) . "' AND is_active = 1 LIMIT 1");
+    if (!$category_check || !mysqli_fetch_assoc($category_check)) {
+        echo json_encode(['status' => 'error', 'message' => 'הקטגוריה אינה שייכת לבית או לסוג הפעולה.']);
+        exit();
+    }
+
     $update_query = "UPDATE transactions
                      SET amount = $amount, category = $category_id, description = '$description'$payment_method_update
                      WHERE id = $trans_id AND home_id = $home_id";
