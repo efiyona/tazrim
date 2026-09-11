@@ -6,6 +6,8 @@ include(ROOT_PATH . '/assets/includes/auth_check.php');
 require_once ROOT_PATH . '/assets/includes/user_css_href.php';
 
 $home_id = $_SESSION['home_id'];
+require_once ROOT_PATH . '/app/functions/payment_methods.php';
+$payment_methods = tazrim_payment_methods((int)$home_id, true);
 $home_data = selectOne('homes', ['id' => $home_id]);
 
 // --- ניהול חודשים ותאריכים עם זיכרון בסשן ואבטחה ---
@@ -454,6 +456,7 @@ $categories_array = array_merge($expense_categories, $income_categories);
                         <div id="edit-category-grid-container"></div>
                         <input type="hidden" name="category_id" id="edit-selected-category-id" required>
                     </div>
+                    <div class="input-group"><label>אמצעי תשלום</label><select name="payment_method_id" id="edit-payment-method"><option value="" disabled>לא צוין</option><?php foreach ($payment_methods as $pm): ?><option value="<?php echo (int)$pm['id']; ?>"><?php echo htmlspecialchars($pm['name']); ?></option><?php endforeach; ?></select></div>
 
                     <div id="edit-trans-msg" style="margin-bottom: 15px; font-weight: 700; text-align: center; display: none; padding: 10px; border-radius: 8px;"></div>
 
@@ -974,12 +977,13 @@ $categories_array = array_merge($expense_categories, $income_categories);
         var editModal = document.getElementById('edit-transaction-modal');
         var editForm = document.getElementById('edit-transaction-form');
 
-        function openEditTransModal(id, amount, categoryId, desc, type, source) {
+        function openEditTransModal(id, amount, categoryId, desc, type, source, paymentMethodId) {
             window.transactionActionSource = source || 'main';
             document.getElementById('edit-trans-id').value = id;
             document.getElementById('edit-trans-amount').value = amount;
             document.getElementById('edit-trans-desc').value = desc;
             document.getElementById('edit-trans-type').value = type;
+            var pmSelect=document.getElementById('edit-payment-method'); pmSelect.value=paymentMethodId||''; pmSelect.disabled=!paymentMethodId; pmSelect.onchange=function(){pmSelect.disabled=false;};
             buildCustomSelectReports('edit-category-grid-container', 'edit-selected-category-id', type, categoryId);
             editModal.style.display = 'block';
         }

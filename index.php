@@ -6,6 +6,8 @@ include(ROOT_PATH . '/assets/includes/auth_check.php');
 
 $home_id = $_SESSION['home_id'];
 
+require_once ROOT_PATH . '/app/functions/payment_methods.php';
+$payment_methods = tazrim_payment_methods((int)$home_id, true);
 $home_data = selectOne('homes', ['id' => $home_id]);
 if (!$home_data) {
     $home_data = ['name' => ''];
@@ -167,6 +169,8 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                         <input type="hidden" name="category_id" id="selected-category-id" required>
                     </div>
 
+                    <div class="input-group"><label>אמצעי תשלום</label><select name="payment_method_id" id="trans-payment-method" required><?php foreach ($payment_methods as $pm): ?><option value="<?php echo (int)$pm['id']; ?>" <?php echo !empty($pm['is_default'])?'selected':''; ?>><?php echo htmlspecialchars($pm['name']); ?><?php echo !empty($pm['last4'])?' · •••• '.htmlspecialchars($pm['last4']):''; ?></option><?php endforeach; ?></select></div>
+
                     <div class="input-group">
                         <label>תאריך</label>
                         <div class="input-with-icon">
@@ -238,6 +242,8 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                         <div id="edit-category-grid-container"></div>
                         <input type="hidden" name="category_id" id="edit-selected-category-id" required>
                     </div>
+
+                    <div class="input-group"><label>אמצעי תשלום</label><select name="payment_method_id" id="edit-payment-method"><option value="" disabled>לא צוין</option><?php foreach ($payment_methods as $pm): ?><option value="<?php echo (int)$pm['id']; ?>"><?php echo htmlspecialchars($pm['name']); ?><?php echo !empty($pm['last4'])?' · •••• '.htmlspecialchars($pm['last4']):''; ?></option><?php endforeach; ?></select></div>
 
                     <div id="edit-trans-msg" style="margin-bottom: 15px; font-weight: 700; text-align: center; display: none; padding: 10px; border-radius: 8px;"></div>
 
@@ -916,12 +922,13 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
     const editModal = document.getElementById('edit-transaction-modal');
     const editForm = document.getElementById('edit-transaction-form');
 
-    function openEditTransModal(id, amount, categoryId, desc, type, source) {
+    function openEditTransModal(id, amount, categoryId, desc, type, source, paymentMethodId) {
         window.transactionActionSource = source || 'main';
         document.getElementById('edit-trans-id').value = id;
         document.getElementById('edit-trans-amount').value = amount;
         document.getElementById('edit-trans-desc').value = desc;
         document.getElementById('edit-trans-type').value = type;
+        const pmSelect=document.getElementById('edit-payment-method'); pmSelect.value=paymentMethodId||''; pmSelect.disabled=!paymentMethodId; pmSelect.onchange=()=>{pmSelect.disabled=false;};
 
         buildCustomSelect('edit-category-grid-container', 'edit-selected-category-id', type, categoryId);
 
