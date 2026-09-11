@@ -153,7 +153,10 @@
 
 
                 <div class="transactions-section">
-                    <h2 class="section-subtitle" style="margin-bottom: 20px;">פעולות אחרונות</h2>
+                    <div class="transactions-section__header">
+                        <h2 class="section-subtitle">פעולות אחרונות</h2>
+                        <a class="transactions-all-link" href="<?php echo BASE_URL; ?>pages/all_transactions.php"><i class="fa-solid fa-list"></i><span>כל הפעולות</span></a>
+                    </div>
 
                     <div id="recent-transactions-list">
                         <?php if ($recent_result && mysqli_num_rows($recent_result) > 0): ?>

@@ -74,8 +74,8 @@ $navigation = [
         'name' => 'ראשי',
         'icon' => 'fa-house',
         'url' => BASE_URL . 'index.php',
-        'file' => 'index.php',
-        'plus_modal' => 'add-transaction-modal'
+        'file' => ['index.php', 'all_transactions.php'],
+        'plus_modal' => ($current_page === 'index.php' ? 'add-transaction-modal' : null)
     ],
     [
         'name' => 'דוחות',
