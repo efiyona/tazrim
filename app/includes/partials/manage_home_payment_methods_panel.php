@@ -1,8 +1,5 @@
 <div class="manage-categories-toolbar">
-    <div>
-        <h2 class="section-subtitle" style="margin:0;">אמצעי תשלום</h2>
-        <p class="hint-text" style="margin:4px 0 0;">הוסיפו כרטיסים ואמצעים לבית. נשמרות רק 4 ספרות אחרונות.</p>
-    </div>
+    <h2 class="section-subtitle" style="margin:0;">אמצעי תשלום</h2>
     <button type="button" class="btn-primary" style="width:max-content;margin:0;padding:8px 20px;font-size:.95rem;box-shadow:0 4px 10px rgba(35,114,39,.2)" onclick="openPaymentMethodEditor()">
         הוספה <i class="fa-solid fa-plus"></i>
     </button>
@@ -39,7 +36,6 @@
                 <div id="pm-card-fields" class="pm-card-fields">
                     <div class="input-group"><label>חברת אשראי / מנפיק</label><div class="input-with-icon"><i class="fa-solid fa-building"></i><input name="issuer" id="pm-issuer" placeholder="למשל: max"></div></div>
                     <div class="input-group"><label>4 ספרות אחרונות</label><div class="input-with-icon"><i class="fa-solid fa-credit-card"></i><input name="last4" id="pm-last4" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="3403"></div></div>
-                    <p class="hint-text"><i class="fa-solid fa-shield-halved"></i> לא נשמרים מספר כרטיס מלא, תוקף או קוד אבטחה.</p>
                 </div>
                 <div id="pm-msg" style="display:none;margin-bottom:15px;font-weight:700;text-align:center;padding:10px;border-radius:8px;"></div>
                 <button class="btn-primary" id="btn-save-payment-method" type="submit" style="margin-top:15px;"><i class="fa-solid fa-save"></i> שמור אמצעי תשלום</button>
