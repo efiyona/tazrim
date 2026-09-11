@@ -2,6 +2,7 @@
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
 require_once ROOT_PATH . '/vendor/autoload.php';
+require_once ROOT_PATH . '/app/functions/payment_methods.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
@@ -54,7 +55,7 @@ if (is_array($category_ids_input)) {
 }
 $category_ids = array_values(array_unique($category_ids));
 
-$sql = "SELECT t.transaction_date, t.type, t.description, t.amount, c.name AS category_name, u.first_name AS user_name, COALESCE(pm.name, 'לא צוין') AS payment_method_name
+$sql = "SELECT t.transaction_date, t.type, t.description, t.amount, c.name AS category_name, u.first_name AS user_name, COALESCE(pm.name, 'לא צוין') AS payment_method_name, pm.last4 AS payment_method_last4
         FROM transactions t
         LEFT JOIN categories c ON c.id = t.category
         LEFT JOIN users u ON u.id = t.user_id
@@ -185,7 +186,7 @@ foreach ($transactions as $transaction) {
 
     $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row_index, (string)($transaction['description'] ?? ''));
     $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row_index, $amount);
-    $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row_index, (string)($transaction['payment_method_name'] ?? 'לא צוין'));
+    $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row_index, tazrim_payment_method_public_name(['name' => $transaction['payment_method_name'] ?? 'לא צוין', 'last4' => $transaction['payment_method_last4'] ?? null]));
 
     if ($include_user) {
         $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row_index, (string)($transaction['user_name'] ?? ''));

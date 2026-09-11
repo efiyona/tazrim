@@ -169,7 +169,7 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                         <input type="hidden" name="category_id" id="selected-category-id" required>
                     </div>
 
-                    <div class="input-group"><label>אמצעי תשלום</label><select name="payment_method_id" id="trans-payment-method" required><?php foreach ($payment_methods as $pm): ?><option value="<?php echo (int)$pm['id']; ?>" <?php echo !empty($pm['is_default'])?'selected':''; ?>><?php echo htmlspecialchars($pm['name']); ?></option><?php endforeach; ?></select></div>
+                    <div class="input-group"><label>אמצעי תשלום</label><select name="payment_method_id" id="trans-payment-method" required><?php foreach ($payment_methods as $pm): ?><option value="<?php echo (int)$pm['id']; ?>" <?php echo !empty($pm['is_default'])?'selected':''; ?>><?php echo htmlspecialchars(tazrim_payment_method_public_name($pm), ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
 
                     <div class="input-group">
                         <label>תאריך</label>
@@ -243,7 +243,7 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                         <input type="hidden" name="category_id" id="edit-selected-category-id" required>
                     </div>
 
-                    <div class="input-group"><label>אמצעי תשלום</label><select name="payment_method_id" id="edit-payment-method"><option value="" disabled>לא צוין</option><?php foreach ($payment_methods as $pm): ?><option value="<?php echo (int)$pm['id']; ?>"><?php echo htmlspecialchars($pm['name']); ?></option><?php endforeach; ?></select></div>
+                    <div class="input-group"><label>אמצעי תשלום</label><select name="payment_method_id" id="edit-payment-method"><option value="" disabled>לא צוין</option><?php foreach ($payment_methods as $pm): ?><option value="<?php echo (int)$pm['id']; ?>"><?php echo htmlspecialchars(tazrim_payment_method_public_name($pm), ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
 
                     <div id="edit-trans-msg" style="margin-bottom: 15px; font-weight: 700; text-align: center; display: none; padding: 10px; border-radius: 8px;"></div>
 

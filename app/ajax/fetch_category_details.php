@@ -1,6 +1,7 @@
 <?php
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
+require_once ROOT_PATH . '/app/functions/payment_methods.php';
 
 $today_il = date('Y-m-d');
 
@@ -21,7 +22,7 @@ $js_action_source = (isset($_GET['ui_context']) && $_GET['ui_context'] === 'repo
     : 'category-details';
 
 if ($mode === 'type') {
-    $query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name, COALESCE(pm.name, 'לא צוין') as payment_method_name
+    $query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name, COALESCE(pm.name, 'לא צוין') as payment_method_name, pm.last4 as payment_method_last4
               FROM transactions t
               LEFT JOIN categories c ON t.category = c.id
               LEFT JOIN users u ON t.user_id = u.id
@@ -38,7 +39,7 @@ if ($mode === 'type') {
         ? 'אין הכנסות רשומות החודש.'
         : 'אין הוצאות רשומות החודש.';
 } elseif ($cat_id) {
-    $query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name, COALESCE(pm.name, 'לא צוין') as payment_method_name
+    $query = "SELECT t.*, c.icon as cat_icon, u.first_name as user_name, COALESCE(pm.name, 'לא צוין') as payment_method_name, pm.last4 as payment_method_last4
               FROM transactions t
               LEFT JOIN categories c ON t.category = c.id
               LEFT JOIN users u ON t.user_id = u.id
@@ -84,7 +85,7 @@ if (mysqli_num_rows($result) > 0) {
         echo '      <div class="cat-icon-wrapper"><i class="' . $icon_class . '"></i></div>';
         echo '      <div class="details">';
         echo '          <span class="desc">' . $safe_desc_html . ' ' . $user_badge . ' ' . $waiting_badge . '</span>';
-        echo '          <span class="date">' . date('d/m/Y', strtotime($row['transaction_date'])) . ' · ' . htmlspecialchars($row['payment_method_name']) . '</span>';
+        echo '          <span class="date">' . date('d/m/Y', strtotime($row['transaction_date'])) . ' · ' . htmlspecialchars(tazrim_payment_method_public_name(['name' => $row['payment_method_name'], 'last4' => $row['payment_method_last4'] ?? null]), ENT_QUOTES, 'UTF-8') . '</span>';
         echo '      </div>';
         echo '  </div>';
         echo '  <div class="transaction-actions">';
