@@ -160,6 +160,15 @@
             .header-btn--ghost:hover i { transition: none; transform: none; }
         }
 
+        .developer-strip { background: linear-gradient(135deg, #18263a, #243b58); color: #fff; }
+        .developer-strip .container { display:flex; align-items:center; justify-content:space-between; gap:28px; }
+        .developer-copy { text-align:right; }
+        .developer-copy h2 { color:#fff; margin-bottom:.65rem; }
+        .developer-copy p { color:#d6deea; margin:0; max-width:720px; }
+        .developer-link { flex:none; display:inline-flex; align-items:center; gap:9px; color:#fff; text-decoration:none; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.08); padding:13px 20px; border-radius:999px; font-weight:800; transition:.2s; }
+        .developer-link:hover { background:#fff; color:#18263a; transform:translateY(-2px); }
+        @media(max-width:700px){.developer-strip .container{flex-direction:column;text-align:center}.developer-copy{text-align:center}.developer-link{width:100%;justify-content:center}}
+
         /* =========================================
            Hero & Mockup
         ========================================= */
@@ -730,6 +739,16 @@
                         </div>
                     </article>
                 </div>
+            </div>
+        </section>
+
+        <section class="section-pad developer-strip" aria-labelledby="developer-title">
+            <div class="container">
+                <div class="developer-copy">
+                    <h2 id="developer-title">בונים על התזרים?</h2>
+                    <p>API ציבורי מאפשר לחבר אפליקציות, אוטומציות וקיצורי דרך לנתוני התזרים באמצעות טוקן מאובטח.</p>
+                </div>
+                <a class="developer-link" href="<?php echo BASE_URL . 'pages/api_docs.php'; ?>"><i class="fa-solid fa-code"></i> תיעוד API למפתחים</a>
             </div>
         </section>
 

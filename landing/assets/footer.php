@@ -14,6 +14,7 @@
                     <li><a href="<?php echo BASE_URL . 'pages/register.php'; ?>"><i class="fa-solid fa-angle-left"></i> פתיחת חשבון</a></li>
                     <li><a href="<?php echo BASE_URL . 'pages/login.php'; ?>"><i class="fa-solid fa-angle-left"></i> כניסה למערכת</a></li>
                     <li><a href="#steps"><i class="fa-solid fa-angle-left"></i> איך זה עובד</a></li>
+                    <li><a href="<?php echo BASE_URL . 'pages/api_docs.php'; ?>"><i class="fa-solid fa-angle-left"></i> API למפתחים</a></li>
                 </ul>
             </nav>
 
