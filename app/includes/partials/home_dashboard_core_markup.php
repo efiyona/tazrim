@@ -155,7 +155,7 @@
                 <div class="transactions-section">
                     <div class="transactions-section__header">
                         <h2 class="section-subtitle">פעולות אחרונות</h2>
-                        <a class="transactions-all-link" href="<?php echo BASE_URL; ?>pages/all_transactions.php"><i class="fa-solid fa-list"></i><span>כל הפעולות</span></a>
+                        <a class="transactions-all-link" href="<?php echo BASE_URL; ?>pages/all_transactions.php"><span>כל הפעולות</span><i class="fa-solid fa-arrow-left"></i></a>
                     </div>
 
                     <div id="recent-transactions-list">
