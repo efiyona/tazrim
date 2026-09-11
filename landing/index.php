@@ -746,7 +746,7 @@
             <div class="container">
                 <div class="developer-copy">
                     <h2 id="developer-title">בונים על התזרים?</h2>
-                    <p>API ציבורי מאפשר לחבר אפליקציות, אוטומציות וקיצורי דרך לנתוני התזרים באמצעות טוקן מאובטח.</p>
+                    <p>API ציבורי מאפשר לחבר אוטומציות וקיצורי דרך לתזרים באמצעות טוקן מאובטח.</p>
                 </div>
                 <a class="developer-link" href="<?php echo BASE_URL . 'pages/api_docs.php'; ?>"><i class="fa-solid fa-code"></i> תיעוד API למפתחים</a>
             </div>
