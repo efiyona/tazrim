@@ -56,13 +56,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!in_array($method_type, $allowed_method_types, true) || $method_name === '') continue;
         if ($method_type === 'credit_card' && !preg_match('/^\d{4}$/', $method_last4)) continue;
         if ($method_type !== 'credit_card') { $method_last4 = ''; $method_issuer = ''; }
+        $method_last4 = $method_last4 === '' ? null : $method_last4;
+        $method_issuer = $method_issuer === '' ? null : $method_issuer;
         $is_default = $methods_added === 0 ? 1 : 0;
         if ($is_default && !empty($existing_default)) {
             $default_id = (int)$existing_default[0]['id'];
-            $stmt = $conn->prepare("UPDATE payment_methods SET type=?,name=?,last4=NULLIF(?,''),issuer=NULLIF(?,'') WHERE id=? AND home_id=?");
+            $stmt = $conn->prepare("UPDATE payment_methods SET type=?,name=?,last4=?,issuer=? WHERE id=? AND home_id=?");
             $stmt->bind_param('ssssii', $method_type, $method_name, $method_last4, $method_issuer, $default_id, $home_id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO payment_methods(home_id,type,name,last4,issuer,is_default,is_active) VALUES(?,?,?,NULLIF(?,''),NULLIF(?,''),?,1)");
+            $stmt = $conn->prepare("INSERT INTO payment_methods(home_id,type,name,last4,issuer,is_default,is_active) VALUES(?,?,?,?,?,?,1)");
             $stmt->bind_param('issssi', $home_id, $method_type, $method_name, $method_last4, $method_issuer, $is_default);
         }
         if ($stmt->execute()) $methods_added++;

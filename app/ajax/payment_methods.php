@@ -26,8 +26,9 @@ try {
         if(!in_array($type,['cash','credit_card','check','bank_transfer','bank_debit'],true)||$name==='')throw new InvalidArgumentException('נתונים לא תקינים.');
         if($type==='credit_card'&&!preg_match('/^\d{4}$/',$last4))throw new InvalidArgumentException('יש להזין 4 ספרות אחרונות.');
         if($type!=='credit_card'){$last4='';$issuer='';}
-        if($id>0){$s=$conn->prepare("UPDATE payment_methods SET type=?,name=?,last4=NULLIF(?,''),issuer=NULLIF(?,'') WHERE id=? AND home_id=?");$s->bind_param('ssssii',$type,$name,$last4,$issuer,$id,$home);}
-        else{$s=$conn->prepare("INSERT INTO payment_methods(home_id,type,name,last4,issuer) VALUES(?,?,?,NULLIF(?,''),NULLIF(?,''))");$s->bind_param('issss',$home,$type,$name,$last4,$issuer);}
+        $last4 = $last4 === '' ? null : $last4; $issuer = $issuer === '' ? null : $issuer;
+        if($id>0){$s=$conn->prepare("UPDATE payment_methods SET type=?,name=?,last4=?,issuer=? WHERE id=? AND home_id=?");$s->bind_param('ssssii',$type,$name,$last4,$issuer,$id,$home);}
+        else{$s=$conn->prepare("INSERT INTO payment_methods(home_id,type,name,last4,issuer) VALUES(?,?,?,?,?)");$s->bind_param('issss',$home,$type,$name,$last4,$issuer);}
         $s->execute();$s->close();
     }
     echo json_encode(['status'=>'success','data'=>tazrim_payment_methods($home,false)]);
