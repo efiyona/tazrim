@@ -27,6 +27,8 @@ if ($navCtx === null) {
         $navCtx = 'dashboard';
     } elseif ($script === 'push_broadcast.php') {
         $navCtx = 'push_broadcast';
+    } elseif ($script === 'satisfaction_survey.php') {
+        $navCtx = 'satisfaction_survey';
     } elseif ($script === 'popup_campaigns.php' || $script === 'popup_campaign_edit.php') {
         $navCtx = 'popup_campaigns';
     } else {

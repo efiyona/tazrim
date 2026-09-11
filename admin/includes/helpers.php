@@ -57,6 +57,13 @@ function tazrim_admin_nav_items(): array
             'href' => BASE_URL . 'admin/landing_events.php',
         ],
         [
+            'type' => 'link',
+            'key' => 'satisfaction_survey',
+            'label' => 'תשובות לסקר',
+            'icon' => 'fa-face-smile-beam',
+            'href' => BASE_URL . 'admin/satisfaction_survey.php',
+        ],
+        [
             'type' => 'group',
             'key' => 'broadcast_user_messages',
             'label' => 'הודעות למשתמשים',
