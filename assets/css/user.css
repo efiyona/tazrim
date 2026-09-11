@@ -6639,3 +6639,6 @@ body.page-auth {
         padding-bottom: max(148px, calc(112px + env(safe-area-inset-bottom, 0px))) !important;
     }
 }
+
+/* בורר אמצעי תשלום מותאם אישית — טפסי הוספה/עריכת פעולה */
+.payment-picker{position:relative}.payment-picker__trigger{width:100%;border:1px solid #e5e7eb;background:#fff;border-radius:999px;padding:12px 17px;display:flex;align-items:center;justify-content:space-between;font:inherit;color:var(--text);cursor:pointer}.payment-picker__value{display:flex;align-items:center;gap:9px;font-weight:600}.payment-picker__value>i{color:var(--main)}.payment-picker__menu{display:none;position:absolute;z-index:80;top:calc(100% + 7px);right:0;left:0;padding:7px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 14px 30px rgba(0,0,0,.13)}.payment-picker.open .payment-picker__menu{display:grid}.payment-picker__option{border:0;background:transparent;border-radius:11px;padding:11px 12px;display:grid;grid-template-columns:24px 1fr 20px;align-items:center;text-align:right;gap:8px;font:inherit;cursor:pointer;color:var(--text)}.payment-picker__option:hover,.payment-picker__option.selected{background:var(--sub_main-light);color:var(--main)}.payment-picker__option>i:first-child{color:var(--main)}.payment-picker__option>i:last-child{visibility:hidden}.payment-picker__option.selected>i:last-child{visibility:visible}

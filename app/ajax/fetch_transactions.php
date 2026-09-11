@@ -47,6 +47,7 @@ if (mysqli_num_rows($result) > 0) {
         $symbol = ($row['type'] == 'income') ? '+' : '-';
         $safe_desc = htmlspecialchars($row['description'], ENT_QUOTES);
         $date_formatted = date('d/m/Y', strtotime($row['transaction_date']));
+        $payment_method_arg = $row['payment_method_id'] !== null ? (int)$row['payment_method_id'] : 'null';
         
         $user_badge = "";
         if ($row['user_name']) {
@@ -56,7 +57,7 @@ if (mysqli_num_rows($result) > 0) {
         // מדפיסים את העיצוב בדיוק כמו ב-index.php
         echo "
         <div class='transaction-item {$row['type']} {$pending_class}' 
-        onclick=\"openEditTransModal({$row['id']}, {$row['amount']}, {$row['category']}, '{$safe_desc}', '{$row['type']}', 'main')\"
+        onclick=\"openEditTransModal({$row['id']}, {$row['amount']}, {$row['category']}, '{$safe_desc}', '{$row['type']}', 'main', {$payment_method_arg})\"
         style='cursor: pointer;'>
             <div class='transaction-info'>
                 <div class='cat-icon-wrapper'>

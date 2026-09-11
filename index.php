@@ -169,7 +169,7 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                         <input type="hidden" name="category_id" id="selected-category-id" required>
                     </div>
 
-                    <div class="input-group"><label>אמצעי תשלום</label><select name="payment_method_id" id="trans-payment-method" required><?php foreach ($payment_methods as $pm): ?><option value="<?php echo (int)$pm['id']; ?>" <?php echo !empty($pm['is_default'])?'selected':''; ?>><?php echo htmlspecialchars(tazrim_payment_method_public_name($pm), ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
+                    <div class="input-group"><label>אמצעי תשלום</label><input type="hidden" name="payment_method_id" id="trans-payment-method" value="<?php echo (int)(($payment_methods[0]['id'] ?? 0)); ?>"><div class="payment-picker" id="trans-payment-picker"><button type="button" class="payment-picker__trigger" aria-haspopup="listbox" aria-expanded="false"><span class="payment-picker__value"><i class="fa-solid fa-wallet"></i><span>בחירת אמצעי תשלום</span></span><i class="fa-solid fa-chevron-down"></i></button><div class="payment-picker__menu" role="listbox"></div></div></div>
 
                     <div class="input-group">
                         <label>תאריך</label>
@@ -243,7 +243,7 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
                         <input type="hidden" name="category_id" id="edit-selected-category-id" required>
                     </div>
 
-                    <div class="input-group"><label>אמצעי תשלום</label><select name="payment_method_id" id="edit-payment-method"><option value="" disabled>לא צוין</option><?php foreach ($payment_methods as $pm): ?><option value="<?php echo (int)$pm['id']; ?>"><?php echo htmlspecialchars(tazrim_payment_method_public_name($pm), ENT_QUOTES, 'UTF-8'); ?></option><?php endforeach; ?></select></div>
+                    <div class="input-group"><label>אמצעי תשלום</label><input type="hidden" name="payment_method_id" id="edit-payment-method" value="<?php echo (int)(0); ?>"><div class="payment-picker" id="edit-payment-picker"><button type="button" class="payment-picker__trigger" aria-haspopup="listbox" aria-expanded="false"><span class="payment-picker__value"><i class="fa-solid fa-wallet"></i><span>בחירת אמצעי תשלום</span></span><i class="fa-solid fa-chevron-down"></i></button><div class="payment-picker__menu" role="listbox"></div></div></div>
 
                     <div id="edit-trans-msg" style="margin-bottom: 15px; font-weight: 700; text-align: center; display: none; padding: 10px; border-radius: 8px;"></div>
 
@@ -647,6 +647,13 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
 
 </script>
 <script>
+    const transactionPaymentMethods = <?php echo json_encode(array_map(function($pm){ return ['id'=>(int)$pm['id'],'type'=>$pm['type'],'name'=>tazrim_payment_method_public_name($pm),'is_default'=>(int)$pm['is_default']]; }, $payment_methods), JSON_UNESCAPED_UNICODE); ?>;
+    const transactionPaymentIcons={bank_transfer:'fa-building-columns',credit_card:'fa-credit-card',cash:'fa-money-bill-wave',check:'fa-money-check',bank_debit:'fa-repeat'};
+    function setTransactionPaymentPicker(pickerId,inputId,value){const picker=document.getElementById(pickerId),input=document.getElementById(inputId);if(!picker||!input)return;const pm=transactionPaymentMethods.find(x=>Number(x.id)===Number(value))||transactionPaymentMethods.find(x=>Number(x.is_default)===1)||transactionPaymentMethods[0];if(!pm)return;input.value=pm.id;picker.querySelector('.payment-picker__value').innerHTML=`<i class="fa-solid ${transactionPaymentIcons[pm.type]||'fa-wallet'}"></i><span>${escapePaymentText(pm.name)}</span>`;picker.querySelectorAll('.payment-picker__option').forEach(o=>o.classList.toggle('selected',Number(o.dataset.value)===Number(pm.id)));}
+    function escapePaymentText(v){const d=document.createElement('div');d.textContent=v||'';return d.innerHTML;}
+    function initTransactionPaymentPicker(pickerId,inputId){const picker=document.getElementById(pickerId),input=document.getElementById(inputId);if(!picker||!input)return;const menu=picker.querySelector('.payment-picker__menu');menu.innerHTML=transactionPaymentMethods.map(pm=>`<button type="button" class="payment-picker__option" data-value="${pm.id}"><i class="fa-solid ${transactionPaymentIcons[pm.type]||'fa-wallet'}"></i><span>${escapePaymentText(pm.name)}</span><i class="fa-solid fa-check"></i></button>`).join('');picker.querySelector('.payment-picker__trigger').addEventListener('click',e=>{e.stopPropagation();document.querySelectorAll('.payment-picker').forEach(x=>{if(x!==picker)x.classList.remove('open')});const open=!picker.classList.contains('open');picker.classList.toggle('open',open);picker.querySelector('.payment-picker__trigger').setAttribute('aria-expanded',open?'true':'false');});menu.addEventListener('click',e=>{const o=e.target.closest('.payment-picker__option');if(!o)return;e.stopPropagation();setTransactionPaymentPicker(pickerId,inputId,o.dataset.value);picker.classList.remove('open');picker.querySelector('.payment-picker__trigger').setAttribute('aria-expanded','false');});setTransactionPaymentPicker(pickerId,inputId,input.value);}
+    initTransactionPaymentPicker('trans-payment-picker','trans-payment-method');
+    initTransactionPaymentPicker('edit-payment-picker','edit-payment-method');
     const addModal = document.getElementById('add-transaction-modal');
     const floatingBtn = document.querySelector('.floating-btn');
     const addForm = document.getElementById('add-transaction-form');
@@ -740,9 +747,8 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
     }
 
     document.addEventListener('click', function() {
-        document.querySelectorAll('.custom-select-wrapper').forEach(w => {
-            w.classList.remove('open');
-        });
+        document.querySelectorAll('.custom-select-wrapper').forEach(w => { w.classList.remove('open'); });
+        document.querySelectorAll('.payment-picker').forEach(w => { w.classList.remove('open'); });
     });
 
     // 1. התיקון כאן: הגנה מקריסה במקרה שהכפתור הישן כבר לא קיים במסך
@@ -793,7 +799,8 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         document.getElementById('trans-date').value = "<?php echo date('Y-m-d'); ?>"; 
         document.getElementById('trans-currency-code').value = 'ILS';
         syncCurrencyToggle('trans-currency-code', 'trans-currency-toggle');
-        document.getElementById('selected-category-id').value = ""; 
+        document.getElementById('selected-category-id').value = "";
+        setTransactionPaymentPicker('trans-payment-picker','trans-payment-method',transactionPaymentMethods.find(x=>Number(x.is_default)===1)?.id);
         document.getElementById('add-trans-msg').style.display = 'none';
         setTransRecurrenceMode('once');
         
@@ -928,7 +935,7 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
         document.getElementById('edit-trans-amount').value = amount;
         document.getElementById('edit-trans-desc').value = desc;
         document.getElementById('edit-trans-type').value = type;
-        const pmSelect=document.getElementById('edit-payment-method'); pmSelect.value=paymentMethodId||''; pmSelect.disabled=!paymentMethodId; pmSelect.onchange=()=>{pmSelect.disabled=false;};
+        setTransactionPaymentPicker('edit-payment-picker','edit-payment-method',paymentMethodId);
 
         buildCustomSelect('edit-category-grid-container', 'edit-selected-category-id', type, categoryId);
 

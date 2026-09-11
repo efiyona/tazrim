@@ -456,7 +456,7 @@ $categories_array = array_merge($expense_categories, $income_categories);
                         <div id="edit-category-grid-container"></div>
                         <input type="hidden" name="category_id" id="edit-selected-category-id" required>
                     </div>
-                    <div class="input-group"><label>אמצעי תשלום</label><select name="payment_method_id" id="edit-payment-method"><option value="" disabled>לא צוין</option><?php foreach ($payment_methods as $pm): ?><option value="<?php echo (int)$pm['id']; ?>"><?php echo htmlspecialchars($pm['name']); ?></option><?php endforeach; ?></select></div>
+                    <div class="input-group"><label>אמצעי תשלום</label><input type="hidden" name="payment_method_id" id="edit-payment-method" value="<?php echo (int)(0); ?>"><div class="payment-picker" id="edit-payment-picker"><button type="button" class="payment-picker__trigger" aria-haspopup="listbox" aria-expanded="false"><span class="payment-picker__value"><i class="fa-solid fa-wallet"></i><span>בחירת אמצעי תשלום</span></span><i class="fa-solid fa-chevron-down"></i></button><div class="payment-picker__menu" role="listbox"></div></div></div>
 
                     <div id="edit-trans-msg" style="margin-bottom: 15px; font-weight: 700; text-align: center; display: none; padding: 10px; border-radius: 8px;"></div>
 
@@ -974,6 +974,11 @@ $categories_array = array_merge($expense_categories, $income_categories);
             });
         }
 
+        var transactionPaymentMethods = <?php echo json_encode(array_map(function($pm){ return ['id'=>(int)$pm['id'],'type'=>$pm['type'],'name'=>tazrim_payment_method_public_name($pm),'is_default'=>(int)$pm['is_default']]; }, $payment_methods), JSON_UNESCAPED_UNICODE); ?>;
+        var transactionPaymentIcons={bank_transfer:'fa-building-columns',credit_card:'fa-credit-card',cash:'fa-money-bill-wave',check:'fa-money-check',bank_debit:'fa-repeat'};
+        function paymentText(v){var d=document.createElement('div');d.textContent=v||'';return d.innerHTML;}
+        function setReportsPaymentPicker(value){var picker=document.getElementById('edit-payment-picker'),input=document.getElementById('edit-payment-method');var pm=transactionPaymentMethods.find(function(x){return Number(x.id)===Number(value);})||transactionPaymentMethods.find(function(x){return Number(x.is_default)===1;})||transactionPaymentMethods[0];if(!picker||!input||!pm)return;input.value=pm.id;picker.querySelector('.payment-picker__value').innerHTML='<i class="fa-solid '+(transactionPaymentIcons[pm.type]||'fa-wallet')+'"></i><span>'+paymentText(pm.name)+'</span>';picker.querySelectorAll('.payment-picker__option').forEach(function(o){o.classList.toggle('selected',Number(o.dataset.value)===Number(pm.id));});}
+        (function(){var picker=document.getElementById('edit-payment-picker');if(!picker)return;var menu=picker.querySelector('.payment-picker__menu');menu.innerHTML=transactionPaymentMethods.map(function(pm){return '<button type="button" class="payment-picker__option" data-value="'+pm.id+'"><i class="fa-solid '+(transactionPaymentIcons[pm.type]||'fa-wallet')+'"></i><span>'+paymentText(pm.name)+'</span><i class="fa-solid fa-check"></i></button>';}).join('');picker.querySelector('.payment-picker__trigger').addEventListener('click',function(e){e.stopPropagation();picker.classList.toggle('open');});menu.addEventListener('click',function(e){var o=e.target.closest('.payment-picker__option');if(!o)return;e.stopPropagation();setReportsPaymentPicker(o.dataset.value);picker.classList.remove('open');});setReportsPaymentPicker(null);})();
         var editModal = document.getElementById('edit-transaction-modal');
         var editForm = document.getElementById('edit-transaction-form');
 
@@ -983,7 +988,7 @@ $categories_array = array_merge($expense_categories, $income_categories);
             document.getElementById('edit-trans-amount').value = amount;
             document.getElementById('edit-trans-desc').value = desc;
             document.getElementById('edit-trans-type').value = type;
-            var pmSelect=document.getElementById('edit-payment-method'); pmSelect.value=paymentMethodId||''; pmSelect.disabled=!paymentMethodId; pmSelect.onchange=function(){pmSelect.disabled=false;};
+            setReportsPaymentPicker(paymentMethodId);
             buildCustomSelectReports('edit-category-grid-container', 'edit-selected-category-id', type, categoryId);
             editModal.style.display = 'block';
         }
@@ -1035,9 +1040,8 @@ $categories_array = array_merge($expense_categories, $income_categories);
         }
 
         document.addEventListener('click', function () {
-            document.querySelectorAll('.custom-select-wrapper').forEach(function (w) {
-                w.classList.remove('open');
-            });
+            document.querySelectorAll('.custom-select-wrapper').forEach(function (w) { w.classList.remove('open'); });
+            document.querySelectorAll('.payment-picker').forEach(function (w) { w.classList.remove('open'); });
         });
 
         editForm.addEventListener('submit', function (e) {

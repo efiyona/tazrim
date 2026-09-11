@@ -111,7 +111,7 @@
                     <div id="pending-transactions-list">
                         <?php while ($row = mysqli_fetch_assoc($pending_result)): ?>
                            <div class="transaction-item <?php echo $row['type']; ?> <?php echo (strtotime($row['transaction_date']) > strtotime($today_il)) ? 'pending-trans' : ''; ?>"
-                            onclick="openEditTransModal(<?php echo (int) $row['id']; ?>, <?php echo (float) $row['amount']; ?>, <?php echo (int) $row['category']; ?>, '<?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?>', '<?php echo $row['type']; ?>', 'main')"
+                            onclick="openEditTransModal(<?php echo (int) $row['id']; ?>, <?php echo (float) $row['amount']; ?>, <?php echo (int) $row['category']; ?>, '<?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?>', '<?php echo $row['type']; ?>', 'main', <?php echo $row['payment_method_id'] !== null ? (int)$row['payment_method_id'] : 'null'; ?>)"
                             style="cursor: pointer;">
                                 <div class="transaction-info">
                                     <div class="cat-icon-wrapper">
@@ -159,7 +159,7 @@
                         <?php if ($recent_result && mysqli_num_rows($recent_result) > 0): ?>
                             <?php while ($row = mysqli_fetch_assoc($recent_result)): ?>
                                 <div class="transaction-item <?php echo $row['type']; ?> <?php echo (strtotime($row['transaction_date']) > strtotime($today_il)) ? 'pending-trans' : ''; ?>"
-                                onclick="openEditTransModal(<?php echo (int) $row['id']; ?>, <?php echo (float) $row['amount']; ?>, <?php echo (int) $row['category']; ?>, '<?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?>', '<?php echo $row['type']; ?>', 'main')"
+                                onclick="openEditTransModal(<?php echo (int) $row['id']; ?>, <?php echo (float) $row['amount']; ?>, <?php echo (int) $row['category']; ?>, '<?php echo htmlspecialchars($row['description'], ENT_QUOTES); ?>', '<?php echo $row['type']; ?>', 'main', <?php echo $row['payment_method_id'] !== null ? (int)$row['payment_method_id'] : 'null'; ?>)"
                                 style="cursor: pointer;">
                                     <div class="transaction-info">
                                         <div class="cat-icon-wrapper">
