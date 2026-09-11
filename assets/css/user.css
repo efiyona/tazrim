@@ -2434,6 +2434,28 @@ body.auth-forgot .auth-switch a {
             .full-width-card { grid-column: span 2; }
         }
 
+        /* עמוד ניהול הבית — אמצעי תשלום: אותה שורת כותרת/פעולה כמו קטגוריות */
+        #manage-home-payment-methods-panel {
+            min-width: 0;
+            max-width: 100%;
+        }
+        #manage-home-payment-methods-panel .manage-categories-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 10px;
+            margin-bottom: 24px;
+            min-width: 0;
+        }
+        #manage-home-payment-methods-panel .manage-categories-toolbar .section-subtitle {
+            flex: 1 1 12rem;
+            min-width: 0;
+        }
+        #manage-home-payment-methods-panel .manage-categories-toolbar .btn-primary {
+            flex-shrink: 0;
+        }
+
         /* עמוד ניהול הבית — בלוק קטגוריות: מניעת גלישה אופקית במובייל */
         #manage-home-categories-panel {
             min-width: 0;
