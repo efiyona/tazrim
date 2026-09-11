@@ -144,6 +144,13 @@ if (isset($_POST['register_btn'])) {
                     'bank_balance_manual_adjustment' => encryptBalance(0.0),
                     'show_bank_balance' => 0,
                 ]);
+                if ($target_home_id) {
+                    $default_method_name = 'בנק';
+                    $stmt = $conn->prepare("INSERT INTO payment_methods(home_id,type,name,is_default,is_active) VALUES(?,'bank_transfer',?,1,1)");
+                    $stmt->bind_param('is', $target_home_id, $default_method_name);
+                    $stmt->execute();
+                    $stmt->close();
+                }
             }
 
             // 3. עדכון ה-home_id של המשתמש חזרה

@@ -17,6 +17,7 @@ try {
     require('../../../../path.php');
     include(ROOT_PATH . '/app/database/db.php');
     require_once ROOT_PATH . '/app/functions/budget_overrun_push.php';
+    require_once ROOT_PATH . '/app/functions/payment_methods.php';
 
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
@@ -75,6 +76,11 @@ try {
     }
 
     $desc_esc = mysqli_real_escape_string($conn, $description);
+    $payment_method_update = '';
+    if (array_key_exists('payment_method_id', $body)) {
+        $payment_method_id = tazrim_resolve_payment_method_id($home_id, $body['payment_method_id']);
+        $payment_method_update = ", payment_method_id = $payment_method_id";
+    }
 
     $oldRow = [
         'type' => (string) ($existing['type'] ?? ''),
@@ -83,8 +89,8 @@ try {
     ];
     $today_ledger = date('Y-m-d');
 
-    $update_query = "UPDATE transactions 
-                     SET amount = $amount, category = $category_id, description = '$desc_esc' 
+    $update_query = "UPDATE transactions
+                     SET amount = $amount, category = $category_id, description = '$desc_esc'$payment_method_update
                      WHERE id = $trans_id AND home_id = $home_id";
 
     if (!mysqli_query($conn, $update_query)) {

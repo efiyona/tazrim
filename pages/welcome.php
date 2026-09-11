@@ -76,6 +76,9 @@ if ($has_active_categories) {
         
         .hint-text { font-size: 0.85rem; color: #888; margin-top: 5px; }
 
+        .welcome-payment-method { position:relative; display:flex; align-items:center; gap:14px; padding:14px; margin:9px 0; border:1px solid #dbe7dc; border-radius:14px; background:#f8fcf8; }
+        .welcome-payment-method > i { color:var(--main); font-size:1.35rem; width:32px; }
+        .welcome-payment-method small { display:block; color:#777; margin-top:2px; }
         @media (max-width: 600px) {
             .welcome-card { padding: 30px 20px; }
             .cat-suggest-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -89,6 +92,7 @@ if ($has_active_categories) {
             <div class="dot active" id="dot-1"></div>
             <div class="dot" id="dot-2"></div>
             <div class="dot" id="dot-3"></div>
+            <div class="dot" id="dot-4"></div>
         </div>
 
         <form id="welcome-form">
@@ -122,10 +126,20 @@ if ($has_active_categories) {
                     </label>
                 </div>
 
-                <button type="button" class="btn-welcome" onclick="nextStep(3)">המשך לקטגוריות <i class="fa-solid fa-arrow-left"></i></button>
+                <button type="button" class="btn-welcome" onclick="nextStep(3)">המשך לאמצעי תשלום <i class="fa-solid fa-arrow-left"></i></button>
             </div>
 
             <div class="step" id="step-3">
+                <h2 style="font-weight: 800; margin-bottom: 5px;">איך משלמים בבית?</h2>
+                <p style="color:#666">יצרנו אמצעי ברירת מחדל בשם "בנק". אפשר להוסיף עכשיו כרטיסים או אמצעים נוספים.</p>
+                <div id="welcome-methods" style="text-align:right;margin:22px 0">
+                    <div class="welcome-payment-method" data-type="bank_transfer" data-name="בנק" data-last4="" data-issuer=""><i class="fa-solid fa-building-columns"></i><div><strong>בנק</strong><small>ברירת מחדל</small></div></div>
+                </div>
+                <button type="button" class="cat-add-btn" style="width:100%;min-height:auto" onclick="addWelcomePaymentMethod()"><i class="fa-solid fa-plus"></i><span>הוספת אמצעי תשלום</span></button>
+                <button type="button" class="btn-welcome" onclick="nextStep(4)">המשך לקטגוריות <i class="fa-solid fa-arrow-left"></i></button>
+            </div>
+
+            <div class="step" id="step-4">
                 <h2 style="font-weight: 800; margin-bottom: 5px;">הקטגוריות שלכם</h2>
                 <p style="color: #666; font-size: 0.95rem;">הכנו עבורכם רשימת ברירת מחדל. <strong style="color: #dc2626;">מחקו</strong> את מה שלא רלוונטי עבורכם, ו<strong style="color: var(--main);">הוסיפו</strong> קטגוריות משלכם בסוף הרשימה.</p>
                 
@@ -276,6 +290,24 @@ if ($has_active_categories) {
             }
         }
 
+        function addWelcomePaymentMethod() {
+            const type = prompt('סוג: אשראי / מזומן / צק / העברה בנקאית', 'אשראי');
+            if (!type) return;
+            const normalized = type.includes('אשראי') ? 'credit_card' : (type.includes('מזומן') ? 'cash' : (type.includes('צ') ? 'check' : 'bank_transfer'));
+            const name = prompt('שם שיופיע במערכת', normalized === 'credit_card' ? 'כרטיס אשראי' : type);
+            if (!name || !name.trim()) return;
+            let last4='', issuer='';
+            if (normalized === 'credit_card') {
+                last4 = (prompt('4 ספרות אחרונות בלבד') || '').trim();
+                if (!/^\d{4}$/.test(last4)) { alert('יש להזין בדיוק 4 ספרות.'); return; }
+                issuer = (prompt('חברת אשראי / מנפיק (רשות)') || '').trim();
+            }
+            const el=document.createElement('div'); el.className='welcome-payment-method';
+            Object.assign(el.dataset,{type:normalized,name:name.trim(),last4,issuer});
+            el.innerHTML=`<i class="fa-solid ${normalized==='credit_card'?'fa-credit-card':'fa-wallet'}"></i><div><strong></strong><small>${last4?'•••• '+last4:'אמצעי תשלום'}</small></div><button type="button" class="btn-delete-cat" onclick="this.parentElement.remove()"><i class="fa-solid fa-trash"></i></button>`;
+            el.querySelector('strong').textContent=name.trim(); document.getElementById('welcome-methods').appendChild(el);
+        }
+
         // בניית הנתונים ושליחה לשרת
         document.getElementById('welcome-form').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -299,6 +331,9 @@ if ($has_active_categories) {
             formData.append('initial_balance', document.getElementById('initial_balance').value);
             const showCb = document.getElementById('welcome_show_bank_balance');
             formData.append('show_bank_balance', showCb && showCb.checked ? '1' : '0');
+            const methods = Array.from(document.querySelectorAll('.welcome-payment-method')).map(el => ({type:el.dataset.type,name:el.dataset.name,last4:el.dataset.last4||'',issuer:el.dataset.issuer||''}));
+            if (methods.length === 0) { msgBox.style.display='block'; msgBox.innerText='חובה להגדיר לפחות אמצעי תשלום אחד.'; return; }
+            formData.append('payment_methods', JSON.stringify(methods));
 
             let hasEmptyCustomNames = false;
 

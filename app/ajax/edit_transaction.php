@@ -2,6 +2,7 @@
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
 require_once ROOT_PATH . '/app/functions/budget_overrun_push.php';
+require_once ROOT_PATH . '/app/functions/payment_methods.php';
 
 header('Content-Type: application/json');
 
@@ -17,6 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $amount = isset($_POST['amount']) ? (float)$_POST['amount'] : 0;
     $category_id = isset($_POST['category_id']) ? (int)$_POST['category_id'] : 0;
     $description = mysqli_real_escape_string($conn, trim($_POST['description']));
+    $payment_method_update = '';
+    if (array_key_exists('payment_method_id', $_POST)) {
+        $payment_method_id = tazrim_resolve_payment_method_id((int)$home_id, $_POST['payment_method_id']);
+        $payment_method_update = ", payment_method_id = $payment_method_id";
+    }
 
     if ($amount <= 0 || empty($category_id) || empty($description)) {
         echo json_encode(['status' => 'error', 'message' => 'אנא ודא שהסכום גדול מ-0 ושבחרת קטגוריה ותיאור.']);
@@ -30,8 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    $update_query = "UPDATE transactions 
-                     SET amount = $amount, category = $category_id, description = '$description' 
+    $update_query = "UPDATE transactions
+                     SET amount = $amount, category = $category_id, description = '$description'$payment_method_update
                      WHERE id = $trans_id AND home_id = $home_id";
 
     if (mysqli_query($conn, $update_query)) {

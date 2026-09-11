@@ -42,6 +42,8 @@ if (!function_exists('ai_user_agent_dispatch')) {
      */
     function ai_user_agent_dispatch(mysqli $conn, int $homeId, int $userId, array $action): array
     {
+        if (!defined('ROOT_PATH')) require_once dirname(__DIR__, 4) . '/path.php';
+        require_once ROOT_PATH . '/app/functions/payment_methods.php';
         $kind = strtolower(trim((string) ($action['kind'] ?? $action['action'] ?? '')));
         if ($kind === '') {
             return ['ok' => false, 'message' => 'סוג פעולה חסר'];
@@ -148,11 +150,12 @@ if (!function_exists('ai_user_agent_dispatch')) {
                         throw new RuntimeException('bad_init_tx');
                     }
                     $currency = 'ILS';
-                    $txStmt = $conn->prepare('INSERT INTO transactions (home_id, user_id, type, amount, currency_code, category, description, transaction_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                    $paymentMethodId = tazrim_default_payment_method_id($homeId);
+                    $txStmt = $conn->prepare('INSERT INTO transactions (home_id, user_id, payment_method_id, type, amount, currency_code, category, description, transaction_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
                     if (!$txStmt) {
                         throw new RuntimeException('prepare_tx');
                     }
-                    $txStmt->bind_param('iisdsiss', $homeId, $userId, $type, $amount, $currency, $newCatId, $description, $transactionDate);
+                    $txStmt->bind_param('iiisdsiss', $homeId, $userId, $paymentMethodId, $type, $amount, $currency, $newCatId, $description, $transactionDate);
                     if (!$txStmt->execute()) {
                         $txStmt->close();
                         throw new RuntimeException('insert_tx');
@@ -209,11 +212,20 @@ if (!function_exists('ai_user_agent_dispatch')) {
                 return ['ok' => false, 'message' => 'קטגוריה לא תואמת לסוג הפעולה'];
             }
             $currency = 'ILS';
-            $stmt = $conn->prepare('INSERT INTO transactions (home_id, user_id, type, amount, currency_code, category, description, transaction_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            $paymentMethodId = null;
+            $paymentMethodName = trim((string)($action['payment_method'] ?? ''));
+            if ($paymentMethodName !== '') {
+                $pm = $conn->prepare('SELECT id FROM payment_methods WHERE home_id=? AND is_active=1 AND name=? LIMIT 1');
+                $pm->bind_param('is',$homeId,$paymentMethodName); $pm->execute(); $pmRow=$pm->get_result()->fetch_assoc(); $pm->close();
+                if (!$pmRow) return ['ok'=>false,'message'=>'אמצעי התשלום לא נמצא'];
+                $paymentMethodId=(int)$pmRow['id'];
+            }
+            $paymentMethodId = tazrim_resolve_payment_method_id($homeId, $paymentMethodId);
+            $stmt = $conn->prepare('INSERT INTO transactions (home_id, user_id, payment_method_id, type, amount, currency_code, category, description, transaction_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
             if (!$stmt) {
                 return ['ok' => false, 'message' => 'שגיאת מסד'];
             }
-            $stmt->bind_param('iisdsiss', $homeId, $userId, $type, $amount, $currency, $categoryId, $description, $transactionDate);
+            $stmt->bind_param('iiisdsiss', $homeId, $userId, $paymentMethodId, $type, $amount, $currency, $categoryId, $description, $transactionDate);
             $ok = $stmt->execute();
             $stmt->close();
             if (!$ok) {

@@ -204,6 +204,9 @@ $members_result = mysqli_query($conn, $members_query);
                         <div id="manage-home-recurring-panel">
                             <?php include ROOT_PATH . '/app/includes/partials/manage_home_recurring_panel.php'; ?>
                         </div>
+                        <div id="manage-home-payment-methods-panel">
+                            <?php include ROOT_PATH . '/app/includes/partials/manage_home_payment_methods_panel.php'; ?>
+                        </div>
                     </div>
 
                     <div class="card full-width-card">
@@ -387,6 +390,20 @@ $members_result = mysqli_query($conn, $members_query);
             </div>
         </div>
     </div>
+
+<script>
+let paymentMethods=[];
+const pmLabels={bank_transfer:'בנק / העברה',credit_card:'כרטיס אשראי',cash:'מזומן',check:"צ'ק",bank_debit:'הוראת קבע'};
+function loadPaymentMethods(){fetch('../../app/ajax/payment_methods.php').then(r=>r.json()).then(x=>{if(x.status!=='success')throw Error(x.message);paymentMethods=x.data;renderPaymentMethods();}).catch(e=>console.error(e));}
+function renderPaymentMethods(){const el=document.getElementById('payment-methods-list');if(!el)return;el.innerHTML=paymentMethods.map(pm=>`<div class="payment-method-card ${pm.is_active==1?'':'inactive'}"><div class="pm-main"><div class="pm-icon"><i class="fa-solid ${pm.type==='credit_card'?'fa-credit-card':'fa-building-columns'}"></i></div><div><strong>${escapeHtml(pm.name)}</strong> ${pm.is_default==1?'<span class="pm-badge">ברירת מחדל</span>':''}<div class="hint-text">${pmLabels[pm.type]||pm.type}${pm.last4?' · •••• '+pm.last4:''}${pm.is_active==1?'':' · לא פעיל'}</div></div></div><div class="pm-actions">${pm.is_active==1&&pm.is_default!=1?`<button type="button" onclick="paymentMethodAction('set_default',${pm.id})">הגדר כברירת מחדל</button>`:''}<button type="button" onclick="openPaymentMethodEditor(${pm.id})">עריכה</button>${pm.is_active==1?`<button type="button" onclick="paymentMethodAction('deactivate',${pm.id})">הסרה</button>`:''}</div></div>`).join('');}
+function escapeHtml(v){const d=document.createElement('div');d.textContent=v||'';return d.innerHTML;}
+function openPaymentMethodEditor(id){const pm=paymentMethods.find(x=>Number(x.id)===Number(id));document.getElementById('pm-id').value=pm?pm.id:'';document.getElementById('pm-type').value=pm?pm.type:'bank_transfer';document.getElementById('pm-name').value=pm?pm.name:'';document.getElementById('pm-issuer').value=pm?.issuer||'';document.getElementById('pm-last4').value=pm?.last4||'';document.getElementById('pm-modal-title').textContent=pm?'עריכת אמצעי תשלום':'אמצעי תשלום חדש';toggleCardFields();document.getElementById('payment-method-modal').style.display='block';}
+function closePaymentMethodEditor(){document.getElementById('payment-method-modal').style.display='none';}
+function toggleCardFields(){document.getElementById('pm-card-fields').style.display=document.getElementById('pm-type').value==='credit_card'?'grid':'none';}
+function paymentMethodAction(action,id){const f=new FormData();f.append('action',action);f.append('id',id);fetch('../../app/ajax/payment_methods.php',{method:'POST',body:f}).then(r=>r.json()).then(x=>{if(x.status!=='success')throw Error(x.message);paymentMethods=x.data;renderPaymentMethods();}).catch(e=>alert(e.message));}
+document.getElementById('payment-method-form')?.addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.currentTarget);f.append('action','save');fetch('../../app/ajax/payment_methods.php',{method:'POST',body:f}).then(r=>r.json()).then(x=>{if(x.status!=='success')throw Error(x.message);paymentMethods=x.data;renderPaymentMethods();closePaymentMethodEditor();}).catch(e=>document.getElementById('pm-msg').textContent=e.message);});
+document.addEventListener('DOMContentLoaded',loadPaymentMethods);
+</script>
 
 </body>
  <script>

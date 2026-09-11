@@ -1,6 +1,7 @@
 <?php
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
+require_once ROOT_PATH . '/app/functions/payment_methods.php';
 
 header('Content-Type: application/json');
 
@@ -36,7 +37,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         tazrim_apply_user_bank_balance_target($conn, (int) $home_id, $bank_val, date('Y-m-d'));
     }
 
-    // 2. עיבוד והזרקת קטגוריות
+    // 2. אמצעי תשלום. גם אם הלקוח לא שלח נתונים, הבית מתחיל עם "בנק".
+    $methods = json_decode((string)($_POST['payment_methods'] ?? '[]'), true);
+    if (!is_array($methods) || count($methods) === 0) {
+        $methods = [['type' => 'bank_transfer', 'name' => 'בנק', 'last4' => '', 'issuer' => '']];
+    }
+    $allowed_method_types = ['cash','credit_card','check','bank_transfer','bank_debit'];
+    $methods_added = 0;
+    $existing_default = tazrim_payment_methods((int)$home_id, true);
+    foreach ($methods as $i => $method) {
+        $method_type = (string)($method['type'] ?? '');
+        $method_name = trim((string)($method['name'] ?? ''));
+        $method_last4 = trim((string)($method['last4'] ?? ''));
+        $method_issuer = trim((string)($method['issuer'] ?? ''));
+        if (!in_array($method_type, $allowed_method_types, true) || $method_name === '') continue;
+        if ($method_type === 'credit_card' && !preg_match('/^\d{4}$/', $method_last4)) continue;
+        if ($method_type !== 'credit_card') { $method_last4 = ''; $method_issuer = ''; }
+        $is_default = $methods_added === 0 ? 1 : 0;
+        if ($is_default && !empty($existing_default)) {
+            $default_id = (int)$existing_default[0]['id'];
+            $stmt = $conn->prepare("UPDATE payment_methods SET type=?,name=?,last4=NULLIF(?,''),issuer=NULLIF(?,'') WHERE id=? AND home_id=?");
+            $stmt->bind_param('ssssii', $method_type, $method_name, $method_last4, $method_issuer, $default_id, $home_id);
+        } else {
+            $stmt = $conn->prepare("INSERT INTO payment_methods(home_id,type,name,last4,issuer,is_default,is_active) VALUES(?,?,?,NULLIF(?,''),NULLIF(?,''),?,1)");
+            $stmt->bind_param('issssi', $home_id, $method_type, $method_name, $method_last4, $method_issuer, $is_default);
+        }
+        if ($stmt->execute()) $methods_added++;
+        $stmt->close();
+    }
+    if ($methods_added === 0) {
+        echo json_encode(['status'=>'error','message'=>'חובה להגדיר לפחות אמצעי תשלום אחד.']); exit();
+    }
+
+    // 3. עיבוד והזרקת קטגוריות
     $cats_added_count = 0;
     
     if (isset($_POST['cats']) && is_array($_POST['cats'])) {

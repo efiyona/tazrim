@@ -18,6 +18,7 @@ try {
     require('../../../../path.php');
     include(ROOT_PATH . '/app/database/db.php');
     require_once ROOT_PATH . '/app/functions/currency.php';
+    require_once ROOT_PATH . '/app/functions/payment_methods.php';
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
     $token = isset($_GET['token']) ? trim($_GET['token']) : '';
@@ -49,6 +50,8 @@ try {
     }
 
     $recurring_id = !empty($body['recurring_id']) ? (int) $body['recurring_id'] : 0;
+    $payment_method_supplied = array_key_exists('payment_method_id', $body);
+    $payment_method_id = $payment_method_supplied ? tazrim_resolve_payment_method_id($home_id, $body['payment_method_id']) : null;
     $type = (($body['rec_type'] ?? 'expense') === 'income') ? 'income' : 'expense';
     $category_id = isset($body['rec_category']) ? (int) $body['rec_category'] : 0;
     $amount = isset($body['rec_amount']) ? (float) $body['rec_amount'] : 0;
@@ -109,7 +112,8 @@ try {
         }
 
         $currency_code_esc = mysqli_real_escape_string($conn, $currency_code);
-        $q = "UPDATE recurring_transactions SET type='$type', amount=$amount, currency_code='$currency_code_esc', category=$category_id, description='$description', day_of_month=$day_of_month WHERE id=$recurring_id AND home_id=$home_id";
+        $pm_update = $payment_method_supplied ? ", payment_method_id=$payment_method_id" : '';
+        $q = "UPDATE recurring_transactions SET type='$type', amount=$amount, currency_code='$currency_code_esc', category=$category_id, description='$description', day_of_month=$day_of_month$pm_update WHERE id=$recurring_id AND home_id=$home_id";
         if (mysqli_query($conn, $q)) {
             echo json_encode(['status' => 'success']);
         } else {
@@ -117,8 +121,9 @@ try {
         }
     } else {
         $currency_code_esc = mysqli_real_escape_string($conn, $currency_code);
-        $q = "INSERT INTO recurring_transactions (home_id, user_id, type, amount, currency_code, category, description, day_of_month, interval_months, last_injected_month, is_active) 
-              VALUES ($home_id, $user_id, '$type', $amount, '$currency_code_esc', $category_id, '$description', $day_of_month, $interval_months, NULL, 1)";
+        if (!$payment_method_id) $payment_method_id = tazrim_default_payment_method_id((int)$home_id);
+        $q = "INSERT INTO recurring_transactions (home_id, user_id, payment_method_id, type, amount, currency_code, category, description, day_of_month, interval_months, last_injected_month, is_active)
+              VALUES ($home_id, $user_id, $payment_method_id, '$type', $amount, '$currency_code_esc', $category_id, '$description', $day_of_month, $interval_months, NULL, 1)";
         if (mysqli_query($conn, $q)) {
             echo json_encode(['status' => 'success']);
         } else {

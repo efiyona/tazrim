@@ -54,10 +54,11 @@ if (is_array($category_ids_input)) {
 }
 $category_ids = array_values(array_unique($category_ids));
 
-$sql = "SELECT t.transaction_date, t.type, t.description, t.amount, c.name AS category_name, u.first_name AS user_name
+$sql = "SELECT t.transaction_date, t.type, t.description, t.amount, c.name AS category_name, u.first_name AS user_name, COALESCE(pm.name, 'לא צוין') AS payment_method_name
         FROM transactions t
         LEFT JOIN categories c ON c.id = t.category
         LEFT JOIN users u ON u.id = t.user_id
+        LEFT JOIN payment_methods pm ON pm.id = t.payment_method_id
         WHERE t.home_id = ? AND t.transaction_date BETWEEN ? AND ?";
 
 $bind_types = 'iss';
@@ -135,6 +136,7 @@ if ($include_category) {
 }
 $headers[] = 'תיאור';
 $headers[] = 'סכום';
+$headers[] = 'אמצעי תשלום';
 if ($include_user) {
     $headers[] = 'משתמש';
 }
@@ -183,6 +185,7 @@ foreach ($transactions as $transaction) {
 
     $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row_index, (string)($transaction['description'] ?? ''));
     $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row_index, $amount);
+    $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row_index, (string)($transaction['payment_method_name'] ?? 'לא צוין'));
 
     if ($include_user) {
         $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row_index, (string)($transaction['user_name'] ?? ''));
