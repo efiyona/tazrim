@@ -1,0 +1,3297 @@
+[
+  {
+    "path": "/application/api/v1/auth/login.php",
+    "title": "Log in",
+    "group": "Authentication",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Public credentials exchange",
+    "params": [
+      "email",
+      "password"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "user_id"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "user_id": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/categories/details.php",
+    "title": "Get details",
+    "group": "Categories",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "cat_id",
+      "m",
+      "y"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "transactions"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "transactions": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/categories/list.php",
+    "title": "List",
+    "group": "Categories",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "type"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "categories"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "categories": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/dashboard/init.php",
+    "title": "Initialize",
+    "group": "Dashboard",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "m",
+      "y"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "month_info",
+      "name",
+      "number",
+      "year",
+      "prev_month",
+      "prev_year",
+      "next_month"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "month_info": "string",
+      "name": "string",
+      "number": "string",
+      "year": "string",
+      "prev_month": "string",
+      "prev_year": "string",
+      "next_month": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/dashboard/transactions.php",
+    "title": "Transactions",
+    "group": "Dashboard",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "limit",
+      "m",
+      "offset",
+      "status",
+      "y"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "transactions",
+      "has_more",
+      "next_offset"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "transactions": "string",
+      "has_more": "string",
+      "next_offset": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/info/messages.php",
+    "title": "Messages",
+    "group": "Information",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "keys"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "messages"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "messages": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/manage_home/delete_category.php",
+    "title": "Delete Category",
+    "group": "Home management",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/manage_home/delete_recurring.php",
+    "title": "Delete Recurring",
+    "group": "Home management",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/manage_home/delete_shopping_store.php",
+    "title": "Delete Shopping Store",
+    "group": "Home management",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/manage_home/init.php",
+    "title": "Initialize",
+    "group": "Home management",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "home",
+      "name"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "home": "string",
+      "name": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/manage_home/save_category.php",
+    "title": "Create or update Category",
+    "group": "Home management",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "cat_budget",
+      "cat_icon",
+      "cat_name",
+      "cat_type",
+      "category_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/manage_home/save_recurring.php",
+    "title": "Create or update Recurring",
+    "group": "Home management",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "currency_code",
+      "interval_months",
+      "payment_method_id",
+      "rec_amount",
+      "rec_category",
+      "rec_description",
+      "rec_type",
+      "recurring_id",
+      "transaction_date"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/manage_home/save_shopping_store.php",
+    "title": "Create or update Shopping Store",
+    "group": "Home management",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "store_icon",
+      "store_id",
+      "store_name"
+    ],
+    "response": [
+      "status",
+      "message",
+      "new_store_id"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "new_store_id": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/manage_home/update_home.php",
+    "title": "Update Home",
+    "group": "Home management",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "home_name",
+      "initial_balance",
+      "show_bank_balance"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/notifications/list.php",
+    "title": "List",
+    "group": "Notifications",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "notifications",
+      "unread_count"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "notifications": "string",
+      "unread_count": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/notifications/mark_read.php",
+    "title": "Mark Read",
+    "group": "Notifications",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [],
+    "response": [
+      "status",
+      "message",
+      "data"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/reports/summary.php",
+    "title": "Summary",
+    "group": "Reports",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "m",
+      "y"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "month_info",
+      "name",
+      "number",
+      "year",
+      "prev_month",
+      "prev_year",
+      "next_month"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "month_info": "string",
+      "name": "string",
+      "number": "string",
+      "year": "string",
+      "prev_month": "string",
+      "prev_year": "string",
+      "next_month": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/shopping/_auth.php",
+    "title": "Auth",
+    "group": "Shopping",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/shopping/ai_sort.php",
+    "title": "Ai Sort",
+    "group": "Shopping",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "candidates",
+      "category_id",
+      "error",
+      "items"
+    ],
+    "response": [
+      "status",
+      "code",
+      "message",
+      "debug_raw"
+    ],
+    "sample": {
+      "status": "success",
+      "code": "string",
+      "message": "string",
+      "debug_raw": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/shopping/clear_all.php",
+    "title": "Clear All",
+    "group": "Shopping",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/shopping/clear_category.php",
+    "title": "Clear Category",
+    "group": "Shopping",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "category_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/shopping/delete_item.php",
+    "title": "Delete Item",
+    "group": "Shopping",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "item_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/shopping/lists.php",
+    "title": "Lists",
+    "group": "Shopping",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [],
+    "response": [
+      "status",
+      "categories",
+      "active_categories",
+      "empty_categories",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "categories": "string",
+      "active_categories": "string",
+      "empty_categories": "string",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/shopping/save_item.php",
+    "title": "Create or update Item",
+    "group": "Shopping",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "category_id",
+      "item_id",
+      "item_name",
+      "quantity"
+    ],
+    "response": [
+      "status",
+      "message",
+      "new_id"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "new_id": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/shopping/setup.php",
+    "title": "Set up",
+    "group": "Shopping",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "categories"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/transactions/create.php",
+    "title": "Create",
+    "group": "Transactions",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "amount",
+      "category_id",
+      "currency_code",
+      "description",
+      "interval_months",
+      "is_recurring",
+      "payment_method_id",
+      "transaction_date",
+      "type"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/transactions/delete.php",
+    "title": "Delete",
+    "group": "Transactions",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "transaction_id"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/transactions/update.php",
+    "title": "Update",
+    "group": "Transactions",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "amount",
+      "category_id",
+      "description",
+      "payment_method_id",
+      "transaction_id"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/user/delete_account.php",
+    "title": "Delete Account",
+    "group": "User",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/user/expo_push_register.php",
+    "title": "Expo Push Register",
+    "group": "User",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "expo_push_token",
+      "platform"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/user/expo_push_unregister.php",
+    "title": "Expo Push Unregister",
+    "group": "User",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "expo_push_token"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/user/feedback_submit.php",
+    "title": "Feedback Submit",
+    "group": "User",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "kind",
+      "message",
+      "screen",
+      "title"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "report_id"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "report_id": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/user/ios_shortcuts_data.php",
+    "title": "Ios Shortcuts Data",
+    "group": "User",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "has_token",
+      "token",
+      "shortcuts"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "has_token": "string",
+      "token": "string",
+      "shortcuts": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/user/ios_shortcuts_token_create.php",
+    "title": "Ios Shortcuts Token Create",
+    "group": "User",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "token"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "token": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/user/ios_shortcuts_token_delete.php",
+    "title": "Ios Shortcuts Token Delete",
+    "group": "User",
+    "methods": [
+      "GET"
+    ],
+    "auth": "API token in token parameter",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/user/notify_pref.php",
+    "title": "Notify Pref",
+    "group": "User",
+    "methods": [
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "pref",
+      "value"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/application/api/v1/user/profile.php",
+    "title": "Profile",
+    "group": "User",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "auth": "API token in token parameter",
+    "params": [
+      "first_name",
+      "last_name",
+      "nickname",
+      "phone"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "email"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "email": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/app/api/add_shift.php",
+    "title": "Create Shift",
+    "group": "Shortcuts API",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Shortcut token in api_token",
+    "params": [
+      "date",
+      "end_time",
+      "job_id",
+      "note",
+      "shift_type_id",
+      "start_time"
+    ],
+    "response": [
+      "status",
+      "message",
+      "shift_id",
+      "starts_at",
+      "ends_at"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "shift_id": "string",
+      "starts_at": "string",
+      "ends_at": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/app/api/delete_shift.php",
+    "title": "Delete Shift",
+    "group": "Shortcuts API",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Shortcut token in api_token",
+    "params": [
+      "id"
+    ],
+    "response": [
+      "status",
+      "message",
+      "id"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "id": 1
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/app/api/get_categories.php",
+    "title": "Get Categories",
+    "group": "Shortcuts API",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Shortcut token in api_token",
+    "params": [
+      "type"
+    ],
+    "response": [
+      "status",
+      "message",
+      "categories"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "categories": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/app/api/get_shifts.php",
+    "title": "Get Shifts",
+    "group": "Shortcuts API",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Shortcut token in api_token",
+    "params": [
+      "month",
+      "year"
+    ],
+    "response": [
+      "status",
+      "message",
+      "year",
+      "month",
+      "jobs",
+      "shifts"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "year": "string",
+      "month": "string",
+      "jobs": "string",
+      "shifts": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/app/api/save_transaction.php",
+    "title": "Create or update Transaction",
+    "group": "Shortcuts API",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Shortcut token in api_token",
+    "params": [
+      "amount",
+      "category_id",
+      "currency_code",
+      "description",
+      "payment_method_id",
+      "type"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/app/api/save_transaction_dated.php",
+    "title": "Create or update Transaction Dated",
+    "group": "Shortcuts API",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Shortcut token in api_token",
+    "params": [
+      "amount",
+      "category_id",
+      "currency_code",
+      "description",
+      "payment_method_id",
+      "transaction_date",
+      "type"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/app/api/shopping/add_shopping_item.php",
+    "title": "Create Shopping Item",
+    "group": "Shortcuts API",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Shortcut token in api_token",
+    "params": [
+      "category_id",
+      "item_name",
+      "quantity"
+    ],
+    "response": [
+      "status",
+      "message",
+      "new_id"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "new_id": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/app/api/shopping/get_stores.php",
+    "title": "Get Stores",
+    "group": "Shortcuts API",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Shortcut token in api_token",
+    "params": [],
+    "response": [
+      "status",
+      "message",
+      "categories"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "categories": "string"
+    },
+    "stability": "Supported"
+  },
+  {
+    "path": "/app/ajax/add_recipe_items_to_shopping.php",
+    "title": "Create Recipe Items To Shopping",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "category_id",
+      "items"
+    ],
+    "response": [
+      "status",
+      "message",
+      "inserted_count"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "inserted_count": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/add_transaction.php",
+    "title": "Create Transaction",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "amount",
+      "category_id",
+      "currency_code",
+      "description",
+      "interval_months",
+      "is_recurring",
+      "payment_method_id",
+      "transaction_date",
+      "type"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/ai_sort_category.php",
+    "title": "Ai Sort Category",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "candidates",
+      "category_id",
+      "error",
+      "items"
+    ],
+    "response": [
+      "status",
+      "message",
+      "code",
+      "debug_raw"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "code": "string",
+      "debug_raw": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/clear_shopping_category.php",
+    "title": "Clear Shopping Category",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "category_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/clear_shopping_list.php",
+    "title": "Clear Shopping List",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status"
+    ],
+    "sample": {
+      "status": "success"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/delete_account.php",
+    "title": "Delete Account",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/delete_api_token.php",
+    "title": "Delete Api Token",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/delete_category.php",
+    "title": "Delete Category",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/delete_recurring.php",
+    "title": "Delete Recurring",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/delete_shopping_item.php",
+    "title": "Delete Shopping Item",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "item_id"
+    ],
+    "response": [
+      "status"
+    ],
+    "sample": {
+      "status": "success"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/delete_shopping_store.php",
+    "title": "Delete Shopping Store",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/delete_subscription.php",
+    "title": "Delete Subscription",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "endpoint"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/delete_transaction.php",
+    "title": "Delete Transaction",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/edit_transaction.php",
+    "title": "Edit Transaction",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "amount",
+      "category_id",
+      "description",
+      "payment_method_id",
+      "transaction_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/email_verification.php",
+    "title": "Email Verification",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "action",
+      "code"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/export_transactions_excel.php",
+    "title": "Export Transactions Excel",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "category_ids",
+      "end_date",
+      "max_amount",
+      "min_amount",
+      "month",
+      "payment_method_id",
+      "payment_type",
+      "scope",
+      "search_text",
+      "start_date",
+      "user_id"
+    ],
+    "response": [
+      "binary .xlsx file"
+    ],
+    "sample": {},
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/extract_recipe_items.php",
+    "title": "Extract Recipe Items",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "candidates"
+    ],
+    "response": [
+      "status",
+      "message",
+      "code",
+      "source_mode",
+      "items",
+      "warnings",
+      "images_count"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "code": "string",
+      "source_mode": "string",
+      "items": "string",
+      "warnings": "string",
+      "images_count": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/extract_work_schedule_images.php",
+    "title": "Extract Work Schedule Images",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "candidates",
+      "job_id",
+      "month",
+      "year"
+    ],
+    "response": [
+      "status",
+      "message",
+      "code",
+      "upload_report",
+      "source_mode",
+      "warnings"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "code": "string",
+      "upload_report": "string",
+      "source_mode": "string",
+      "warnings": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/fetch_category_details.php",
+    "title": "Fetch Category Get details",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "cat_id",
+      "m",
+      "mode",
+      "trans_type",
+      "ui_context",
+      "y"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/fetch_manage_home_categories.php",
+    "title": "Fetch Manage Home Categories",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "ok",
+      "error",
+      "html"
+    ],
+    "sample": {
+      "ok": "string",
+      "error": "string",
+      "html": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/fetch_manage_home_recurring.php",
+    "title": "Fetch Manage Home Recurring",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "ok",
+      "error",
+      "html"
+    ],
+    "sample": {
+      "ok": "string",
+      "error": "string",
+      "html": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/fetch_manage_home_shopping_stores.php",
+    "title": "Fetch Manage Home Shopping Stores",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "ok",
+      "error",
+      "html"
+    ],
+    "sample": {
+      "ok": "string",
+      "error": "string",
+      "html": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/fetch_notifications.php",
+    "title": "Fetch Notifications",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "notifications",
+      "unread_count"
+    ],
+    "sample": {
+      "status": "success",
+      "notifications": "string",
+      "unread_count": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/fetch_reports_data.php",
+    "title": "Fetch Reports Data",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "m",
+      "y"
+    ],
+    "response": [
+      "ok",
+      "message",
+      "data",
+      "header",
+      "currentLabel"
+    ],
+    "sample": {
+      "ok": "string",
+      "message": "string",
+      "data": "string",
+      "header": "string",
+      "currentLabel": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/fetch_shopping_lists.php",
+    "title": "Fetch Shopping Lists",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "message",
+      "active_categories",
+      "empty_categories"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "active_categories": "string",
+      "empty_categories": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/fetch_transactions.php",
+    "title": "Fetch Transactions",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "m",
+      "offset",
+      "status",
+      "y"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/fetch_user_profile_work_panel.php",
+    "title": "Fetch User Profile Work Panel",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "ok",
+      "message",
+      "html"
+    ],
+    "sample": {
+      "ok": "string",
+      "message": "string",
+      "html": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/forgot_password_handler.php",
+    "title": "Forgot Password Handler",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "action",
+      "code",
+      "confirm_password",
+      "email",
+      "password"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/generate_api_token.php",
+    "title": "Generate Api Token",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "message",
+      "token"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "token": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/get_ios_tazrim_panel.php",
+    "title": "Get Ios Tazrim Panel",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "message",
+      "html"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "html": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/home_dashboard_core.php",
+    "title": "Home Dashboard Core",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "m",
+      "y"
+    ],
+    "response": [
+      "ok",
+      "error",
+      "html"
+    ],
+    "sample": {
+      "ok": "string",
+      "error": "string",
+      "html": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/mark_notifications_read.php",
+    "title": "Mark Notifications Read",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status"
+    ],
+    "sample": {
+      "status": "success"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/payment_methods.php",
+    "title": "Payment Methods",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "action",
+      "delete_mode",
+      "id",
+      "issuer",
+      "last4",
+      "name",
+      "type"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/popup_campaign_ack.php",
+    "title": "Popup Campaign Ack",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "campaign_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/popup_campaign_action.php",
+    "title": "Popup Campaign Action",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "action",
+      "campaign_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/popup_campaigns_pending.php",
+    "title": "Popup Campaigns Pending",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "message",
+      "campaigns"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "campaigns": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/process_tos.php",
+    "title": "Process Tos",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/profile_password_reset.php",
+    "title": "Profile Password Reset",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "action",
+      "code",
+      "confirm_password",
+      "password"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/reset_home_balance.php",
+    "title": "Reset Home Balance",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/save_category.php",
+    "title": "Create or update Category",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "cat_budget",
+      "cat_icon",
+      "cat_name",
+      "cat_type",
+      "category_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/save_notification_preferences.php",
+    "title": "Create or update Notification Preferences",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "pref",
+      "value"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/save_recurring.php",
+    "title": "Create or update Recurring",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "currency_code",
+      "interval_months",
+      "payment_method_id",
+      "rec_amount",
+      "rec_category",
+      "rec_description",
+      "rec_type",
+      "recurring_id",
+      "transaction_date"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/save_shopping_item.php",
+    "title": "Create or update Shopping Item",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "category_id",
+      "item_id",
+      "item_name",
+      "quantity"
+    ],
+    "response": [
+      "status",
+      "message",
+      "new_id"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "new_id": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/save_shopping_store.php",
+    "title": "Create or update Shopping Store",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "store_icon",
+      "store_id",
+      "store_name"
+    ],
+    "response": [
+      "status",
+      "message",
+      "new_store_id"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "new_store_id": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/save_subscription.php",
+    "title": "Create or update Subscription",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "endpoint",
+      "keys"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/setup_shopping_categories.php",
+    "title": "Set up Shopping Categories",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "categories",
+      "icon",
+      "name"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/setup_welcome.php",
+    "title": "Set up Welcome",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "budgets",
+      "cats",
+      "home_name",
+      "initial_balance",
+      "payment_methods",
+      "show_bank_balance"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/submit_feedback.php",
+    "title": "Submit Feedback",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "kind",
+      "message",
+      "screen",
+      "title"
+    ],
+    "response": [
+      "status",
+      "message",
+      "data",
+      "report_id"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "data": "string",
+      "report_id": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/update_home.php",
+    "title": "Update Home",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "bank_balance_display",
+      "home_name",
+      "show_bank_balance"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/update_profile.php",
+    "title": "Update Profile",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "email",
+      "first_name",
+      "last_name",
+      "nickname",
+      "phone"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/user_gemini_key_delete.php",
+    "title": "User Gemini Key Delete",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "csrf_token",
+      "key_id"
+    ],
+    "response": [
+      "status",
+      "code",
+      "configured"
+    ],
+    "sample": {
+      "status": "success",
+      "code": "string",
+      "configured": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/user_gemini_key_save.php",
+    "title": "User Gemini Key Create or update",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "api_key",
+      "csrf_token"
+    ],
+    "response": [
+      "status",
+      "code",
+      "mask"
+    ],
+    "sample": {
+      "status": "success",
+      "code": "string",
+      "mask": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/user_gemini_key_status.php",
+    "title": "User Gemini Key Status",
+    "group": "Web app internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "code",
+      "configured"
+    ],
+    "sample": {
+      "status": "success",
+      "code": "string",
+      "configured": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/ajax/work_schedule.php",
+    "title": "Work Schedule",
+    "group": "Web app internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "action",
+      "color",
+      "default_end_time",
+      "default_start_time",
+      "ends_at",
+      "icon_class",
+      "icon_preset",
+      "id",
+      "job_id",
+      "month",
+      "name",
+      "note",
+      "payday_day_of_month",
+      "shift_type_id",
+      "shifts",
+      "sort_order",
+      "starts_at",
+      "title",
+      "types",
+      "year"
+    ],
+    "response": [
+      "ok",
+      "message"
+    ],
+    "sample": {
+      "ok": "string",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/crud/delete.php",
+    "title": "Delete",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/crud/delete_bulk.php",
+    "title": "Delete Bulk",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/crud/form.php",
+    "title": "Form",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "id",
+      "t"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/crud/list.php",
+    "title": "List",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/crud/save.php",
+    "title": "Create or update",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/delete.php",
+    "title": "Delete",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/delete_bulk.php",
+    "title": "Delete Bulk",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/homes_list.php",
+    "title": "Homes List",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "limit",
+      "q"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/list.php",
+    "title": "List",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "page",
+      "q",
+      "t"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/lookup.php",
+    "title": "Lookup",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "field",
+      "limit",
+      "q",
+      "t"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/mass_email_ai_generate.php",
+    "title": "Mass Email Ai Generate",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "answers",
+      "candidates",
+      "csrf_token",
+      "error",
+      "instructions",
+      "original_instructions",
+      "phase",
+      "prev_questions"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/mass_email_list.php",
+    "title": "Mass Email List",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "broadcast_id",
+      "page",
+      "per_page"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/mass_email_send.php",
+    "title": "Mass Email Send",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "csrf_token",
+      "html_body",
+      "ids",
+      "subject",
+      "target_type",
+      "text_body"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/popup_campaign_ai_generate.php",
+    "title": "Popup Campaign Ai Generate",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "answers",
+      "candidates",
+      "csrf_token",
+      "cta_href",
+      "error",
+      "instructions",
+      "original_instructions",
+      "phase",
+      "prev_questions"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/popup_campaign_delete.php",
+    "title": "Popup Campaign Delete",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "csrf_token",
+      "id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/popup_campaign_duplicate.php",
+    "title": "Popup Campaign Duplicate",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "csrf_token",
+      "id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/popup_campaign_reads.php",
+    "title": "Popup Campaign Reads",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "campaign_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/popup_campaign_save.php",
+    "title": "Popup Campaign Create or update",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "ack_policy",
+      "body_html",
+      "csrf_token",
+      "ends_at",
+      "form_schema",
+      "home_ids",
+      "id",
+      "is_active",
+      "sort_order",
+      "starts_at",
+      "status",
+      "target_scope",
+      "title",
+      "user_ids"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/push_broadcast.php",
+    "title": "Push Broadcast",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "csrf_token"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/push_broadcast_ai_generate.php",
+    "title": "Push Broadcast Ai Generate",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "answers",
+      "candidates",
+      "csrf_token",
+      "error",
+      "instructions",
+      "original_instructions",
+      "phase",
+      "prev_questions"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/save.php",
+    "title": "Create or update",
+    "group": "Admin internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/ajax/users_list.php",
+    "title": "Users List",
+    "group": "Admin internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "limit",
+      "q"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/features/ai_chat/api/agent_execute.php",
+    "title": "Agent Execute",
+    "group": "AI chat internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "accept",
+      "chat_id",
+      "proposal_id",
+      "proposed_at",
+      "signature"
+    ],
+    "response": [
+      "status",
+      "message",
+      "outcome"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "outcome": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/features/ai_chat/api/delete_all_chats.php",
+    "title": "Delete All Chats",
+    "group": "AI chat internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "deleted_chats",
+      "deleted_messages",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "deleted_chats": "string",
+      "deleted_messages": "string",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/features/ai_chat/api/delete_chat.php",
+    "title": "Delete Chat",
+    "group": "AI chat internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "chat_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/features/ai_chat/api/get_chat.php",
+    "title": "Get Chat",
+    "group": "AI chat internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "chat_id"
+    ],
+    "response": [
+      "status",
+      "message",
+      "chat",
+      "messages"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "chat": "string",
+      "messages": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/features/ai_chat/api/list_chats.php",
+    "title": "List Chats",
+    "group": "AI chat internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "items"
+    ],
+    "sample": {
+      "status": "success",
+      "items": []
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/features/ai_chat/api/new_chat.php",
+    "title": "New Chat",
+    "group": "AI chat internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [],
+    "response": [
+      "status",
+      "chat"
+    ],
+    "sample": {
+      "status": "success",
+      "chat": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/app/features/ai_chat/api/stream_message.php",
+    "title": "Stream Message",
+    "group": "AI chat internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Logged-in user session",
+    "params": [
+      "candidates",
+      "category_display_name",
+      "category_id",
+      "chat_id",
+      "current_view",
+      "job_display_name",
+      "job_id",
+      "kind",
+      "message",
+      "needs_deep",
+      "needs_full_transactions",
+      "page_context",
+      "proposal_id",
+      "proposed_at",
+      "shift_id",
+      "shift_window_label",
+      "signature"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/features/ai_chat/api/agent_data.php",
+    "title": "Agent Data",
+    "group": "Admin AI internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/features/ai_chat/api/agent_execute.php",
+    "title": "Agent Execute",
+    "group": "Admin AI internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "action",
+      "api_token",
+      "chat_id",
+      "data",
+      "id",
+      "path",
+      "proposed_at",
+      "sql",
+      "status",
+      "table"
+    ],
+    "response": [
+      "status",
+      "message",
+      "detail"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "detail": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/features/ai_chat/api/delete_all_chats.php",
+    "title": "Delete All Chats",
+    "group": "Admin AI internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [],
+    "response": [
+      "status",
+      "deleted_chats",
+      "deleted_messages",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "deleted_chats": "string",
+      "deleted_messages": "string",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/features/ai_chat/api/delete_chat.php",
+    "title": "Delete Chat",
+    "group": "Admin AI internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "chat_id"
+    ],
+    "response": [
+      "status",
+      "message"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/features/ai_chat/api/get_chat.php",
+    "title": "Get Chat",
+    "group": "Admin AI internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "chat_id"
+    ],
+    "response": [
+      "status",
+      "message",
+      "chat",
+      "messages"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "chat": "string",
+      "messages": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/features/ai_chat/api/list_chats.php",
+    "title": "List Chats",
+    "group": "Admin AI internals",
+    "methods": [
+      "GET"
+    ],
+    "auth": "Program-admin session",
+    "params": [],
+    "response": [
+      "status",
+      "items"
+    ],
+    "sample": {
+      "status": "success",
+      "items": []
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/features/ai_chat/api/new_chat.php",
+    "title": "New Chat",
+    "group": "Admin AI internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "scope"
+    ],
+    "response": [
+      "status",
+      "chat"
+    ],
+    "sample": {
+      "status": "success",
+      "chat": "string"
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/features/ai_chat/api/stream_message.php",
+    "title": "Stream Message",
+    "group": "Admin AI internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "acceptable",
+      "analysis",
+      "approved",
+      "candidates",
+      "chat_id",
+      "complexity_tier",
+      "confidence",
+      "message",
+      "needs_deep",
+      "page_context",
+      "promptFeedback",
+      "reason_code",
+      "retry_instruction_he",
+      "suggestion",
+      "user_hint",
+      "warnings"
+    ],
+    "response": [
+      "message",
+      "detail",
+      "code",
+      "chat_id"
+    ],
+    "sample": {
+      "message": "string",
+      "detail": "string",
+      "code": "string",
+      "chat_id": 1
+    },
+    "stability": "Internal"
+  },
+  {
+    "path": "/admin/features/ai_chat/api/verify_sequence.php",
+    "title": "Verify Sequence",
+    "group": "Admin AI internals",
+    "methods": [
+      "POST"
+    ],
+    "auth": "Program-admin session",
+    "params": [
+      "api_token",
+      "verification"
+    ],
+    "response": [
+      "status",
+      "message",
+      "detail",
+      "ok",
+      "checks"
+    ],
+    "sample": {
+      "status": "success",
+      "message": "string",
+      "detail": "string",
+      "ok": true,
+      "checks": []
+    },
+    "stability": "Internal"
+  }
+]
