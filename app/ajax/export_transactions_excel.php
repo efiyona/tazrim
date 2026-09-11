@@ -24,6 +24,9 @@ $min_amount = isset($_GET['min_amount']) && $_GET['min_amount'] !== '' ? (float)
 $max_amount = isset($_GET['max_amount']) && $_GET['max_amount'] !== '' ? (float)$_GET['max_amount'] : null;
 $search_text = trim($_GET['search_text'] ?? '');
 $category_ids_input = $_GET['category_ids'] ?? [];
+$payment_method_id = isset($_GET['payment_method_id']) && $_GET['payment_method_id'] !== '' ? (int) $_GET['payment_method_id'] : null;
+$payment_type = trim((string)($_GET['payment_type'] ?? ''));
+$month = preg_match('/^\d{4}-\d{2}$/', $_GET['month'] ?? '') ? $_GET['month'] : '';
 
 // לפי אפיון הממשק: תמיד כוללים את עמודות המשתמש/קטגוריה ושורת הסיכום.
 $include_summary = 1;
@@ -97,6 +100,10 @@ if ($max_amount !== null) {
     $bind_types .= 'd';
     $bind_values[] = $max_amount;
 }
+
+if ($payment_method_id !== null && $payment_method_id > 0) { $sql .= " AND t.payment_method_id = ?"; $bind_types .= 'i'; $bind_values[] = $payment_method_id; }
+if ($payment_type !== '') { $sql .= " AND pm.type = ?"; $bind_types .= 's'; $bind_values[] = $payment_type; }
+if ($month !== '') { $sql .= " AND DATE_FORMAT(t.transaction_date, '%Y-%m') = ?"; $bind_types .= 's'; $bind_values[] = $month; }
 
 if ($search_text !== '') {
     $sql .= " AND (t.description LIKE ? OR c.name LIKE ? OR u.first_name LIKE ?)";
