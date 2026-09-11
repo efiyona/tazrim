@@ -6,7 +6,7 @@ global $conn;
 
 $featureLabels = ['transactions'=>'הוספת פעולות','reports'=>'דוחות ותובנות','budgets'=>'תקציבים ויעדים','shopping'=>'רשימת קניות','work'=>'סידור עבודה','ai'=>'התזרים החכם'];
 $summary = ['count'=>0,'csat'=>0.0,'nps'=>0.0,'routine'=>0.0];
-$summaryRes = $conn->query('SELECT COUNT(*) c, COALESCE(AVG(csat),0) csat, COALESCE(AVG(nps),0) nps, COALESCE(AVG(routine_score),0) routine FROM satisfaction_survey_responses');
+$summaryRes = $conn->query('SELECT COUNT(*) count, COALESCE(AVG(csat),0) csat, COALESCE(AVG(nps),0) nps, COALESCE(AVG(routine_score),0) routine FROM satisfaction_survey_responses');
 if ($summaryRes) {$summary = array_merge($summary, $summaryRes->fetch_assoc() ?: []);}
 $rows=[];
 $sql="SELECT s.*,u.first_name,u.last_name,u.email,h.name home_name FROM satisfaction_survey_responses s INNER JOIN users u ON u.id=s.user_id LEFT JOIN homes h ON h.id=u.home_id ORDER BY s.submitted_at DESC,s.id DESC";
