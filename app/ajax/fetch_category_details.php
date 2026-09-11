@@ -79,7 +79,7 @@ if (mysqli_num_rows($result) > 0) {
         $amount_prefix = $row['type'] === 'income' ? '+' : '-';
 
         echo '<div class="transaction-item ' . $row['type'] . ' ' . $pending_class . '"
-            onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . $safe_desc . '\', \'' . $row['type'] . '\', \'' . $js_action_source . '\')"
+            onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . $safe_desc . '\', \'' . $row['type'] . '\', \'' . $js_action_source . '\', ' . ($row['payment_method_id'] !== null ? (int)$row['payment_method_id'] : 'null') . ')"
             style="margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer;">';
         echo '  <div class="transaction-info">';
         echo '      <div class="cat-icon-wrapper"><i class="' . $icon_class . '"></i></div>';
@@ -91,7 +91,7 @@ if (mysqli_num_rows($result) > 0) {
         echo '  <div class="transaction-actions">';
         echo '      <div class="transaction-amount">' . $amount_prefix . ' ' . number_format($row['amount'], 0) . ' ₪</div>';
         echo '      <div class="transaction-row-actions">';
-        echo '          <button type="button" onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . $safe_desc . '\', \'' . $row['type'] . '\', \'' . $js_action_source . '\')" class="transaction-action-pill" title="ערוך פעולה">';
+        echo '          <button type="button" onclick="openEditTransModal(' . $row['id'] . ', ' . $row['amount'] . ', ' . $row['category'] . ', \'' . $safe_desc . '\', \'' . $row['type'] . '\', \'' . $js_action_source . '\', ' . ($row['payment_method_id'] !== null ? (int)$row['payment_method_id'] : 'null') . ')" class="transaction-action-pill" title="ערוך פעולה">';
         echo '              <i class="fa-solid fa-pen" style="font-size: 1rem;"></i>';
         echo '          </button>';
         echo '          <button type="button" onclick="event.stopPropagation(); deleteTransaction(' . $row['id'] . ', \'' . $js_action_source . '\')" class="transaction-action-pill transaction-action-pill--danger" title="מחק פעולה">';
