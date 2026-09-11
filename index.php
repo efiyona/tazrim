@@ -116,7 +116,7 @@ require_once ROOT_PATH . '/app/includes/render_home_dashboard_core.php';
     <script>
     (function(){
       var popup=document.getElementById('satisfaction-survey-announcement');
-      var key='tazrim_satisfaction_survey_invite_v1_<?php echo (int)($_SESSION['id'] ?? 0); ?>';
+      var key='tazrim_satisfaction_survey_invite_v2_<?php echo (int)($_SESSION['id'] ?? 0); ?>';
       if(!popup)return;
       function dismiss(){try{localStorage.setItem(key,'1');}catch(e){} popup.hidden=true;popup.setAttribute('aria-hidden','true');}
       var dismissed=false;try{dismissed=localStorage.getItem(key)==='1';}catch(e){}
