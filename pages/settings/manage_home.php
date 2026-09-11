@@ -204,11 +204,11 @@ $members_result = mysqli_query($conn, $members_query);
                         <div id="manage-home-recurring-panel">
                             <?php include ROOT_PATH . '/app/includes/partials/manage_home_recurring_panel.php'; ?>
                         </div>
-                        <div class="manage-categories-toolbar payment-methods-entry">
-                            <h2 class="section-subtitle" style="margin:0;">אמצעי תשלום</h2>
-                            <a href="<?php echo htmlspecialchars(BASE_URL . 'pages/settings/payment_methods.php', ENT_QUOTES, 'UTF-8'); ?>" class="btn-primary" style="width:max-content;margin:0;padding:8px 20px;font-size:.95rem;box-shadow:0 4px 10px rgba(35,114,39,.2);text-decoration:none;">
-                                ניהול <i class="fa-solid fa-arrow-left"></i>
-                            </a>
+                    </div>
+
+                    <div class="card full-width-card">
+                        <div id="manage-home-payment-methods-panel">
+                            <?php include ROOT_PATH . '/app/includes/partials/manage_home_payment_methods_panel.php'; ?>
                         </div>
                     </div>
 
@@ -396,6 +396,25 @@ $members_result = mysqli_query($conn, $members_query);
 
 
 
+<script>
+let paymentMethods=[];
+const pmLabels={bank_transfer:'בנק / העברה',credit_card:'כרטיס אשראי',cash:'מזומן',check:"צ'ק",bank_debit:'הוראת קבע'};
+const pmIcons={bank_transfer:'fa-building-columns',credit_card:'fa-credit-card',cash:'fa-money-bill-wave',check:'fa-money-check',bank_debit:'fa-repeat'};
+function loadPaymentMethods(){fetch('../../app/ajax/payment_methods.php').then(r=>r.json()).then(x=>{if(x.status!=='success')throw Error(x.message);paymentMethods=x.data;renderPaymentMethods();}).catch(e=>console.error(e));}
+function paymentMethodPublicName(pm){const name=String(pm.name||'').trim(),last4=String(pm.last4||'').replace(/\D/g,'');if(!last4)return name;const escaped=last4.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return name.replace(new RegExp('[\\s\\-–—·•]*'+escaped+'\\s*$'),'').trim()||'אמצעי תשלום';}
+function renderPaymentMethods(){const el=document.getElementById('payment-methods-list');if(!el)return;el.innerHTML=paymentMethods.map(pm=>`<div class="transaction-item ${pm.is_active==1?'income':''}" onclick="openPaymentMethodEditor(${pm.id})" style="cursor:pointer;${pm.is_active==1?'':'opacity:.55'}"><div class="transaction-info"><div class="cat-icon-wrapper"><i class="fa-solid ${pmIcons[pm.type]||'fa-wallet'}"></i></div><div class="details"><span class="desc">${escapeHtml(paymentMethodPublicName(pm))} ${pm.is_default==1?'<span class="pm-default-badge"><i class="fa-solid fa-check"></i> ברירת מחדל</span>':''}</span><span class="date">${pmLabels[pm.type]||pm.type}${pm.issuer?' · '+escapeHtml(pm.issuer):''}${pm.is_active==1?'':' · לא פעיל'}</span></div></div><div class="transaction-actions"><div class="transaction-row-actions">${pm.is_active==1&&pm.is_default!=1?`<button type="button" class="transaction-action-pill" onclick="event.stopPropagation();paymentMethodAction('set_default',${pm.id})" title="הגדר כברירת מחדל"><i class="fa-solid fa-star"></i></button>`:''}<div class="transaction-action-pill" title="ערוך אמצעי תשלום"><i class="fa-solid fa-pen"></i></div>${pm.is_active==1?`<button type="button" class="transaction-action-pill transaction-action-pill--danger" onclick="event.stopPropagation();paymentMethodAction('deactivate',${pm.id})" title="הסר אמצעי תשלום"><i class="fa-solid fa-trash-can"></i></button>`:''}</div></div></div>`).join('');}
+function escapeHtml(v){const d=document.createElement('div');d.textContent=v||'';return d.innerHTML;}
+function openPaymentMethodEditor(id){const pm=paymentMethods.find(x=>Number(x.id)===Number(id));document.getElementById('pm-id').value=pm?pm.id:'';selectPaymentType(pm?pm.type:'bank_transfer',false);document.getElementById('pm-name').value=pm?pm.name:'';document.getElementById('pm-issuer').value=pm?.issuer||'';document.getElementById('pm-last4').value=pm?.last4||'';document.getElementById('pm-modal-title').textContent=pm?'עריכת אמצעי תשלום':'אמצעי תשלום חדש';const msg=document.getElementById('pm-msg');msg.style.display='none';msg.textContent='';toggleCardFields();document.getElementById('payment-method-modal').style.display='block';}
+function closePaymentMethodEditor(){document.getElementById('payment-method-modal').style.display='none';}
+function selectPaymentType(value,close=true){const input=document.getElementById('pm-type'),menu=document.getElementById('pm-type-select'),option=menu.querySelector(`[data-value="${value}"]`);if(!option)return;input.value=value;document.getElementById('pm-type-label').textContent=pmLabels[value];document.getElementById('pm-type-icon').className=`fa-solid ${pmIcons[value]||'fa-wallet'}`;menu.querySelectorAll('[data-value]').forEach(x=>x.classList.toggle('selected',x.dataset.value===value));if(close)menu.classList.remove('open');menu.querySelector('.pm-type-trigger').setAttribute('aria-expanded','false');toggleCardFields();}
+function togglePaymentTypeMenu(){const menu=document.getElementById('pm-type-select'),open=!menu.classList.contains('open');menu.classList.toggle('open',open);menu.querySelector('.pm-type-trigger').setAttribute('aria-expanded',open?'true':'false');}
+function toggleCardFields(){document.getElementById('pm-card-fields').style.display=document.getElementById('pm-type').value==='credit_card'?'block':'none';}
+document.addEventListener('click',e=>{const menu=document.getElementById('pm-type-select');if(menu&&!menu.contains(e.target)){menu.classList.remove('open');menu.querySelector('.pm-type-trigger').setAttribute('aria-expanded','false');}});
+function paymentMethodAction(action,id){const run=()=>{const f=new FormData();f.append('action',action);f.append('id',id);return fetch('../../app/ajax/payment_methods.php',{method:'POST',body:f}).then(r=>r.json()).then(x=>{if(x.status!=='success')throw Error(x.message);paymentMethods=x.data;renderPaymentMethods();});};if(action==='deactivate'&&typeof tazrimConfirm==='function'){tazrimConfirm({title:'הסרת אמצעי תשלום',message:'האם להסיר את אמצעי התשלום? פעולות עבר יישמרו.',confirmText:'הסר',cancelText:'ביטול',danger:true}).then(ok=>{if(ok)run().catch(e=>tazrimAlert({title:'לא ניתן להסיר',message:e.message}));});}else run().catch(e=>typeof tazrimAlert==='function'?tazrimAlert({title:'שגיאה',message:e.message}):alert(e.message));}
+document.getElementById('payment-method-form')?.addEventListener('submit',e=>{e.preventDefault();const btn=document.getElementById('btn-save-payment-method'),msg=document.getElementById('pm-msg');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> שומר...';const f=new FormData(e.currentTarget);f.append('action','save');fetch('../../app/ajax/payment_methods.php',{method:'POST',body:f}).then(r=>r.json()).then(x=>{if(x.status!=='success')throw Error(x.message);paymentMethods=x.data;renderPaymentMethods();closePaymentMethodEditor();}).catch(err=>{msg.style.display='block';msg.style.background='#fee2e2';msg.style.color='var(--error)';msg.textContent=err.message;}).finally(()=>{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-save"></i> שמור אמצעי תשלום';});});
+document.addEventListener('DOMContentLoaded',loadPaymentMethods);
+window.addEventListener('click',e=>{if(e.target===document.getElementById('payment-method-modal'))closePaymentMethodEditor();});
+</script>
 </body>
  <script>
         const allCategories = <?php echo json_encode($categories_array, JSON_UNESCAPED_UNICODE); ?>;

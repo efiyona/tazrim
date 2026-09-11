@@ -55,10 +55,9 @@ if (isset($_SESSION['id']) && isset($conn) && $conn instanceof mysqli) {
  */
 $settings_submenu = [
     ['name' => 'ניהול הבית', 'icon' => 'fa-house-user', 'url' => BASE_URL . 'pages/settings/manage_home.php', 'file' => 'manage_home.php'],
-    ['name' => 'אמצעי תשלום', 'icon' => 'fa-wallet', 'url' => BASE_URL . 'pages/settings/payment_methods.php', 'file' => 'payment_methods.php'],
     ['name' => 'החשבון שלי', 'icon' => 'fa-user-gear', 'url' => BASE_URL . 'pages/settings/user_profile.php', 'file' => 'user_profile.php'],
 ];
-$settings_nav_files = ['manage_home.php', 'payment_methods.php', 'user_profile.php'];
+$settings_nav_files = ['manage_home.php', 'user_profile.php'];
 if (isset($_SESSION['role']) && $_SESSION['role'] === 'program_admin') {
     $settings_submenu[] = [
         'name' => 'פאנל ניהול מערכת',
