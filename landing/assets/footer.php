@@ -26,7 +26,7 @@
                 <h4>מידע</h4>
                 <ul>
                     <li><a href="<?php echo BASE_URL . 'landing/terms.php'; ?>"><i class="fa-solid fa-angle-left"></i> מדיניות פרטיות</a></li>
-                    <li><a href="mailto:support@hatazrim.com"><i class="fa-solid fa-angle-left"></i> יצירת קשר</a></li>
+                    <li><a href="mailto:hatazrim@gmail.com"><i class="fa-solid fa-angle-left"></i> יצירת קשר</a></li>
                 </ul>
             </nav>
 
