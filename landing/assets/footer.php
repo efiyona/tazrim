@@ -6,6 +6,11 @@
                     <img src="<?php echo BASE_URL . 'assets/images/logo-header.png'; ?>" alt="התזרים">
                 </a>
                 <p>שליטה מלאה בתזרים המשפחתי, בלי לחבר את חשבון הבנק.</p>
+                <div class="footer-social">
+                    <a href="mailto:hatazrim@gmail.com" aria-label="שליחת מייל" title="hatazrim@gmail.com"><i class="fa-solid fa-envelope"></i></a>
+                    <a href="https://www.facebook.com/profile.php?id=61594326091544" target="_blank" rel="noopener" aria-label="הפייסבוק של התזרים"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/hatazrim/" target="_blank" rel="noopener" aria-label="האינסטגרם של התזרים"><i class="fa-brands fa-instagram"></i></a>
+                </div>
             </div>
 
             <nav class="footer-col" aria-label="ניווט במערכת">
@@ -22,7 +27,7 @@
                 <h4>מידע</h4>
                 <ul>
                     <li><a href="<?php echo BASE_URL . 'landing/terms.php'; ?>"><i class="fa-solid fa-angle-left"></i> מדיניות פרטיות</a></li>
-                    <li><a href="mailto:support@hatazrim.com"><i class="fa-solid fa-angle-left"></i> יצירת קשר</a></li>
+                    <li><a href="mailto:hatazrim@gmail.com"><i class="fa-solid fa-angle-left"></i> יצירת קשר</a></li>
                 </ul>
             </nav>
 
@@ -39,3 +44,4 @@
         </div>
     </div>
 </footer>
+
