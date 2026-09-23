@@ -79,7 +79,7 @@ if (!is_array($items) || count($items) > 500) {
     exit();
 }
 
-$inserted = 0; $duplicates = 0; $skipped = 0;
+$inserted = 0; $duplicates = 0; $skipped = 0; $skipped_card = 0;
 $ins = mysqli_prepare($conn,
     "INSERT IGNORE INTO bank_pending_transactions
      (home_id, user_id, dedup_hash, bank, account_ref, txn_date, amount, currency_code, type, description, reference)
@@ -96,6 +96,9 @@ foreach ($items as $it) {
     }
     $desc = mb_substr(trim((string)($it['description'] ?? '')), 0, 255);
     $ref  = mb_substr(trim((string)($it['reference'] ?? '')), 0, 64);
+    // Card-company settlement totals (מסטרקרד/ויזה/כאל...) are skipped: the
+    // תזרים itemizes card purchases separately, importing the total double-counts.
+    if (preg_match('/מסטרקרד|ויזה|כאל|ישראכרט|אמקס|אמריקן אקספרס|דיינרס|מקס/u', $desc) === 1) { $skipped_card++; continue; }
     $event_id = trim((string)($it['event_id'] ?? ''));
     $key = ($event_id !== '' && $event_id !== '0') ? 'e'.$event_id : sha1($date.'|'.$amount.'|'.$desc.'|'.$type.'|'.$ref);
     $hash = sha1($bank.'|'.$account_ref.'|'.$key);
@@ -126,7 +129,7 @@ echo json_encode([
     'status' => 'ok',
     'inserted' => $inserted,
     'duplicates' => $duplicates,
-    'skipped' => $skipped,
+    'skipped' => $skipped, 'skipped_card' => $skipped_card,
     'balance_recorded' => $balance_recorded,
     'pending_total' => $pending_total,
 ], JSON_UNESCAPED_UNICODE);

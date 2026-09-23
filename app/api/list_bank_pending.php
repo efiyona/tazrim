@@ -2,6 +2,7 @@
 // List pending bank transactions + latest balance snapshot for the app (token-auth, home-scoped).
 require('../../path.php');
 include(ROOT_PATH . '/app/database/db.php');
+include(ROOT_PATH . '/app/functions/bank_categorize.php');
 header('Content-Type: application/json; charset=utf-8');
 
 $token = trim((string)($_POST['api_token'] ?? $_GET['api_token'] ?? ''));
@@ -18,7 +19,10 @@ $q = mysqli_prepare($conn, "SELECT id, txn_date, amount, type, description, refe
 mysqli_stmt_bind_param($q, 'i', $home_id);
 mysqli_stmt_execute($q);
 $res = mysqli_stmt_get_result($q);
-while ($row = mysqli_fetch_assoc($res)) $items[] = $row;
+while ($row = mysqli_fetch_assoc($res)) {
+    $row['suggested_category'] = tazrim_bank_suggest_category($conn, $home_id, (string)$row['description'], (string)$row['type']);
+    $items[] = $row;
+}
 
 $balance = null; $balance_at = '';
 $s = mysqli_prepare($conn, "SELECT balance, captured_at FROM bank_balance_snapshots WHERE home_id = ? ORDER BY captured_at DESC LIMIT 1");

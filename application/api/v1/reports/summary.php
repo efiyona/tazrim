@@ -29,6 +29,11 @@ try {
 
     $user = selectOne('users', ['api_token' => $token]);
     if (!$user) {
+        // fallback: app/integration tokens (api_tokens table, e.g. the Hamoach app token)
+        $tok_row = selectOne('api_tokens', ['token' => $token]);
+        if ($tok_row && !empty($tok_row['user_id'])) { $user = selectOne('users', ['id' => (int)$tok_row['user_id']]); }
+    }
+    if (!$user) {
         echo json_encode(['status' => 'error', 'message' => 'טוקן פג תוקף או לא חוקי.']);
         exit();
     }

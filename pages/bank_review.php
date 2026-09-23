@@ -2,6 +2,7 @@
 require_once('../path.php');
 include(ROOT_PATH . '/app/database/db.php');
 include(ROOT_PATH . '/assets/includes/auth_check.php');
+include(ROOT_PATH . '/app/functions/bank_categorize.php');
 // Efi only (user 1): bank data is personal, not household-shared.
 if ((int)$_SESSION['id'] !== 1) { header('Location: ' . BASE_URL . 'index.php'); exit(); }
 $home_id = (int)$_SESSION['home_id'];
@@ -64,7 +65,7 @@ if ($r) $snap = mysqli_fetch_assoc($r);
     <div class="transaction-amount"><?php echo $row['type'] === 'income' ? '+' : '-'; ?> <?php echo number_format((float)$row['amount'], 2); ?> ₪</div>
     <form method="post" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
       <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
-      <select name="category" style="max-width:130px"><?php foreach ($categories as $c): ?><option value="<?php echo (int)$c['id']; ?>"><?php echo h($c['name']); ?></option><?php endforeach; ?></select>
+      <select name="category" style="max-width:130px"><?php $suggested = tazrim_bank_suggest_category($conn, $home_id, (string)$row['description'], (string)$row['type']); foreach ($categories as $c): ?><option value="<?php echo (int)$c['id']; ?>"<?php echo ($suggested !== null && (int)$c['id'] === $suggested) ? ' selected' : ''; ?>><?php echo h($c['name']); ?></option><?php endforeach; ?></select>
       <button type="submit" name="action" value="approve" class="transaction-action-pill" title="אשר והוסף לתזרים"><i class="fa-solid fa-check"></i></button>
       <button type="submit" name="action" value="reject" class="transaction-action-pill transaction-action-pill--danger" title="דחה" onclick="return confirm('לדחות את הפעולה?');"><i class="fa-solid fa-xmark"></i></button>
     </form>
