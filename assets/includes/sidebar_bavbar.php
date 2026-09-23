@@ -74,8 +74,15 @@ $navigation = [
         'name' => 'ראשי',
         'icon' => 'fa-house',
         'url' => BASE_URL . 'index.php',
-        'file' => 'index.php',
-        'plus_modal' => 'add-transaction-modal'
+        'file' => ['index.php', 'all_transactions.php'],
+        'plus_modal' => ($current_page === 'index.php' ? 'add-transaction-modal' : null)
+    ],
+    [
+        'name' => 'בנק',
+        'icon' => 'fa-building-columns',
+        'url' => BASE_URL . 'pages/bank_review.php',
+        'file' => 'bank_review.php',
+        'plus_modal' => null,
     ],
     [
         'name' => 'דוחות',
