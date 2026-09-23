@@ -2,6 +2,8 @@
 require_once('../path.php');
 include(ROOT_PATH . '/app/database/db.php');
 include(ROOT_PATH . '/assets/includes/auth_check.php');
+// Efi only (user 1): bank data is personal, not household-shared.
+if ((int)$_SESSION['id'] !== 1) { header('Location: ' . BASE_URL . 'index.php'); exit(); }
 $home_id = (int)$_SESSION['home_id'];
 $user_id = (int)$_SESSION['id'];
 function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }

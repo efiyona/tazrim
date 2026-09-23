@@ -78,13 +78,6 @@ $navigation = [
         'plus_modal' => ($current_page === 'index.php' ? 'add-transaction-modal' : null)
     ],
     [
-        'name' => 'בנק',
-        'icon' => 'fa-building-columns',
-        'url' => BASE_URL . 'pages/bank_review.php',
-        'file' => 'bank_review.php',
-        'plus_modal' => null,
-    ],
-    [
         'name' => 'דוחות',
         'icon' => 'fa-chart-line',
         'url' => BASE_URL . 'pages/reports.php',
@@ -99,6 +92,18 @@ $navigation = [
         'plus_modal' => 'add-shopping-item-modal' 
     ],
 ];
+
+// Bank review entry: Efi only (user 1) - bank data is personal.
+if ((int)($_SESSION['id'] ?? 0) === 1) {
+    array_splice($navigation, 1, 0, [[
+        'name' => 'בנק',
+        'icon' => 'fa-building-columns',
+        'url' => BASE_URL . 'pages/bank_review.php',
+        'file' => 'bank_review.php',
+        'plus_modal' => null,
+    ]]);
+}
+
 if (!empty($work_schedule_enabled)) {
     $navigation[] = [
         'name' => 'סידור',
