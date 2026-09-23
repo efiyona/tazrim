@@ -97,7 +97,7 @@ foreach ($items as $it) {
     $desc = mb_substr(trim((string)($it['description'] ?? '')), 0, 255);
     $ref  = mb_substr(trim((string)($it['reference'] ?? '')), 0, 64);
     $event_id = trim((string)($it['event_id'] ?? ''));
-    $key = $event_id !== '' ? 'e'.$event_id : sha1($date.'|'.$amount.'|'.$desc.'|'.$type);
+    $key = ($event_id !== '' && $event_id !== '0') ? 'e'.$event_id : sha1($date.'|'.$amount.'|'.$desc.'|'.$type.'|'.$ref);
     $hash = sha1($bank.'|'.$account_ref.'|'.$key);
     mysqli_stmt_bind_param($ins, 'iisssssdss',
         $home_id, $user_id, $hash, $bank, $account_ref, $date, $amount, $type, $desc, $ref);
