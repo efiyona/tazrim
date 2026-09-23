@@ -99,7 +99,7 @@ foreach ($items as $it) {
     $event_id = trim((string)($it['event_id'] ?? ''));
     $key = ($event_id !== '' && $event_id !== '0') ? 'e'.$event_id : sha1($date.'|'.$amount.'|'.$desc.'|'.$type.'|'.$ref);
     $hash = sha1($bank.'|'.$account_ref.'|'.$key);
-    mysqli_stmt_bind_param($ins, 'iisssssdss',
+    mysqli_stmt_bind_param($ins, 'iissssdsss',
         $home_id, $user_id, $hash, $bank, $account_ref, $date, $amount, $type, $desc, $ref);
     mysqli_stmt_execute($ins);
     if (mysqli_stmt_affected_rows($ins) === 1) { $inserted++; } else { $duplicates++; }
